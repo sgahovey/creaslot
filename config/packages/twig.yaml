@@ -1,0 +1,9 @@
+twig:
+    file_name_pattern: '*.twig'
+    globals:
+        # Disponible dans tous les templates via {{ app_environment_label }}
+        app_environment_label: '%env(APP_ENVIRONMENT_LABEL)%'
+
+when@test:
+    twig:
+        strict_variables: true
