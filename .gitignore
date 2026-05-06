@@ -1,5 +1,5 @@
 # Fichiers IA – rester en local uniquement
-.cursorrules.txt
+.cursorrules
 docs/design-tokens.md
 design-tokens.md
 
@@ -24,3 +24,15 @@ desktop.ini
 .env.local
 .env.*.local
 .env.production
+
+# Symfony — répertoires générés (seront présents après US-1.2)
+/var/
+/vendor/
+/public/build/
+
+# Node.js (Webpack Encore / Asset Mapper)
+/node_modules/
+
+# PHPUnit
+.phpunit.result.cache
+/coverage/
