@@ -20,6 +20,10 @@ desktop.ini
 *.tmp
 *.bak
 
+# Surcharges Docker générées automatiquement par Symfony Flex (incompatibles avec notre MySQL)
+compose.override.yaml
+compose.override.yml
+
 # Variables d'environnement
 .env.local
 .env.*.local
@@ -36,3 +40,13 @@ desktop.ini
 # PHPUnit
 .phpunit.result.cache
 /coverage/
+
+###> phpunit/phpunit ###
+/phpunit.xml
+/.phpunit.cache/
+###< phpunit/phpunit ###
+
+###> symfony/asset-mapper ###
+/public/assets/
+/assets/vendor/
+###< symfony/asset-mapper ###

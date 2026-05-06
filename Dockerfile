@@ -34,6 +34,8 @@ FROM php:8.4-fpm-alpine AS production
 RUN apk add --no-cache \
         icu-libs \
         libzip \
+        git \
+        unzip \
     && apk add --no-cache --virtual .build-deps \
         icu-dev \
         libzip-dev \
@@ -43,6 +45,9 @@ RUN apk add --no-cache \
         zip \
     && docker-php-ext-enable opcache \
     && apk del --no-cache .build-deps
+
+# Composer disponible dans le conteneur pour les commandes de développement
+COPY --from=composer:2.7 /usr/bin/composer /usr/bin/composer
 
 # Configuration PHP (OPcache, limites, etc.)
 COPY docker/php/php.ini /usr/local/etc/php/conf.d/app.ini
