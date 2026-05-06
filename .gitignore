@@ -1,0 +1,26 @@
+# Fichiers IA – rester en local uniquement
+.cursorrules.txt
+docs/design-tokens.md
+design-tokens.md
+
+# Systèmes d'exploitation
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE et éditeurs
+.idea/
+.vscode/
+.cursor/
+*.swp
+*.swo
+
+# Logs et fichiers temporaires
+*.log
+*.tmp
+*.bak
+
+# Variables d'environnement
+.env.local
+.env.*.local
+.env.production
