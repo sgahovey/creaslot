@@ -2,104 +2,10 @@
 
 {% block title %}Connexion{% endblock %}
 
-{# Page full-page centrée — le header global n'est pas affiché sur les pages d'auth #}
+{# Pages d'auth : masquer header, footer et flash (ils sont dans la carte) #}
 {% block header %}{% endblock %}
-
-{% block stylesheets %}
-<style>
-    .cs-auth-wrapper {
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: var(--cs-space-lg);
-        background-color: var(--cs-bg-page);
-    }
-
-    .cs-auth-card {
-        width: 100%;
-        max-width: 440px;
-        background: var(--cs-bg-card);
-        border: 1px solid var(--cs-border);
-        border-radius: var(--cs-radius-lg);
-        padding: var(--cs-space-xl);
-        box-shadow: var(--cs-shadow-md);
-    }
-
-    .cs-auth-logo {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: var(--cs-blue-primary);
-        text-decoration: none;
-        letter-spacing: -0.5px;
-    }
-
-    .cs-auth-title {
-        font-size: 1.375rem;
-        font-weight: 700;
-        color: var(--cs-text-primary);
-        margin-bottom: var(--cs-space-xs);
-    }
-
-    .cs-auth-subtitle {
-        font-size: 0.875rem;
-        color: var(--cs-text-secondary);
-        margin-bottom: var(--cs-space-lg);
-    }
-
-    .form-label {
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--cs-text-primary);
-        margin-bottom: 4px;
-    }
-
-    .form-control {
-        border-color: var(--cs-border-input);
-        border-radius: var(--cs-radius-md);
-        padding: 10px 12px;
-        font-size: 1rem;
-        font-family: var(--cs-font-family);
-        transition: border-color 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    .form-control:focus {
-        border-color: var(--cs-border-focus);
-        box-shadow: 0 0 0 3px rgba(31, 78, 121, 0.15);
-    }
-
-    .btn-primary {
-        background-color: var(--cs-blue-primary);
-        border-color: var(--cs-blue-primary);
-        font-weight: 600;
-        padding: 12px 24px;
-        border-radius: var(--cs-radius-md);
-        transition: background-color 0.15s ease;
-    }
-
-    .btn-primary:hover {
-        background-color: var(--cs-blue-secondary);
-        border-color: var(--cs-blue-secondary);
-    }
-
-    .cs-auth-footer {
-        text-align: center;
-        margin-top: var(--cs-space-lg);
-        font-size: 0.875rem;
-        color: var(--cs-text-secondary);
-    }
-
-    .cs-auth-footer a {
-        color: var(--cs-blue-primary);
-        font-weight: 600;
-        text-decoration: none;
-    }
-
-    .cs-auth-footer a:hover {
-        text-decoration: underline;
-    }
-</style>
-{% endblock %}
+{% block footer %}{% endblock %}
+{% block flash_messages %}{% endblock %}
 
 {% block body %}
 <div class="cs-auth-wrapper">

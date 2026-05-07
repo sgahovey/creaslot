@@ -1,0 +1,42 @@
+{# Flash messages Symfony — auto-dismiss après 5 secondes #}
+{% set flash_config = {
+    'success': { icon: 'bi-check-circle-fill',       bs_class: 'alert-success' },
+    'info':    { icon: 'bi-info-circle-fill',         bs_class: 'alert-info'    },
+    'warning': { icon: 'bi-exclamation-triangle-fill', bs_class: 'alert-warning' },
+    'error':   { icon: 'bi-x-circle-fill',            bs_class: 'alert-danger'  }
+} %}
+
+{% set has_flashes = false %}
+{% for type in flash_config|keys %}
+    {% if app.flashes(type) is not empty %}
+        {% set has_flashes = true %}
+    {% endif %}
+{% endfor %}
+
+{% if has_flashes %}
+<div class="container" id="cs-flash-container" style="padding-top: var(--cs-space-md);">
+    {% for type, config in flash_config %}
+        {% for message in app.flashes(type) %}
+            <div class="alert {{ config.bs_class }} alert-dismissible cs-alert fade show mb-2"
+                 role="alert"
+                 data-cs-autodismiss="5000">
+                <i class="bi {{ config.icon }} flex-shrink-0" aria-hidden="true"></i>
+                <span>{{ message }}</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer le message"></button>
+            </div>
+        {% endfor %}
+    {% endfor %}
+</div>
+
+<script>
+    (function () {
+        document.querySelectorAll('[data-cs-autodismiss]').forEach(function (el) {
+            var delay = parseInt(el.dataset.csAutodismiss, 10) || 5000;
+            setTimeout(function () {
+                var bsAlert = bootstrap.Alert.getOrCreateInstance(el);
+                if (bsAlert) { bsAlert.close(); }
+            }, delay);
+        });
+    })();
+</script>
+{% endif %}
