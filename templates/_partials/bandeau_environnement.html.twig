@@ -1,0 +1,12 @@
+{# Bandeau visible uniquement hors production #}
+{% if app_environment_label is defined and app_environment_label == 'preprod' %}
+    <div class="cs-env-banner cs-env-banner--preprod" role="status" aria-label="Environnement pré-production">
+        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+        PRÉ-PRODUCTION — Les données de cet environnement ne sont pas réelles
+    </div>
+{% elseif app.environment == 'dev' %}
+    <div class="cs-env-banner cs-env-banner--dev" role="status" aria-label="Environnement de développement">
+        <i class="bi bi-code-slash" aria-hidden="true"></i>
+        DÉVELOPPEMENT
+    </div>
+{% endif %}
