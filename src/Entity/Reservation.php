@@ -11,7 +11,6 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: ReservationRepository::class)]
 #[ORM\Table(name: 'reservation')]
 #[ORM\Index(columns: ['statut'], name: 'idx_reservation_statut')]
-#[ORM\HasLifecycleCallbacks]
 class Reservation
 {
     #[ORM\Id]
@@ -24,37 +23,27 @@ class Reservation
     private Creneau $creneau;
 
     #[ORM\ManyToOne(targetEntity: Utilisateur::class, inversedBy: 'reservations')]
-    #[ORM\JoinColumn(name: 'id_auditeur', nullable: false)]
-    private Utilisateur $auditeur;
+    #[ORM\JoinColumn(name: 'id_utilisateur', nullable: false)]
+    private Utilisateur $utilisateur;
 
-    #[ORM\Column(type: 'text', nullable: true)]
-    private ?string $commentaire = null;
+    #[ORM\Column(name: 'date_reservation')]
+    private \DateTimeImmutable $dateReservation;
+
+    #[ORM\Column(name: 'commentaire_auditeur', type: 'text', nullable: true)]
+    private ?string $commentaireAuditeur = null;
 
     #[ORM\Column(length: 20, enumType: StatutReservation::class)]
     private StatutReservation $statut = StatutReservation::ACTIVE;
 
-    #[ORM\Column(type: 'text', nullable: true)]
+    #[ORM\Column(name: 'date_annulation', nullable: true)]
+    private ?\DateTimeImmutable $dateAnnulation = null;
+
+    #[ORM\Column(name: 'motif_annulation', type: 'text', nullable: true)]
     private ?string $motifAnnulation = null;
-
-    #[ORM\Column(nullable: true)]
-    private ?\DateTimeImmutable $annuleeAt = null;
-
-    #[ORM\Column]
-    private \DateTimeImmutable $createdAt;
-
-    #[ORM\Column]
-    private \DateTimeImmutable $updatedAt;
 
     public function __construct()
     {
-        $this->createdAt = new \DateTimeImmutable();
-        $this->updatedAt = new \DateTimeImmutable();
-    }
-
-    #[ORM\PreUpdate]
-    public function majUpdatedAt(): void
-    {
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->dateReservation = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -74,26 +63,31 @@ class Reservation
         return $this;
     }
 
-    public function getAuditeur(): Utilisateur
+    public function getUtilisateur(): Utilisateur
     {
-        return $this->auditeur;
+        return $this->utilisateur;
     }
 
-    public function setAuditeur(Utilisateur $auditeur): static
+    public function setUtilisateur(Utilisateur $utilisateur): static
     {
-        $this->auditeur = $auditeur;
+        $this->utilisateur = $utilisateur;
 
         return $this;
     }
 
-    public function getCommentaire(): ?string
+    public function getDateReservation(): \DateTimeImmutable
     {
-        return $this->commentaire;
+        return $this->dateReservation;
     }
 
-    public function setCommentaire(?string $commentaire): static
+    public function getCommentaireAuditeur(): ?string
     {
-        $this->commentaire = $commentaire;
+        return $this->commentaireAuditeur;
+    }
+
+    public function setCommentaireAuditeur(?string $commentaireAuditeur): static
+    {
+        $this->commentaireAuditeur = $commentaireAuditeur;
 
         return $this;
     }
@@ -110,6 +104,18 @@ class Reservation
         return $this;
     }
 
+    public function getDateAnnulation(): ?\DateTimeImmutable
+    {
+        return $this->dateAnnulation;
+    }
+
+    public function setDateAnnulation(?\DateTimeImmutable $dateAnnulation): static
+    {
+        $this->dateAnnulation = $dateAnnulation;
+
+        return $this;
+    }
+
     public function getMotifAnnulation(): ?string
     {
         return $this->motifAnnulation;
@@ -122,29 +128,7 @@ class Reservation
         return $this;
     }
 
-    public function getAnnuleeAt(): ?\DateTimeImmutable
-    {
-        return $this->annuleeAt;
-    }
-
-    public function setAnnuleeAt(?\DateTimeImmutable $annuleeAt): static
-    {
-        $this->annuleeAt = $annuleeAt;
-
-        return $this;
-    }
-
-    public function getCreatedAt(): \DateTimeImmutable
-    {
-        return $this->createdAt;
-    }
-
-    public function getUpdatedAt(): \DateTimeImmutable
-    {
-        return $this->updatedAt;
-    }
-
-    public function estAnnulable(): bool
+    public function isAnnulable(): bool
     {
         return $this->statut === StatutReservation::ACTIVE;
     }

@@ -27,17 +27,13 @@ class Service
     #[ORM\Column]
     private bool $estActif = true;
 
-    #[ORM\Column]
-    private \DateTimeImmutable $createdAt;
-
-    /** @var Collection<int, Creneau> */
-    #[ORM\OneToMany(targetEntity: Creneau::class, mappedBy: 'service')]
-    private Collection $creneaux;
+    /** @var Collection<int, Utilisateur> */
+    #[ORM\OneToMany(targetEntity: Utilisateur::class, mappedBy: 'service')]
+    private Collection $utilisateurs;
 
     public function __construct()
     {
-        $this->creneaux  = new ArrayCollection();
-        $this->createdAt = new \DateTimeImmutable();
+        $this->utilisateurs = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -81,30 +77,29 @@ class Service
         return $this;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    /** @return Collection<int, Utilisateur> */
+    public function getUtilisateurs(): Collection
     {
-        return $this->createdAt;
+        return $this->utilisateurs;
     }
 
-    /** @return Collection<int, Creneau> */
-    public function getCreneaux(): Collection
+    public function addUtilisateur(Utilisateur $utilisateur): static
     {
-        return $this->creneaux;
-    }
-
-    public function addCreneau(Creneau $creneau): static
-    {
-        if (!$this->creneaux->contains($creneau)) {
-            $this->creneaux->add($creneau);
-            $creneau->setService($this);
+        if (!$this->utilisateurs->contains($utilisateur)) {
+            $this->utilisateurs->add($utilisateur);
+            $utilisateur->setService($this);
         }
 
         return $this;
     }
 
-    public function removeCreneau(Creneau $creneau): static
+    public function removeUtilisateur(Utilisateur $utilisateur): static
     {
-        $this->creneaux->removeElement($creneau);
+        if ($this->utilisateurs->removeElement($utilisateur)) {
+            if ($utilisateur->getService() === $this) {
+                $utilisateur->setService(null);
+            }
+        }
 
         return $this;
     }

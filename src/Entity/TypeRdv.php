@@ -11,6 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: TypeRdvRepository::class)]
 #[ORM\Table(name: 'type_rdv')]
+#[ORM\UniqueConstraint(name: 'UNIQ_type_rdv_code', columns: ['code'])]
 class TypeRdv
 {
     #[ORM\Id]
@@ -18,11 +19,20 @@ class TypeRdv
     #[ORM\Column]
     private ?int $id = null;
 
+    #[ORM\Column(length: 20, unique: true)]
+    private string $code;
+
     #[ORM\Column(length: 50)]
     private string $libelle;
 
     #[ORM\Column(length: 7)]
     private string $couleurHex;
+
+    #[ORM\Column(length: 50, nullable: true)]
+    private ?string $icone = null;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $description = null;
 
     #[ORM\Column]
     private bool $estActif = true;
@@ -39,6 +49,18 @@ class TypeRdv
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function getCode(): string
+    {
+        return $this->code;
+    }
+
+    public function setCode(string $code): static
+    {
+        $this->code = $code;
+
+        return $this;
     }
 
     public function getLibelle(): string
@@ -61,6 +83,30 @@ class TypeRdv
     public function setCouleurHex(string $couleurHex): static
     {
         $this->couleurHex = $couleurHex;
+
+        return $this;
+    }
+
+    public function getIcone(): ?string
+    {
+        return $this->icone;
+    }
+
+    public function setIcone(?string $icone): static
+    {
+        $this->icone = $icone;
+
+        return $this;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(?string $description): static
+    {
+        $this->description = $description;
 
         return $this;
     }
