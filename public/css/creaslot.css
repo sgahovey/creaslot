@@ -205,6 +205,16 @@
     color: var(--cs-text-light);
 }
 
+/* Différenciation visuelle preprod : fine barre orange persistante sur le header */
+.cs-env-preprod .cs-header {
+    border-top: 3px solid var(--cs-warning);
+}
+
+/* Production : aucun style particulier (état nominal) */
+.cs-env-prod {
+    /* état nominal */
+}
+
 /* ============================================================
    6. FOOTER
    ============================================================ */

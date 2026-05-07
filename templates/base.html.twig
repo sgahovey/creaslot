@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="CreaSlot — Gestion de rendez-vous pour le Cnam Réunion">
-    <title>{% block title %}CreaSlot{% endblock %} — CreaSlot</title>
+    {%- set _page_title -%}{% block title %}{% endblock %}{%- endset -%}
+    <title>{% if pre_production is defined and pre_production %}[PRÉPROD] {% endif %}{% if _page_title|trim is not empty %}{{ _page_title|trim }} — {% endif %}CreaSlot</title>
 
     {# Google Fonts — Inter (design-tokens.md : famille de police principale) #}
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,7 +23,7 @@
 
     {% block stylesheets %}{% endblock %}
 </head>
-<body class="cs-body">
+<body class="cs-body {% if pre_production is defined and pre_production %}cs-env-preprod{% else %}cs-env-prod{% endif %}">
 
     {# Bandeau environnement (preprod/dev) #}
     {% include '_partials/bandeau_environnement.html.twig' %}
