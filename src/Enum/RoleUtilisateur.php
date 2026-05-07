@@ -10,3 +10,4 @@ enum RoleUtilisateur: string
     case PERSONNEL   = 'ROLE_PERSONNEL';
     case SUPER_ADMIN = 'ROLE_SUPER_ADMIN';
 }
+    
