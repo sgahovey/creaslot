@@ -9,12 +9,15 @@ use App\Repository\UtilisateurRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UtilisateurRepository::class)]
 #[ORM\Table(name: 'utilisateur')]
 #[ORM\UniqueConstraint(name: 'UNIQ_utilisateur_email', columns: ['email'])]
+#[UniqueEntity(fields: ['email'], message: 'Une erreur est survenue, veuillez réessayer.')]
 class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -23,15 +26,22 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     private ?int $id = null;
 
     #[ORM\Column(length: 180, unique: true)]
+    #[Assert\NotBlank(message: 'Veuillez saisir votre adresse email.')]
+    #[Assert\Email(message: 'Veuillez saisir une adresse email valide.')]
+    #[Assert\Length(max: 180)]
     private string $email;
 
     #[ORM\Column(name: 'mot_de_passe_hash', length: 255)]
     private string $motDePasseHash;
 
     #[ORM\Column(length: 100)]
+    #[Assert\NotBlank(message: 'Veuillez saisir votre nom.')]
+    #[Assert\Length(min: 2, max: 100)]
     private string $nom;
 
     #[ORM\Column(length: 100)]
+    #[Assert\NotBlank(message: 'Veuillez saisir votre prénom.')]
+    #[Assert\Length(min: 2, max: 100)]
     private string $prenom;
 
     #[ORM\Column(length: 30, enumType: RoleUtilisateur::class)]
