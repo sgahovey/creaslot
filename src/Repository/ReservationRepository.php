@@ -25,15 +25,15 @@ class ReservationRepository extends ServiceEntityRepository
      *
      * @return Reservation[]
      */
-    public function findActivesParAuditeur(Utilisateur $auditeur): array
+    public function findActivesParUtilisateur(Utilisateur $utilisateur): array
     {
         return $this->createQueryBuilder('r')
             ->join('r.creneau', 'c')
-            ->andWhere('r.auditeur = :auditeur')
+            ->andWhere('r.utilisateur = :utilisateur')
             ->andWhere('r.statut = :statut')
-            ->setParameter('auditeur', $auditeur)
+            ->setParameter('utilisateur', $utilisateur)
             ->setParameter('statut', StatutReservation::ACTIVE)
-            ->orderBy('c.debutAt', 'ASC')
+            ->orderBy('c.dateDebut', 'ASC')
             ->getQuery()
             ->getResult();
     }

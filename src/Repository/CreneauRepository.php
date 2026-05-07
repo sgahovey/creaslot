@@ -6,7 +6,6 @@ namespace App\Repository;
 
 use App\Entity\Creneau;
 use App\Entity\Utilisateur;
-use App\Enum\StatutCreneau;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -21,19 +20,19 @@ class CreneauRepository extends ServiceEntityRepository
     }
 
     /**
-     * Retourne les créneaux disponibles d'un Personnel, triés par date de début.
+     * Retourne les créneaux disponibles (sans réservation) d'un Personnel, triés par date de début.
      *
      * @return Creneau[]
      */
-    public function findDisponiblesParPersonnel(Utilisateur $personnel): array
+    public function findDisponiblesParUtilisateur(Utilisateur $utilisateur): array
     {
         return $this->createQueryBuilder('c')
-            ->andWhere('c.personnel = :personnel')
-            ->andWhere('c.statut = :statut')
+            ->leftJoin('c.reservation', 'r')
+            ->andWhere('c.utilisateur = :utilisateur')
             ->andWhere('c.estActif = true')
-            ->setParameter('personnel', $personnel)
-            ->setParameter('statut', StatutCreneau::DISPONIBLE)
-            ->orderBy('c.debutAt', 'ASC')
+            ->andWhere('r.id IS NULL')
+            ->setParameter('utilisateur', $utilisateur)
+            ->orderBy('c.dateDebut', 'ASC')
             ->getQuery()
             ->getResult();
     }

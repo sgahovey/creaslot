@@ -8,6 +8,4 @@ enum StatutReservation: string
 {
     case ACTIVE  = 'ACTIVE';
     case ANNULEE = 'ANNULEE';
-    case HONOREE = 'HONOREE';
-    case NO_SHOW = 'NO_SHOW';
 }

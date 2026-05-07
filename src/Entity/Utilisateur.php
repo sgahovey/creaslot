@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\RoleUtilisateur;
 use App\Repository\UtilisateurRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -14,7 +15,6 @@ use Symfony\Component\Security\Core\User\UserInterface;
 #[ORM\Entity(repositoryClass: UtilisateurRepository::class)]
 #[ORM\Table(name: 'utilisateur')]
 #[ORM\UniqueConstraint(name: 'UNIQ_utilisateur_email', columns: ['email'])]
-#[ORM\HasLifecycleCallbacks]
 class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -25,8 +25,8 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 180, unique: true)]
     private string $email;
 
-    #[ORM\Column(length: 255)]
-    private string $motDePasse;
+    #[ORM\Column(name: 'mot_de_passe_hash', length: 255)]
+    private string $motDePasseHash;
 
     #[ORM\Column(length: 100)]
     private string $nom;
@@ -34,41 +34,35 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 100)]
     private string $prenom;
 
-    #[ORM\Column(length: 20, nullable: true)]
-    private ?string $telephone = null;
+    #[ORM\Column(length: 30, enumType: RoleUtilisateur::class)]
+    private RoleUtilisateur $role;
 
-    #[ORM\Column(type: 'json')]
-    private array $roles = [];
+    #[ORM\Column(name: 'date_creation')]
+    private \DateTimeImmutable $dateCreation;
+
+    #[ORM\Column(name: 'derniere_connexion', nullable: true)]
+    private ?\DateTimeImmutable $derniereConnexion = null;
 
     #[ORM\Column]
     private bool $estActif = true;
 
-    #[ORM\Column]
-    private \DateTimeImmutable $createdAt;
-
-    #[ORM\Column]
-    private \DateTimeImmutable $updatedAt;
+    #[ORM\ManyToOne(targetEntity: Service::class, inversedBy: 'utilisateurs')]
+    #[ORM\JoinColumn(name: 'id_service', nullable: true)]
+    private ?Service $service = null;
 
     /** @var Collection<int, Creneau> */
-    #[ORM\OneToMany(targetEntity: Creneau::class, mappedBy: 'personnel')]
+    #[ORM\OneToMany(targetEntity: Creneau::class, mappedBy: 'utilisateur')]
     private Collection $creneaux;
 
     /** @var Collection<int, Reservation> */
-    #[ORM\OneToMany(targetEntity: Reservation::class, mappedBy: 'auditeur')]
+    #[ORM\OneToMany(targetEntity: Reservation::class, mappedBy: 'utilisateur')]
     private Collection $reservations;
 
     public function __construct()
     {
-        $this->creneaux    = new ArrayCollection();
+        $this->creneaux     = new ArrayCollection();
         $this->reservations = new ArrayCollection();
-        $this->createdAt   = new \DateTimeImmutable();
-        $this->updatedAt   = new \DateTimeImmutable();
-    }
-
-    #[ORM\PreUpdate]
-    public function majUpdatedAt(): void
-    {
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->dateCreation = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -97,39 +91,41 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
-     * Retourne les rôles de l'utilisateur. ROLE_USER est toujours inclus.
+     * Retourne les rôles compatibles Symfony Security.
+     * ROLE_USER est toujours inclus comme base.
      *
      * @return list<string>
      */
     public function getRoles(): array
     {
-        $roles   = $this->roles;
-        $roles[] = 'ROLE_USER';
-
-        return array_unique($roles);
+        return array_unique([$this->role->value, 'ROLE_USER']);
     }
 
-    /** @param list<string> $roles */
-    public function setRoles(array $roles): static
+    public function getRole(): RoleUtilisateur
     {
-        $this->roles = $roles;
+        return $this->role;
+    }
+
+    public function setRole(RoleUtilisateur $role): static
+    {
+        $this->role = $role;
 
         return $this;
     }
 
     public function getPassword(): ?string
     {
-        return $this->motDePasse;
+        return $this->motDePasseHash;
     }
 
-    public function getMotDePasse(): string
+    public function getMotDePasseHash(): string
     {
-        return $this->motDePasse;
+        return $this->motDePasseHash;
     }
 
-    public function setMotDePasse(string $motDePasse): static
+    public function setMotDePasseHash(string $motDePasseHash): static
     {
-        $this->motDePasse = $motDePasse;
+        $this->motDePasseHash = $motDePasseHash;
 
         return $this;
     }
@@ -166,14 +162,19 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getTelephone(): ?string
+    public function getDateCreation(): \DateTimeImmutable
     {
-        return $this->telephone;
+        return $this->dateCreation;
     }
 
-    public function setTelephone(?string $telephone): static
+    public function getDerniereConnexion(): ?\DateTimeImmutable
     {
-        $this->telephone = $telephone;
+        return $this->derniereConnexion;
+    }
+
+    public function setDerniereConnexion(?\DateTimeImmutable $derniereConnexion): static
+    {
+        $this->derniereConnexion = $derniereConnexion;
 
         return $this;
     }
@@ -190,14 +191,16 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
+    public function getService(): ?Service
     {
-        return $this->createdAt;
+        return $this->service;
     }
 
-    public function getUpdatedAt(): \DateTimeImmutable
+    public function setService(?Service $service): static
     {
-        return $this->updatedAt;
+        $this->service = $service;
+
+        return $this;
     }
 
     /** @return Collection<int, Creneau> */
@@ -210,7 +213,7 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if (!$this->creneaux->contains($creneau)) {
             $this->creneaux->add($creneau);
-            $creneau->setPersonnel($this);
+            $creneau->setUtilisateur($this);
         }
 
         return $this;
@@ -233,7 +236,7 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     {
         if (!$this->reservations->contains($reservation)) {
             $this->reservations->add($reservation);
-            $reservation->setAuditeur($this);
+            $reservation->setUtilisateur($this);
         }
 
         return $this;

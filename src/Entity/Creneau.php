@@ -4,15 +4,12 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\Enum\StatutCreneau;
 use App\Repository\CreneauRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: CreneauRepository::class)]
 #[ORM\Table(name: 'creneau')]
-#[ORM\Index(columns: ['id_personnel', 'debut_at'], name: 'idx_creneau_personnel_debut')]
-#[ORM\Index(columns: ['statut'], name: 'idx_creneau_statut')]
-#[ORM\HasLifecycleCallbacks]
+#[ORM\Index(columns: ['id_utilisateur', 'date_debut'], name: 'idx_creneau_utilisateur_debut')]
 class Creneau
 {
     #[ORM\Id]
@@ -21,48 +18,34 @@ class Creneau
     private ?int $id = null;
 
     #[ORM\ManyToOne(targetEntity: Utilisateur::class, inversedBy: 'creneaux')]
-    #[ORM\JoinColumn(name: 'id_personnel', nullable: false)]
-    private Utilisateur $personnel;
-
-    #[ORM\ManyToOne(targetEntity: Service::class, inversedBy: 'creneaux')]
-    #[ORM\JoinColumn(name: 'id_service', nullable: false)]
-    private Service $service;
+    #[ORM\JoinColumn(name: 'id_utilisateur', nullable: false)]
+    private Utilisateur $utilisateur;
 
     #[ORM\ManyToOne(targetEntity: TypeRdv::class, inversedBy: 'creneaux')]
     #[ORM\JoinColumn(name: 'id_type_rdv', nullable: false)]
     private TypeRdv $typeRdv;
 
-    #[ORM\Column]
-    private \DateTimeImmutable $debutAt;
+    #[ORM\Column(name: 'date_debut')]
+    private \DateTimeImmutable $dateDebut;
 
-    #[ORM\Column]
-    private \DateTimeImmutable $finAt;
+    #[ORM\Column(name: 'date_fin')]
+    private \DateTimeImmutable $dateFin;
 
-    #[ORM\Column(length: 20, enumType: StatutCreneau::class)]
-    private StatutCreneau $statut = StatutCreneau::DISPONIBLE;
+    #[ORM\Column(name: 'commentaire_auditeur', type: 'text', nullable: true)]
+    private ?string $commentaireAuditeur = null;
+
+    #[ORM\Column(name: 'date_creation')]
+    private \DateTimeImmutable $dateCreation;
 
     #[ORM\Column]
     private bool $estActif = true;
-
-    #[ORM\Column]
-    private \DateTimeImmutable $createdAt;
-
-    #[ORM\Column]
-    private \DateTimeImmutable $updatedAt;
 
     #[ORM\OneToOne(targetEntity: Reservation::class, mappedBy: 'creneau')]
     private ?Reservation $reservation = null;
 
     public function __construct()
     {
-        $this->createdAt = new \DateTimeImmutable();
-        $this->updatedAt = new \DateTimeImmutable();
-    }
-
-    #[ORM\PreUpdate]
-    public function majUpdatedAt(): void
-    {
-        $this->updatedAt = new \DateTimeImmutable();
+        $this->dateCreation = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -70,26 +53,14 @@ class Creneau
         return $this->id;
     }
 
-    public function getPersonnel(): Utilisateur
+    public function getUtilisateur(): Utilisateur
     {
-        return $this->personnel;
+        return $this->utilisateur;
     }
 
-    public function setPersonnel(Utilisateur $personnel): static
+    public function setUtilisateur(Utilisateur $utilisateur): static
     {
-        $this->personnel = $personnel;
-
-        return $this;
-    }
-
-    public function getService(): Service
-    {
-        return $this->service;
-    }
-
-    public function setService(Service $service): static
-    {
-        $this->service = $service;
+        $this->utilisateur = $utilisateur;
 
         return $this;
     }
@@ -106,40 +77,45 @@ class Creneau
         return $this;
     }
 
-    public function getDebutAt(): \DateTimeImmutable
+    public function getDateDebut(): \DateTimeImmutable
     {
-        return $this->debutAt;
+        return $this->dateDebut;
     }
 
-    public function setDebutAt(\DateTimeImmutable $debutAt): static
+    public function setDateDebut(\DateTimeImmutable $dateDebut): static
     {
-        $this->debutAt = $debutAt;
+        $this->dateDebut = $dateDebut;
 
         return $this;
     }
 
-    public function getFinAt(): \DateTimeImmutable
+    public function getDateFin(): \DateTimeImmutable
     {
-        return $this->finAt;
+        return $this->dateFin;
     }
 
-    public function setFinAt(\DateTimeImmutable $finAt): static
+    public function setDateFin(\DateTimeImmutable $dateFin): static
     {
-        $this->finAt = $finAt;
+        $this->dateFin = $dateFin;
 
         return $this;
     }
 
-    public function getStatut(): StatutCreneau
+    public function getCommentaireAuditeur(): ?string
     {
-        return $this->statut;
+        return $this->commentaireAuditeur;
     }
 
-    public function setStatut(StatutCreneau $statut): static
+    public function setCommentaireAuditeur(?string $commentaireAuditeur): static
     {
-        $this->statut = $statut;
+        $this->commentaireAuditeur = $commentaireAuditeur;
 
         return $this;
+    }
+
+    public function getDateCreation(): \DateTimeImmutable
+    {
+        return $this->dateCreation;
     }
 
     public function isEstActif(): bool
@@ -154,30 +130,13 @@ class Creneau
         return $this;
     }
 
-    public function getCreatedAt(): \DateTimeImmutable
-    {
-        return $this->createdAt;
-    }
-
-    public function getUpdatedAt(): \DateTimeImmutable
-    {
-        return $this->updatedAt;
-    }
-
     public function getReservation(): ?Reservation
     {
         return $this->reservation;
     }
 
-    public function setReservation(?Reservation $reservation): static
+    public function isDisponible(): bool
     {
-        $this->reservation = $reservation;
-
-        return $this;
-    }
-
-    public function estDisponible(): bool
-    {
-        return $this->statut === StatutCreneau::DISPONIBLE && $this->estActif;
+        return $this->estActif && $this->reservation === null;
     }
 }
