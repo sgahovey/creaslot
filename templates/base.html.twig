@@ -113,6 +113,11 @@
     </div>
     {% endif %}
 
+    {# Header de navigation — les pages d'auth peuvent surcharger ce block pour le masquer #}
+    {% block header %}
+        {% include '_partials/header.html.twig' %}
+    {% endblock %}
+
     {% block body %}{% endblock %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

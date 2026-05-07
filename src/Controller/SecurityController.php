@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
 class SecurityController extends AbstractController
 {
@@ -21,6 +22,26 @@ class SecurityController extends AbstractController
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly EntityManagerInterface $entityManager,
     ) {}
+
+    #[Route('/connexion', name: 'app_login', methods: ['GET', 'POST'])]
+    public function login(AuthenticationUtils $authenticationUtils): Response
+    {
+        if ($this->getUser()) {
+            return $this->redirectToRoute('app_home');
+        }
+
+        return $this->render('auth/connexion.html.twig', [
+            'dernierEmail' => $authenticationUtils->getLastUsername(),
+            'erreur'       => $authenticationUtils->getLastAuthenticationError(),
+        ]);
+    }
+
+    #[Route('/deconnexion', name: 'app_logout')]
+    public function logout(): never
+    {
+        // Symfony Security intercepte cette route — ce code n'est jamais exécuté.
+        throw new \LogicException('La déconnexion est gérée par le firewall Symfony Security.');
+    }
 
     #[Route('/inscription', name: 'app_inscription', methods: ['GET', 'POST'])]
     public function inscription(Request $request): Response
@@ -63,7 +84,6 @@ class SecurityController extends AbstractController
 
         $this->addFlash('success', 'Votre compte a été créé. Vous pouvez maintenant vous connecter.');
 
-        // TODO: Rediriger vers app_login après US-1.5
-        return $this->redirectToRoute('app_home');
+        return $this->redirectToRoute('app_login');
     }
 }

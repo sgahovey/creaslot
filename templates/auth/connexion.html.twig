@@ -1,0 +1,201 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Connexion{% endblock %}
+
+{# Page full-page centrée — le header global n'est pas affiché sur les pages d'auth #}
+{% block header %}{% endblock %}
+
+{% block stylesheets %}
+<style>
+    .cs-auth-wrapper {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: var(--cs-space-lg);
+        background-color: var(--cs-bg-page);
+    }
+
+    .cs-auth-card {
+        width: 100%;
+        max-width: 440px;
+        background: var(--cs-bg-card);
+        border: 1px solid var(--cs-border);
+        border-radius: var(--cs-radius-lg);
+        padding: var(--cs-space-xl);
+        box-shadow: var(--cs-shadow-md);
+    }
+
+    .cs-auth-logo {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--cs-blue-primary);
+        text-decoration: none;
+        letter-spacing: -0.5px;
+    }
+
+    .cs-auth-title {
+        font-size: 1.375rem;
+        font-weight: 700;
+        color: var(--cs-text-primary);
+        margin-bottom: var(--cs-space-xs);
+    }
+
+    .cs-auth-subtitle {
+        font-size: 0.875rem;
+        color: var(--cs-text-secondary);
+        margin-bottom: var(--cs-space-lg);
+    }
+
+    .form-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--cs-text-primary);
+        margin-bottom: 4px;
+    }
+
+    .form-control {
+        border-color: var(--cs-border-input);
+        border-radius: var(--cs-radius-md);
+        padding: 10px 12px;
+        font-size: 1rem;
+        font-family: var(--cs-font-family);
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .form-control:focus {
+        border-color: var(--cs-border-focus);
+        box-shadow: 0 0 0 3px rgba(31, 78, 121, 0.15);
+    }
+
+    .btn-primary {
+        background-color: var(--cs-blue-primary);
+        border-color: var(--cs-blue-primary);
+        font-weight: 600;
+        padding: 12px 24px;
+        border-radius: var(--cs-radius-md);
+        transition: background-color 0.15s ease;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--cs-blue-secondary);
+        border-color: var(--cs-blue-secondary);
+    }
+
+    .cs-auth-footer {
+        text-align: center;
+        margin-top: var(--cs-space-lg);
+        font-size: 0.875rem;
+        color: var(--cs-text-secondary);
+    }
+
+    .cs-auth-footer a {
+        color: var(--cs-blue-primary);
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .cs-auth-footer a:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="cs-auth-wrapper">
+    <div class="cs-auth-card">
+
+        {# En-tête de la carte #}
+        <div class="d-flex align-items-center gap-2 mb-4">
+            <i class="bi bi-calendar-check-fill" style="font-size: 1.5rem; color: var(--cs-blue-primary);" aria-hidden="true"></i>
+            <span class="cs-auth-logo">CreaSlot</span>
+        </div>
+
+        <h1 class="cs-auth-title">Connexion</h1>
+        <p class="cs-auth-subtitle">Accédez à votre espace de gestion des rendez-vous.</p>
+
+        {# Messages flash #}
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success d-flex align-items-center gap-2 mb-3" role="alert">
+                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+        {% for message in app.flashes('info') %}
+            <div class="alert alert-info d-flex align-items-center gap-2 mb-3" role="alert">
+                <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
+                <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+
+        {# Erreur d'authentification — message générique (OWASP : ne jamais révéler si c'est l'email ou le mot de passe) #}
+        {% if erreur %}
+            <div class="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
+                <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                <span>Identifiants incorrects.</span>
+            </div>
+        {% endif %}
+
+        {# Formulaire de connexion — soumis vers check_path (même route, POST) #}
+        <form method="post" action="{{ path('app_login') }}" novalidate>
+
+            {# Token CSRF anti-falsification de requête #}
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+            {# Email #}
+            <div class="mb-3">
+                <label for="email" class="form-label">
+                    Adresse email
+                </label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    class="form-control"
+                    value="{{ dernierEmail }}"
+                    placeholder="votre.email@exemple.fr"
+                    autocomplete="email"
+                    required
+                    autofocus
+                >
+            </div>
+
+            {# Mot de passe — pas de contraintes de complexité ici, on vérifie un hash existant #}
+            <div class="mb-4">
+                <label for="password" class="form-label">
+                    Mot de passe
+                </label>
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    class="form-control"
+                    placeholder="Votre mot de passe"
+                    autocomplete="current-password"
+                    required
+                >
+            </div>
+
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
+                    Se connecter
+                </button>
+            </div>
+
+        </form>
+
+        <div class="cs-auth-footer">
+            Pas encore de compte ?
+            <a href="{{ path('app_inscription') }}">S'inscrire</a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
