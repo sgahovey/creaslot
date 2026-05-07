@@ -53,6 +53,24 @@ services:
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
+  # phpmyadmin : interface web MySQL — http://localhost:8080 (dev uniquement)
+  # ---------------------------------------------------------------------------
+  phpmyadmin:
+    image: phpmyadmin:5.2-apache
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      PMA_USER: ${MYSQL_USER:-creaslot}
+      PMA_PASSWORD: ${MYSQL_PASSWORD:-creaslot}
+    networks:
+      - creaslot-net
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
   # db : MySQL 8 — persistance des données via volume nommé
   # ---------------------------------------------------------------------------
   db:
