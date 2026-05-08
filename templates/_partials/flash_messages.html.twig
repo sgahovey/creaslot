@@ -1,22 +1,23 @@
 {# Flash messages Symfony — auto-dismiss après 5 secondes #}
+{#
+ # app.flashes consomme les messages à chaque appel : on l'appelle UNE SEULE
+ # fois et on stocke tout dans allFlashes pour éviter que la détection vide
+ # la session avant l'affichage.
+ #}
 {% set flash_config = {
-    'success': { icon: 'bi-check-circle-fill',       bs_class: 'alert-success' },
-    'info':    { icon: 'bi-info-circle-fill',         bs_class: 'alert-info'    },
+    'success': { icon: 'bi-check-circle-fill',        bs_class: 'alert-success' },
+    'info':    { icon: 'bi-info-circle-fill',          bs_class: 'alert-info'    },
     'warning': { icon: 'bi-exclamation-triangle-fill', bs_class: 'alert-warning' },
-    'error':   { icon: 'bi-x-circle-fill',            bs_class: 'alert-danger'  }
+    'error':   { icon: 'bi-x-circle-fill',             bs_class: 'alert-danger'  }
 } %}
 
-{% set has_flashes = false %}
-{% for type in flash_config|keys %}
-    {% if app.flashes(type) is not empty %}
-        {% set has_flashes = true %}
-    {% endif %}
-{% endfor %}
+{% set allFlashes = app.flashes %}
 
-{% if has_flashes %}
+{% if allFlashes is not empty %}
 <div class="container" id="cs-flash-container" style="padding-top: var(--cs-space-md);">
-    {% for type, config in flash_config %}
-        {% for message in app.flashes(type) %}
+    {% for type, messages in allFlashes %}
+        {% set config = flash_config[type] ?? { icon: 'bi-info-circle-fill', bs_class: 'alert-info' } %}
+        {% for message in messages %}
             <div class="alert {{ config.bs_class }} alert-dismissible cs-alert fade show mb-2"
                  role="alert"
                  data-cs-autodismiss="5000">
