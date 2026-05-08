@@ -3,30 +3,39 @@
 {% block title %}Accès refusé (403){% endblock %}
 
 {% block body %}
-<div class="container">
+<main class="container" role="main" id="contenu-principal">
     <div class="cs-error-page">
 
-        <div class="cs-error-icon">
-            <i class="bi bi-shield-lock" aria-hidden="true"></i>
+        <div class="cs-error-icon" aria-hidden="true">
+            <i class="bi bi-shield-lock"></i>
         </div>
 
-        <div class="cs-error-code" aria-hidden="true">403</div>
-
-        <h1 class="fw-bold mt-2 mb-2" style="color: var(--cs-text-primary); font-size: 1.75rem;">
+        <h1 class="fw-bold mt-2 mb-1" style="color: var(--cs-text-primary); font-size: 1.75rem;">
             Accès refusé
         </h1>
-        <p class="text-muted mb-4" style="max-width: 420px;">
-            Vous n'avez pas les droits nécessaires pour accéder à cette page.
-            Connectez-vous ou contactez l'administrateur si vous pensez qu'il s'agit d'une erreur.
+
+        <p class="text-muted mb-1" style="font-size: .875rem; letter-spacing: .05em;">
+            Erreur 403
+        </p>
+
+        <p class="text-muted mb-4" style="max-width: 440px;" role="status">
+            Vous n'avez pas les droits nécessaires pour consulter cette page.
+            {% if not is_granted('IS_AUTHENTICATED_FULLY') %}
+                Connectez-vous avec un compte autorisé pour continuer.
+            {% else %}
+                Si vous pensez qu'il s'agit d'une erreur, contactez l'administrateur.
+            {% endif %}
         </p>
 
         <div class="d-flex gap-3 flex-wrap justify-content-center">
-            <a href="{{ path('app_home') }}" class="btn cs-btn-primary d-inline-flex align-items-center gap-2">
+            <a href="{{ path('app_home') }}"
+               class="btn cs-btn-primary d-inline-flex align-items-center gap-2">
                 <i class="bi bi-house-fill" aria-hidden="true"></i>
                 Retour à l'accueil
             </a>
             {% if not is_granted('IS_AUTHENTICATED_FULLY') %}
-                <a href="{{ path('app_login') }}" class="btn cs-btn-secondary d-inline-flex align-items-center gap-2">
+                <a href="{{ path('app_login') }}"
+                   class="btn cs-btn-secondary d-inline-flex align-items-center gap-2">
                     <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
                     Se connecter
                 </a>
@@ -34,5 +43,5 @@
         </div>
 
     </div>
-</div>
+</main>
 {% endblock %}
