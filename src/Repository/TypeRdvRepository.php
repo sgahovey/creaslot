@@ -17,4 +17,14 @@ class TypeRdvRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, TypeRdv::class);
     }
+
+    /**
+     * Retourne les types de RDV actifs, triés par libellé.
+     *
+     * @return TypeRdv[]
+     */
+    public function findActifs(): array
+    {
+        return $this->findBy(['estActif' => true], ['libelle' => 'ASC']);
+    }
 }
