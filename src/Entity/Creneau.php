@@ -151,4 +151,13 @@ class Creneau
     {
         return $this->estActif && !$this->isPasse() && !$this->isReserve();
     }
+
+    public function getAuditeurReservation(): ?Utilisateur
+    {
+        if (!$this->isReserve()) {
+            return null;
+        }
+
+        return $this->reservation->getUtilisateur();
+    }
 }

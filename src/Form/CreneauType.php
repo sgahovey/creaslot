@@ -26,6 +26,37 @@ class CreneauType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        $estReserve = $options['creneau_reserve'];
+
+        if (!$estReserve) {
+            $this->ajouterChampsModifiables($builder);
+        }
+
+        $builder->add('commentaireAuditeur', TextareaType::class, [
+            'label'       => 'Commentaire (optionnel, visible par les auditeurs)',
+            'required'    => false,
+            'attr'        => [
+                'class'       => 'form-control',
+                'rows'        => 4,
+                'maxlength'   => 500,
+                'placeholder' => 'Disponible pour question sur le cycle ingénieur',
+            ],
+            'constraints' => [
+                new Length(max: 500, maxMessage: 'Le commentaire ne peut pas dépasser {{ limit }} caractères.'),
+            ],
+        ]);
+
+        if (!$estReserve) {
+            $builder->addEventListener(FormEvents::POST_SUBMIT, $this->validerCoherenceHoraires(...));
+        }
+    }
+
+    /**
+     * Ajoute les champs non accessibles quand le créneau est réservé.
+     * Séparé pour respecter le SRP et garder buildForm court.
+     */
+    private function ajouterChampsModifiables(FormBuilderInterface $builder): void
+    {
         $builder
             ->add('typeRdv', EntityType::class, [
                 'class'           => TypeRdv::class,
@@ -38,7 +69,6 @@ class CreneauType extends AbstractType
                     ->andWhere('t.estActif = :actif')
                     ->setParameter('actif', true)
                     ->orderBy('t.libelle', 'ASC'),
-                // Attributs data-* récupérés dans le template pour afficher la couleur et la description
                 'choice_attr'     => fn (TypeRdv $typeRdv) => [
                     'data-couleur'     => $typeRdv->getCouleurHex(),
                     'data-description' => $typeRdv->getDescription() ?? '',
@@ -94,22 +124,7 @@ class CreneauType extends AbstractType
                 'required' => false,
                 'attr'     => ['class' => 'form-control'],
             ])
-            ->add('commentaireAuditeur', TextareaType::class, [
-                'label'       => 'Commentaire (optionnel, visible par les auditeurs)',
-                'required'    => false,
-                'attr'        => [
-                    'class'       => 'form-control',
-                    'rows'        => 4,
-                    'maxlength'   => 500,
-                    'placeholder' => 'Disponible pour question sur le cycle ingénieur',
-                ],
-                'constraints' => [
-                    new Length(max: 500, maxMessage: 'Le commentaire ne peut pas dépasser {{ limit }} caractères.'),
-                ],
-            ])
         ;
-
-        $builder->addEventListener(FormEvents::POST_SUBMIT, $this->validerCoherenceHoraires(...));
     }
 
     private function validerCoherenceHoraires(FormEvent $event): void
@@ -120,7 +135,6 @@ class CreneauType extends AbstractType
         $dureeFld    = $form->get('duree');
         $heureFinFld = $form->get('heureFin');
 
-        // Date d'aujourd'hui avec heure dans le passé
         if ($dateFld->isValid() && $heureFld->isValid()) {
             $date  = $dateFld->getData();
             $heure = $heureFld->getData();
@@ -137,7 +151,6 @@ class CreneauType extends AbstractType
             }
         }
 
-        // Durée personnalisée : heure de fin obligatoire
         if ($dureeFld->getData() === 'custom' && $heureFinFld->getData() === null) {
             $heureFinFld->addError(new FormError("L'heure de fin est obligatoire pour une durée personnalisée."));
         }
@@ -148,7 +161,10 @@ class CreneauType extends AbstractType
         $resolver->setDefaults([
             'data_class'      => Creneau::class,
             'csrf_protection' => true,
-            'csrf_token_id'   => 'creneau_nouveau',
+            'csrf_token_id'   => 'creneau_form',
+            'creneau_reserve' => false,
         ]);
+
+        $resolver->setAllowedTypes('creneau_reserve', 'bool');
     }
 }

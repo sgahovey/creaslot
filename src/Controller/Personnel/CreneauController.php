@@ -8,9 +8,11 @@ use App\Entity\Creneau;
 use App\Entity\Utilisateur;
 use App\Form\CreneauType;
 use App\Repository\CreneauRepository;
+use App\Security\CreneauVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -40,6 +42,52 @@ class CreneauController extends AbstractController
             'page'          => $page,
             'nbPages'       => max(1, (int) ceil($totalCreneaux / 10)),
             'totalCreneaux' => $totalCreneaux,
+        ]);
+    }
+
+    #[Route('/creneau/{id}/modifier', name: 'app_creneau_modifier', methods: ['GET', 'POST'])]
+    public function modifier(Creneau $creneau, Request $request): Response
+    {
+        $this->denyAccessUnlessGranted(CreneauVoter::EDIT, $creneau);
+
+        if ($creneau->isPasse()) {
+            $this->addFlash('error', 'Ce créneau est passé et ne peut plus être modifié.');
+            return $this->redirectToRoute('app_creneau_liste');
+        }
+
+        if (!$creneau->isEstActif()) {
+            $this->addFlash('error', 'Ce créneau a été annulé et ne peut plus être modifié.');
+            return $this->redirectToRoute('app_creneau_liste');
+        }
+
+        $estReserve = $creneau->isReserve();
+        $formulaire = $this->createForm(CreneauType::class, $creneau, ['creneau_reserve' => $estReserve]);
+
+        if (!$estReserve) {
+            $this->preremplirChampsNonMappes($formulaire, $creneau);
+        }
+
+        $formulaire->handleRequest($request);
+
+        if ($formulaire->isSubmitted() && $formulaire->isValid()) {
+            if (!$estReserve) {
+                $this->mettreAJourHoraires($formulaire, $creneau);
+            }
+
+            $this->entityManager->flush();
+
+            /** @var Utilisateur $utilisateur */
+            $utilisateur = $this->getUser();
+            $this->logger->info('Créneau modifié', ['creneau_id' => $creneau->getId(), 'user_id' => $utilisateur->getId()]);
+            $this->addFlash('success', 'Le créneau a été modifié.');
+
+            return $this->redirectToRoute('app_creneau_liste');
+        }
+
+        return $this->render('personnel/creneau/modifier.html.twig', [
+            'formulaire' => $formulaire,
+            'creneau'    => $creneau,
+            'estReserve' => $estReserve,
         ]);
     }
 
@@ -85,6 +133,38 @@ class CreneauController extends AbstractController
         return $this->render('personnel/creneau/nouveau.html.twig', [
             'formulaire' => $formulaire,
         ]);
+    }
+
+    private function mettreAJourHoraires(FormInterface $formulaire, Creneau $creneau): void
+    {
+        $dateDebut = $this->construireDateDebut(
+            $formulaire->get('date')->getData(),
+            $formulaire->get('heureDebut')->getData(),
+        );
+
+        $creneau
+            ->setDateDebut($dateDebut)
+            ->setDateFin($this->calculerDateFin(
+                $dateDebut,
+                $formulaire->get('duree')->getData(),
+                $formulaire->get('heureFin')->getData(),
+            ));
+    }
+
+    private function preremplirChampsNonMappes(FormInterface $formulaire, Creneau $creneau): void
+    {
+        $dateDebut   = $creneau->getDateDebut();
+        $dateFin     = $creneau->getDateFin();
+        $dureeMin    = (int) (($dateFin->getTimestamp() - $dateDebut->getTimestamp()) / 60);
+        $dureeCode   = in_array((string) $dureeMin, ['15', '30', '60'], true) ? (string) $dureeMin : 'custom';
+
+        $formulaire->get('date')->setData($dateDebut);
+        $formulaire->get('heureDebut')->setData($dateDebut);
+        $formulaire->get('duree')->setData($dureeCode);
+
+        if ($dureeCode === 'custom') {
+            $formulaire->get('heureFin')->setData($dateFin);
+        }
     }
 
     private function construireDateDebut(
