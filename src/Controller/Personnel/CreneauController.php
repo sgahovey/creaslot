@@ -7,6 +7,7 @@ namespace App\Controller\Personnel;
 use App\Entity\Creneau;
 use App\Entity\Utilisateur;
 use App\Form\CreneauType;
+use App\Repository\CreneauRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,6 +23,25 @@ class CreneauController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly LoggerInterface $logger,
     ) {}
+
+    #[Route('/creneau', name: 'app_creneau_liste', methods: ['GET'])]
+    public function liste(Request $request, CreneauRepository $creneauRepository): Response
+    {
+        /** @var Utilisateur $utilisateur */
+        $utilisateur   = $this->getUser();
+        $filtre        = $request->query->getString('filtre', 'tous');
+        $page          = max(1, $request->query->getInt('page', 1));
+        $creneaux      = $creneauRepository->findByPersonnelWithFilters($utilisateur, $filtre, $page, 10);
+        $totalCreneaux = count($creneaux);
+
+        return $this->render('personnel/creneau/liste.html.twig', [
+            'creneaux'      => $creneaux,
+            'filtre'        => $filtre,
+            'page'          => $page,
+            'nbPages'       => max(1, (int) ceil($totalCreneaux / 10)),
+            'totalCreneaux' => $totalCreneaux,
+        ]);
+    }
 
     #[Route('/creneau/nouveau', name: 'app_creneau_nouveau', methods: ['GET', 'POST'])]
     public function nouveau(Request $request): Response
@@ -59,8 +79,7 @@ class CreneauController extends AbstractController
 
             $this->addFlash('success', 'Le créneau a été créé.');
 
-            // TODO: Rediriger vers app_creneau_liste après US-2.2
-            return $this->redirectToRoute('app_home');
+            return $this->redirectToRoute('app_creneau_liste');
         }
 
         return $this->render('personnel/creneau/nouveau.html.twig', [

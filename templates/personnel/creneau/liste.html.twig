@@ -1,0 +1,121 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes créneaux{% endblock %}
+
+{% block body %}
+<div class="container py-4" style="max-width: 860px;">
+
+    {# ── En-tête de page ─────────────────────────────────────────────── #}
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <h1 class="h4 fw-bold mb-0" style="color: var(--cs-text-primary);">
+            <i class="bi bi-calendar-week me-2" aria-hidden="true"></i>Mes créneaux
+        </h1>
+        <a href="{{ path('app_creneau_nouveau') }}"
+           class="btn btn-sm btn-primary d-flex align-items-center gap-1"
+           aria-label="Créer un nouveau créneau">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+            Nouveau créneau
+        </a>
+    </div>
+
+    {# ── Filtres ─────────────────────────────────────────────────────── #}
+    <div class="d-flex flex-wrap gap-2 mb-4" role="group" aria-label="Filtrer les créneaux">
+        {% set filtres = {
+            'tous'    : { 'label': 'Tous',      'icone': 'bi-list-ul'        },
+            'a_venir' : { 'label': 'À venir',   'icone': 'bi-arrow-right-circle' },
+            'passes'  : { 'label': 'Passés',    'icone': 'bi-clock-history'  },
+            'annules' : { 'label': 'Annulés',   'icone': 'bi-x-circle'       },
+        } %}
+        {% for cle, meta in filtres %}
+            <a href="{{ path('app_creneau_liste', { filtre: cle }) }}"
+               class="btn btn-sm d-flex align-items-center gap-1 {% if filtre == cle %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+               aria-current="{% if filtre == cle %}true{% else %}false{% endif %}">
+                <i class="bi {{ meta.icone }}" aria-hidden="true"></i>
+                {{ meta.label }}
+            </a>
+        {% endfor %}
+    </div>
+
+    {# ── Compteur ────────────────────────────────────────────────────── #}
+    <p class="text-muted mb-3" style="font-size: .875rem;">
+        {% if totalCreneaux == 0 %}
+            Aucun créneau trouvé
+        {% elseif totalCreneaux == 1 %}
+            1 créneau trouvé
+        {% else %}
+            {{ totalCreneaux }} créneaux trouvés
+        {% endif %}
+    </p>
+
+    {# ── Liste des créneaux ──────────────────────────────────────────── #}
+    {% if creneaux|length == 0 %}
+
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-calendar-x fs-1 d-block mb-3" aria-hidden="true"></i>
+            {% if filtre == 'a_venir' %}
+                <p class="mb-1 fw-semibold">Aucun créneau à venir pour le moment.</p>
+                <p class="mb-3">Créez votre premier créneau pour permettre aux auditeurs de réserver.</p>
+            {% elseif filtre == 'passes' %}
+                <p class="mb-1 fw-semibold">Aucun créneau passé.</p>
+                <p class="mb-0">Votre historique apparaîtra ici.</p>
+            {% elseif filtre == 'annules' %}
+                <p class="mb-1 fw-semibold">Aucun créneau annulé.</p>
+                <p class="mb-0">Bonne nouvelle !</p>
+            {% else %}
+                <p class="mb-1 fw-semibold">Vous n'avez pas encore créé de créneau.</p>
+                <p class="mb-3">Commencez dès maintenant en ajoutant votre premier créneau.</p>
+            {% endif %}
+            {% if filtre == 'tous' %}
+                <a href="{{ path('app_creneau_nouveau') }}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Créer un créneau
+                </a>
+            {% endif %}
+        </div>
+
+    {% else %}
+
+        {% for creneau in creneaux %}
+            {{ include('components/carte_creneau.html.twig', { creneau: creneau }) }}
+        {% endfor %}
+
+        {# ── Pagination ──────────────────────────────────────────────── #}
+        {% if nbPages > 1 %}
+            <nav aria-label="Pagination des créneaux" class="mt-4">
+                <ul class="pagination justify-content-center">
+
+                    <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                        <a class="page-link"
+                           href="{{ path('app_creneau_liste', { filtre: filtre, page: page - 1 }) }}"
+                           aria-label="Page précédente"
+                           {% if page == 1 %}aria-disabled="true" tabindex="-1"{% endif %}>
+                            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                        </a>
+                    </li>
+
+                    {% for p in 1..nbPages %}
+                        <li class="page-item {% if p == page %}active{% endif %}"
+                            {% if p == page %}aria-current="page"{% endif %}>
+                            <a class="page-link"
+                               href="{{ path('app_creneau_liste', { filtre: filtre, page: p }) }}">
+                                {{ p }}
+                            </a>
+                        </li>
+                    {% endfor %}
+
+                    <li class="page-item {% if page == nbPages %}disabled{% endif %}">
+                        <a class="page-link"
+                           href="{{ path('app_creneau_liste', { filtre: filtre, page: page + 1 }) }}"
+                           aria-label="Page suivante"
+                           {% if page == nbPages %}aria-disabled="true" tabindex="-1"{% endif %}>
+                            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                        </a>
+                    </li>
+
+                </ul>
+            </nav>
+        {% endif %}
+
+    {% endif %}
+
+</div>
+{% endblock %}

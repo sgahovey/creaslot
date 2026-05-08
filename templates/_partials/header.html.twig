@@ -32,12 +32,11 @@
                             </li>
                         {% elseif is_granted('ROLE_PERSONNEL') %}
                             <li class="nav-item">
-                                {# TODO: pointer vers app_creneau_liste après US-2.2 #}
-                                <a class="nav-link cs-nav-link d-flex align-items-center gap-1"
-                                   href="{{ path('app_creneau_nouveau') }}">
-                                    <i class="bi bi-calendar-week" aria-hidden="true"></i>
-                                    Mes créneaux
-                                </a>
+                    <a class="nav-link cs-nav-link d-flex align-items-center gap-1"
+                       href="{{ path('app_creneau_liste') }}">
+                        <i class="bi bi-calendar-week" aria-hidden="true"></i>
+                        Mes créneaux
+                    </a>
                             </li>
                         {% elseif is_granted('ROLE_AUDITEUR') %}
                             <li class="nav-item">

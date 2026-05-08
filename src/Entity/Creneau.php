@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\StatutReservation;
 use App\Repository\CreneauRepository;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -135,8 +136,19 @@ class Creneau
         return $this->reservation;
     }
 
+    public function isPasse(): bool
+    {
+        return $this->dateFin < new \DateTimeImmutable();
+    }
+
+    public function isReserve(): bool
+    {
+        return $this->reservation !== null
+            && $this->reservation->getStatut() === StatutReservation::ACTIVE;
+    }
+
     public function isDisponible(): bool
     {
-        return $this->estActif && $this->reservation === null;
+        return $this->estActif && !$this->isPasse() && !$this->isReserve();
     }
 }
