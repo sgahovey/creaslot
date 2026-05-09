@@ -8,6 +8,7 @@ use App\Entity\Creneau;
 use App\Entity\Utilisateur;
 use App\Form\CreneauType;
 use App\Repository\CreneauRepository;
+use App\Enum\StatutReservation;
 use App\Security\CreneauVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -133,6 +134,70 @@ class CreneauController extends AbstractController
         return $this->render('personnel/creneau/nouveau.html.twig', [
             'formulaire' => $formulaire,
         ]);
+    }
+
+    #[Route('/creneau/{id}/supprimer', name: 'app_creneau_supprimer', methods: ['POST'])]
+    public function supprimer(Creneau $creneau, Request $request): Response
+    {
+        $this->denyAccessUnlessGranted(CreneauVoter::DELETE, $creneau);
+
+        if (($refus = $this->refusSupprimerCreneau($creneau, $request)) !== null) {
+            return $refus;
+        }
+
+        $auditeur = $creneau->getAuditeurReservation();
+
+        if ($auditeur !== null) {
+            $this->annulerReservationLiee($creneau);
+        }
+
+        $creneau->setEstActif(false);
+        $this->entityManager->flush();
+
+        /** @var Utilisateur $utilisateur */
+        $utilisateur = $this->getUser();
+        $this->logger->info('Créneau supprimé', [
+            'creneau_id'          => $creneau->getId(),
+            'user_id'             => $utilisateur->getId(),
+            'reservation_annulee' => $auditeur !== null ? 'oui' : 'non',
+        ]);
+
+        $this->addFlash('success', $auditeur !== null
+            ? "Le créneau a été supprimé et la réservation de {$auditeur->getPrenom()} {$auditeur->getNom()} a été annulée."
+            : 'Le créneau a été supprimé.');
+
+        return $this->redirectToRoute('app_creneau_liste');
+    }
+
+    private function refusSupprimerCreneau(Creneau $creneau, Request $request): ?Response
+    {
+        if (!$this->isCsrfTokenValid('supprimer-creneau-' . $creneau->getId(), $request->request->getString('_token'))) {
+            $this->addFlash('error', 'Token de sécurité invalide. Veuillez réessayer.');
+
+            return $this->redirectToRoute('app_creneau_liste');
+        }
+
+        if (!$creneau->isEstActif()) {
+            $this->addFlash('error', 'Ce créneau est déjà désactivé.');
+
+            return $this->redirectToRoute('app_creneau_liste');
+        }
+
+        if ($creneau->isPasse()) {
+            $this->addFlash('error', 'Ce créneau est passé et ne peut plus être supprimé.');
+
+            return $this->redirectToRoute('app_creneau_liste');
+        }
+
+        return null;
+    }
+
+    private function annulerReservationLiee(Creneau $creneau): void
+    {
+        $creneau->getReservation()
+            ->setStatut(StatutReservation::ANNULEE)
+            ->setDateAnnulation(new \DateTimeImmutable())
+            ->setMotifAnnulation('Créneau supprimé par le Personnel');
     }
 
     private function mettreAJourHoraires(FormInterface $formulaire, Creneau $creneau): void

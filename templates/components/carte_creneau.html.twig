@@ -114,15 +114,18 @@
                    aria-label="Modifier le créneau du {{ creneau.dateDebut|date('d/m/Y') }}">
                     <i class="bi bi-pencil" aria-hidden="true"></i> Modifier
                 </a>
-                {# TODO: pointer vers app_creneau_supprimer après US-2.4 #}
-                <a href="#"
-                   class="btn btn-sm btn-outline-danger"
-                   aria-label="Supprimer le créneau du {{ creneau.dateDebut|date('d/m/Y') }}">
+                <button type="button"
+                        class="btn btn-sm btn-outline-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modal-suppr-{{ creneau.id }}"
+                        aria-label="Supprimer le créneau du {{ creneau.dateDebut|date('d/m/Y') }}">
                     <i class="bi bi-trash" aria-hidden="true"></i> Supprimer
-                </a>
+                </button>
             {% endif %}
 
         </div>
 
     </div>
 </div>
+
+{{ include('components/modal_suppression_creneau.html.twig', { creneau: creneau }) }}
