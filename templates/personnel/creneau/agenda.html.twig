@@ -1,0 +1,723 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mon agenda{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css">
+    <style>
+        /* ── Maquette agenda CreaSlot (FullCalendar) ─────────────────── */
+        .cs-agenda-page .cs-agenda-actions .btn.cs-btn-agenda-new {
+            background-color: var(--cs-blue-primary);
+            border-color: var(--cs-blue-primary);
+            color: var(--cs-text-light);
+            font-weight: var(--cs-fw-semibold);
+        }
+        .cs-agenda-page .cs-agenda-actions .btn.cs-btn-agenda-new:hover {
+            filter: brightness(1.06);
+            color: var(--cs-text-light);
+        }
+
+        #calendar.cs-fc-shell {
+            min-height: 62vh;
+        }
+
+        .cs-fc-calendar-wrap {
+            position: relative;
+            min-height: 62vh;
+        }
+
+        .cs-agenda-empty-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 12;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--cs-space-md);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(2px);
+            border-radius: var(--cs-radius-lg);
+            text-align: center;
+        }
+
+        .cs-agenda-empty-overlay[hidden] {
+            display: none !important;
+        }
+
+        .cs-agenda-empty-card {
+            max-width: 320px;
+            padding: var(--cs-space-lg);
+            border-radius: var(--cs-radius-lg);
+            background-color: var(--cs-bg-subtle);
+        }
+
+        /* Info flash JS (sans dépendance Toast Bootstrap) */
+        .cs-agenda-flash-live {
+            position: fixed;
+            top: var(--cs-space-lg);
+            right: var(--cs-space-lg);
+            z-index: 1086;
+            max-width: min(340px, 92vw);
+        }
+
+        /* Barre d'outils : flèches + date sur une même ligne au centre */
+        .cs-agenda-page .fc .fc-toolbar.fc-header-toolbar {
+            flex-wrap: wrap;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--cs-space-md);
+            margin-bottom: var(--cs-space-md);
+        }
+        .cs-agenda-page .fc .fc-toolbar-chunk {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: wrap;
+            align-items: center !important;
+            gap: var(--cs-space-xs);
+        }
+        /* Centre : précédent, titre, suivant sans retour vertical */
+        .cs-agenda-page .fc .fc-toolbar-chunk:nth-child(2) {
+            justify-content: center;
+            flex-wrap: nowrap !important;
+            gap: var(--cs-space-sm);
+        }
+        .cs-agenda-page .fc .fc-toolbar-chunk:nth-child(2) .fc-button-group {
+            flex-direction: row !important;
+            gap: var(--cs-space-xs);
+        }
+        .cs-agenda-page .fc .fc-toolbar-chunk:nth-child(2) .fc-prev-button,
+        .cs-agenda-page .fc .fc-toolbar-chunk:nth-child(2) .fc-next-button {
+            flex: 0 0 auto !important;
+        }
+        .cs-agenda-page .fc .fc-toolbar-title {
+            margin: 0 !important;
+            padding: 0 var(--cs-space-xs);
+            white-space: nowrap;
+            line-height: 1.25;
+            display: inline-block;
+        }
+
+        .cs-agenda-page .fc .fc-toolbar-chunk:first-child .fc-button-group {
+            gap: 0;
+        }
+        .cs-agenda-page .fc .fc-button {
+            border-radius: var(--cs-radius-md) !important;
+            font-weight: var(--cs-fw-medium);
+        }
+        .cs-agenda-page .fc .fc-button-primary:not(:disabled):not(.fc-button-active),
+        .cs-agenda-page .fc .fc-button:not(.fc-button-active):not(:disabled) {
+            background-color: var(--cs-bg-subtle);
+            border-color: var(--cs-border);
+            color: var(--cs-text-primary);
+        }
+        .cs-agenda-page .fc .fc-button-primary:not(:disabled).fc-button-active,
+        .cs-agenda-page .fc .fc-button-primary:not(:disabled):hover,
+        .cs-agenda-page .fc .fc-button:not(.fc-button-active):not(:disabled):hover {
+            background-color: var(--cs-blue-primary) !important;
+            border-color: var(--cs-blue-primary) !important;
+            color: var(--cs-text-light) !important;
+        }
+
+        /* Pause déjeuner — bandeau sous les créneaux (non cliquable, pointer-events: none en JS) */
+        .cs-fc-pause-dejeuner {
+            border: none !important;
+            background: repeating-linear-gradient(
+                -45deg,
+                #e9ecef,
+                #e9ecef 5px,
+                #f8f9fa 5px,
+                #f8f9fa 10px
+            ) !important;
+            box-shadow: none !important;
+            z-index: 0 !important;
+        }
+        .cs-fc-pause-dejeuner .fc-event-main {
+            color: var(--cs-text-secondary) !important;
+            font-size: var(--cs-fs-small);
+            font-weight: var(--cs-fw-semibold);
+            justify-content: center;
+            letter-spacing: 0.06em;
+        }
+
+        .cs-agenda-page .fc-v-event.cs-fc-creneau {
+            z-index: 2;
+        }
+        .cs-agenda-page .fc-v-event.cs-fc-creneau .fc-event-main {
+            border-radius: var(--cs-radius-md);
+            padding: 2px 4px;
+        }
+
+        /* Légende */
+        .cs-agenda-legende {
+            border-top: 1px solid var(--cs-border);
+            margin-top: var(--cs-space-md);
+            padding-top: var(--cs-space-md);
+            font-size: var(--cs-fs-small);
+            color: var(--cs-text-secondary);
+        }
+        .cs-agenda-legende .cs-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            vertical-align: middle;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="container py-4 cs-agenda-page"
+     id="agenda-root"
+     data-url-api="{{ path('api_creneaux_personnel') }}"
+     data-url-next-reserved="{{ path('api_creneaux_next_reserved') }}"
+     data-url-modifier-modele="{{ path('app_creneau_modifier', { id: '__ID__' }) }}"
+     data-url-liste="{{ path('app_creneau_liste') }}">
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-2">
+        <h1 class="h3 fw-bold mb-0" style="color: var(--cs-text-primary);">
+            Mon agenda
+        </h1>
+        <div class="d-flex flex-wrap gap-2 cs-agenda-actions">
+            <a href="{{ path('app_creneau_liste') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-list-ul me-1" aria-hidden="true"></i>Liste complète
+            </a>
+            <a href="{{ path('app_creneau_nouveau') }}" class="btn btn-sm cs-btn-agenda-new">
+                <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Nouveau créneau
+            </a>
+        </div>
+    </div>
+
+    <nav aria-label="Fil d'Ariane" class="mb-3">
+        <ol class="breadcrumb mb-0 py-1" style="font-size: .8125rem;">
+            <li class="breadcrumb-item">
+                <a href="{{ path('app_home') }}" style="color: var(--cs-blue-primary);">Accueil</a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Mon agenda</li>
+        </ol>
+    </nav>
+
+    <p class="text-muted small mb-3 lh-base">
+        Cette vue affiche par défaut uniquement vos rendez-vous réservés.<br>
+        Activez le toggle pour voir aussi vos créneaux libres.
+    </p>
+
+    <div class="form-check form-switch mb-3">
+        <input class="form-check-input" type="checkbox" role="switch"
+               id="toggleDisponibilites" name="toggleDisponibilites"
+               aria-describedby="toggleDisponibilites-help">
+        <label class="form-check-label" for="toggleDisponibilites">
+            Afficher aussi les créneaux libres
+        </label>
+        <p id="toggleDisponibilites-help" class="form-text small text-muted mb-0 mt-1">
+            Par défaut, seuls les rendez-vous réservés sont visibles.
+        </p>
+    </div>
+
+    <div class="card border-0 shadow-sm p-2 p-md-3 cs-fc-calendar-shell"
+         style="border-radius: var(--cs-radius-lg);">
+        <div id="cs-fc-calendar-wrap" class="cs-fc-calendar-wrap position-relative">
+            <div id="calendar"
+                 class="cs-fc-shell"
+                 role="region"
+                 aria-label="Calendrier des créneaux"></div>
+            <div id="cs-agenda-empty-overlay"
+                 class="cs-agenda-empty-overlay"
+                 hidden
+                 role="status"
+                 aria-live="polite"
+                 aria-label="Aucun créneau affiché sur la période visible">
+                <div class="cs-agenda-empty-card shadow-sm border-0 mx-auto">
+                    <p class="small text-muted mb-3 mb-md-4">
+                        Aucun créneau sur la période affichée.
+                    </p>
+                    <div class="d-flex flex-wrap gap-2 justify-content-center align-items-center">
+                        <button type="button"
+                                id="cs-agenda-empty-next"
+                                class="btn btn-sm btn-outline-primary">
+                            Suivant
+                            <i class="bi bi-chevron-right ms-1" aria-hidden="true"></i>
+                        </button>
+                        <button type="button"
+                                id="cs-agenda-empty-today"
+                                class="btn btn-sm btn-primary">
+                            Aujourd'hui
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cs-agenda-legende d-flex flex-column gap-2 mt-3">
+        <div class="d-flex flex-wrap align-items-center gap-3 justify-content-center justify-content-md-start">
+            <span class="fw-semibold text-secondary">Légende :</span>
+            <span><span class="cs-dot me-1" style="background: var(--cs-green-presentiel);" aria-hidden="true"></span>Présentiel</span>
+            <span><span class="cs-dot me-1" style="background: var(--cs-orange-visio);" aria-hidden="true"></span>Visio</span>
+            <span><span class="cs-dot me-1" style="background: var(--cs-blue-telephone);" aria-hidden="true"></span>Téléphone</span>
+            <span class="text-muted ms-md-2 d-none d-md-inline">|</span>
+            <span><strong>Cellule pleine</strong> = rendez-vous réservé</span>
+            <span><strong>Cellule claire</strong> = créneau libre</span>
+        </div>
+        <p class="small text-muted mb-0">
+            Vue semaine : <strong>lundi au vendredi</strong>. Grille <strong>8h30–17h00</strong>.
+            Pause déjeuner affichée <strong>12h30–13h30</strong>. Les pastilles reflètent le type de rendez-vous.
+        </p>
+    </div>
+</div>
+
+{# Modal détail créneau #}
+<div class="modal fade"
+     id="creneau-detail-modal"
+     tabindex="-1"
+     aria-labelledby="creneau-detail-modal-titre"
+     aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: var(--cs-radius-lg);">
+            <div class="modal-header border-0 pb-0">
+                <h2 class="modal-title h6 fw-bold" id="creneau-detail-modal-titre" style="color: var(--cs-text-primary);">
+                    Détail du créneau
+                </h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer la fenêtre"></button>
+            </div>
+            <div class="modal-body pt-2 small">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 text-muted">Type</dt>
+                    <dd class="col-sm-8" id="modal-type"></dd>
+                    <dt class="col-sm-4 text-muted">Date</dt>
+                    <dd class="col-sm-8" id="modal-date"></dd>
+                    <dt class="col-sm-4 text-muted">Horaires</dt>
+                    <dd class="col-sm-8" id="modal-horaires"></dd>
+                    <dt class="col-sm-4 text-muted">Statut</dt>
+                    <dd class="col-sm-8" id="modal-statut"></dd>
+                    <dt class="col-sm-4 text-muted">Auditeur</dt>
+                    <dd class="col-sm-8" id="modal-auditeur"></dd>
+                    <dt class="col-sm-4 text-muted">Commentaire</dt>
+                    <dd class="col-sm-8" id="modal-commentaire"></dd>
+                </dl>
+            </div>
+            <div class="modal-footer border-0 flex-wrap gap-2">
+                <a href="#" class="btn btn-sm btn-outline-secondary" id="modal-lien-modifier">
+                    <i class="bi bi-pencil me-1" aria-hidden="true"></i>Modifier
+                </a>
+                <a href="{{ path('app_creneau_liste') }}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-list-ul me-1" aria-hidden="true"></i>Voir la liste complète
+                </a>
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales/fr.global.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var racine       = document.getElementById('agenda-root');
+        var calendarEl   = document.getElementById('calendar');
+        if (!racine || !calendarEl || typeof FullCalendar === 'undefined') {
+            return;
+        }
+
+        var urlApi             = racine.dataset.urlApi;
+        var urlNextReservedRaw = racine.dataset.urlNextReserved;
+        var urlNextReserved    = urlNextReservedRaw || '';
+        var modifierModele     = racine.dataset.urlModifierModele;
+
+        var emptyOverlayEl   = document.getElementById('cs-agenda-empty-overlay');
+        var emptyBtnNext     = document.getElementById('cs-agenda-empty-next');
+        var emptyBtnToday    = document.getElementById('cs-agenda-empty-today');
+
+        var LS_KEY_AGENDA_DISPONIBILITES = 'agenda_show_disponibilites';
+        var toggleDispo    = document.getElementById('toggleDisponibilites');
+        var showDisponibilites = false;
+        if (toggleDispo) {
+            showDisponibilites = localStorage.getItem(LS_KEY_AGENDA_DISPONIBILITES) === 'true';
+            toggleDispo.checked = showDisponibilites;
+        }
+
+        function reserveOnlyQueryParam() {
+            return showDisponibilites ? 'false' : 'true';
+        }
+
+        var modalEl           = document.getElementById('creneau-detail-modal');
+        var modalTitre        = document.getElementById('creneau-detail-modal-titre');
+        var modalType         = document.getElementById('modal-type');
+        var modalDate         = document.getElementById('modal-date');
+        var modalHoraires     = document.getElementById('modal-horaires');
+        var modalStatut       = document.getElementById('modal-statut');
+        var modalAuditeur     = document.getElementById('modal-auditeur');
+        var modalCommentaire  = document.getElementById('modal-commentaire');
+        var lienModifier      = document.getElementById('modal-lien-modifier');
+
+        function formaterDateFr(date) {
+            return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        }
+        function formaterHeure(date) {
+            return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function escapeHtml(str) {
+            if (str == null || str === '') {
+                return '';
+            }
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function heureSlot(d) {
+            if (!d) {
+                return '';
+            }
+            return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function hexVersRgb(hex) {
+            var h = String(hex).replace('#', '');
+            if (h.length === 3) {
+                h = h.split('').map(function (c) { return c + c; }).join('');
+            }
+            var n = parseInt(h, 16);
+            if (isNaN(n)) return { r: 40, g: 40, b: 40 };
+            return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+        }
+
+        function melangerBlanc(hex, ratio) {
+            var c = hexVersRgb(hex);
+            var t = Math.min(1, Math.max(0, ratio));
+            var r = Math.round(c.r + (255 - c.r) * t);
+            var g = Math.round(c.g + (255 - c.g) * t);
+            var b = Math.round(c.b + (255 - c.b) * t);
+            return 'rgb(' + r + ',' + g + ',' + b + ')';
+        }
+
+        var sourcePauseDejeuner = {
+            events: function (info, successCallback) {
+                successCallback([
+                    {
+                        groupId: 'pause-dejeuner',
+                        daysOfWeek: [1, 2, 3, 4, 5],
+                        startTime: '12:30:00',
+                        endTime: '13:30:00',
+                        title: ' ',
+                        editable: false,
+                        startEditable: false,
+                        durationEditable: false,
+                        display: 'auto',
+                        overlap: true,
+                        extendedProps: { estPause: true }
+                    }
+                ]);
+            }
+        };
+
+        var calendar;
+
+        function nombreEvenementsHorsPause() {
+            var es = calendar.getEvents();
+            var i;
+            var n = 0;
+            for (i = 0; i < es.length; i++) {
+                var px = es[i].extendedProps || {};
+                if (!px.estPause) {
+                    n += 1;
+                }
+            }
+            return n;
+        }
+
+        function majOverlayCreationAgendaVide() {
+            if (!emptyOverlayEl || !calendar) {
+                return;
+            }
+            if (calendarEl.getAttribute('aria-busy') === 'true') {
+                return;
+            }
+            var vide = nombreEvenementsHorsPause() === 0;
+            emptyOverlayEl.hidden = !vide;
+            emptyOverlayEl.setAttribute('aria-hidden', vide ? 'false' : 'true');
+        }
+
+        function flashInfoAgenda(message) {
+            var live = document.createElement('div');
+            live.className = 'alert alert-info mb-0 py-2 shadow-sm cs-agenda-flash-live';
+            live.setAttribute('role', 'status');
+            live.textContent = message;
+            document.body.appendChild(live);
+            window.setTimeout(function () {
+                live.remove();
+            }, 3800);
+        }
+
+        function decorerToolbarMesProchainsRdv() {
+            var shell = calendarEl.closest('.cs-fc-calendar-shell');
+            if (!shell) {
+                return;
+            }
+            var btns = shell.querySelectorAll('.fc-header-toolbar button.fc-button');
+            btns.forEach(function (btn) {
+                if (btn.textContent.indexOf('Mes prochains RDV') === -1) {
+                    return;
+                }
+                btn.innerHTML =
+                    '<i class="bi bi-calendar-event me-1" aria-hidden="true"></i>' +
+                    '<span>Mes prochains RDV</span>';
+                btn.setAttribute(
+                    'aria-label',
+                    'Mes prochains RDV — afficher la semaine du prochain rendez-vous réservé'
+                );
+            });
+        }
+
+        function allerVersProchainsRdvReserve() {
+            if (!urlNextReserved) {
+                flashInfoAgenda('Aucun rendez-vous à venir.');
+                return;
+            }
+            fetch(urlNextReserved, {
+                credentials: 'same-origin',
+                headers: { Accept: 'application/json' }
+            })
+                .then(function (r) {
+                    if (!r.ok) {
+                        throw new Error('HTTP');
+                    }
+                    return r.json();
+                })
+                .then(function (data) {
+                    if (!data.date) {
+                        flashInfoAgenda('Aucun rendez-vous à venir.');
+                        return;
+                    }
+                    calendar.changeView('timeGridWeek', data.date);
+                    window.requestAnimationFrame(function () {
+                        decorerToolbarMesProchainsRdv();
+                    });
+                })
+                .catch(function () {
+                    flashInfoAgenda('Impossible de retrouver vos prochains rendez-vous. Réessayez plus tard.');
+                });
+        }
+
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'timeGridWeek',
+            locale: 'fr',
+            firstDay: 1,
+            weekends: false,
+            slotMinTime: '08:30:00',
+            slotMaxTime: '17:00:00',
+            slotDuration: '00:30:00',
+            slotLabelInterval: '01:00:00',
+            slotLabelFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+            nowIndicator: true,
+            height: 'auto',
+            customButtons: {
+                mesProchainsRdv: {
+                    text: 'Mes prochains RDV',
+                    hint: 'Aller à la semaine du prochain rendez-vous réservé',
+                    click: function () {
+                        allerVersProchainsRdvReserve();
+                    }
+                }
+            },
+            headerToolbar: {
+                left: 'timeGridDay,timeGridWeek,dayGridMonth',
+                center: 'prev,title,next',
+                right: 'mesProchainsRdv today'
+            },
+            buttonText: {
+                today: 'Aujourd\'hui',
+                month: 'Mois',
+                week: 'Semaine',
+                day: 'Jour'
+            },
+            eventSources: [
+                {
+                    id: 'creneaux-personnel',
+                    url: urlApi,
+                    method: 'GET',
+                    extraParams: function () {
+                        return { reserve_only: reserveOnlyQueryParam() };
+                    },
+                    failure: function () {
+                        calendarEl.setAttribute('aria-busy', 'false');
+                        console.error('Impossible de charger les créneaux.');
+                    }
+                },
+                sourcePauseDejeuner
+            ],
+            loading: function (bool) {
+                calendarEl.setAttribute('aria-busy', bool ? 'true' : 'false');
+                if (bool && emptyOverlayEl) {
+                    emptyOverlayEl.hidden = true;
+                    emptyOverlayEl.setAttribute('aria-hidden', 'true');
+                }
+                if (!bool) {
+                    window.requestAnimationFrame(function () {
+                        majOverlayCreationAgendaVide();
+                    });
+                }
+            },
+            eventsSet: function () {
+                majOverlayCreationAgendaVide();
+            },
+            datesSet: function () {
+                window.requestAnimationFrame(function () {
+                    decorerToolbarMesProchainsRdv();
+                });
+            },
+            eventClassNames: function (arg) {
+                if (arg.event.extendedProps && arg.event.extendedProps.estPause) {
+                    return ['cs-fc-pause-dejeuner'];
+                }
+                var p = arg.event.extendedProps || {};
+                var cs = ['cs-fc-creneau'];
+                if (p.isPasse === true || p.isPasse === 'true') {
+                    cs.push('fc-event-passe');
+                }
+                if (p.reserve === true || p.reserve === 'true') {
+                    cs.push('fc-event-reservee', 'creneau-reserve');
+                } else {
+                    cs.push('fc-event-libre');
+                }
+                return cs;
+            },
+            eventContent: function (arg) {
+                if (arg.event.extendedProps && arg.event.extendedProps.estPause) {
+                    return { html: '<div class="text-center w-100 small">PAUSE DÉJEUNER<br><span class="fw-normal">12h30 – 13h30</span></div>' };
+                }
+                var p = arg.event.extendedProps || {};
+                var typeL = p.typeRdv || arg.event.title || '';
+                var reserve = p.reserve === true || p.reserve === 'true';
+                var horaire = '';
+                if (arg.event.start && arg.event.end) {
+                    horaire = heureSlot(arg.event.start) + ' – ' + heureSlot(arg.event.end);
+                }
+                var l3;
+                if (!reserve) {
+                    l3 = 'Disponible';
+                } else {
+                    var nomAu = (p.auditeurNom || '').trim();
+                    l3 = 'Réservé par ' + (nomAu !== '' ? escapeHtml(nomAu) : '—');
+                }
+                return {
+                    html:
+                        '<div class="fc-event-main-frame cs-fc-lines px-1 py-1">' +
+                        '<div class="cs-fc-line-time">' + escapeHtml(horaire || '—') + '</div>' +
+                        '<div class="cs-fc-line-type">' + escapeHtml(typeL || '—') + '</div>' +
+                        '<div class="cs-fc-line-etat">' + l3 + '</div>' +
+                        '</div>'
+                };
+            },
+            eventDidMount: function (arg) {
+                if (arg.event.extendedProps && arg.event.extendedProps.estPause) {
+                    arg.el.style.pointerEvents = 'none';
+                    arg.el.setAttribute('aria-hidden', 'true');
+                    return;
+                }
+                var p = arg.event.extendedProps || {};
+                var hex = p.typeCouleurHex || arg.event.backgroundColor || '#6c757d';
+                var reserve = p.reserve === true || p.reserve === 'true';
+                var el = arg.el;
+                /* Fonds pastel + texte foncé (#1a1a1a) via creaslot.css — contraste RGAA */
+                el.style.border = '2px solid ' + hex;
+                if (reserve) {
+                    el.style.backgroundColor = melangerBlanc(hex, 0.56);
+                } else {
+                    el.style.backgroundColor = melangerBlanc(hex, 0.82);
+                }
+                el.style.removeProperty('color');
+            },
+            eventClick: function (info) {
+                if (info.event.extendedProps && info.event.extendedProps.estPause) {
+                    return;
+                }
+                info.jsEvent.preventDefault();
+                var ev   = info.event;
+                var p    = ev.extendedProps || {};
+                var deb  = ev.start;
+                var fin  = ev.end;
+
+                if (modalTitre) modalTitre.textContent = p.typeRdv || ev.title || 'Créneau';
+                if (modalType) modalType.textContent = p.typeRdv || '—';
+
+                if (modalDate && deb) modalDate.textContent = formaterDateFr(deb);
+                if (modalHoraires && deb && fin) {
+                    modalHoraires.textContent = formaterHeure(deb) + ' – ' + formaterHeure(fin);
+                }
+
+                var statut = 'Disponible (libre)';
+                if (p.isPasse === true || p.isPasse === 'true') {
+                    statut = p.reserve === true || p.reserve === 'true'
+                        ? 'Passé · Réservé'
+                        : 'Passé';
+                } else if (p.reserve === true || p.reserve === 'true') {
+                    statut = 'Réservé';
+                }
+                if (modalStatut) modalStatut.textContent = statut;
+
+                var audNom = (p.auditeurNom || '').trim();
+                if (modalAuditeur) modalAuditeur.textContent = audNom !== '' ? audNom : '—';
+
+                var com = (p.commentaire || '').trim();
+                if (modalCommentaire) modalCommentaire.textContent = com !== '' ? com : '—';
+
+                var id = ev.id;
+                var futurPasPasse = p.isPasse !== true && p.isPasse !== 'true';
+
+                if (lienModifier) {
+                    if (futurPasPasse && id && modifierModele.indexOf('__ID__') !== -1) {
+                        lienModifier.href = modifierModele.replace('__ID__', String(id));
+                        lienModifier.classList.remove('d-none');
+                        lienModifier.removeAttribute('aria-disabled');
+                    } else {
+                        lienModifier.classList.add('d-none');
+                        lienModifier.href = '#';
+                        lienModifier.setAttribute('aria-disabled', 'true');
+                    }
+                }
+
+                if (modalEl && typeof bootstrap !== 'undefined') {
+                    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                }
+            }
+        });
+
+        calendar.render();
+
+        majOverlayCreationAgendaVide();
+        decorerToolbarMesProchainsRdv();
+
+        if (emptyBtnNext) {
+            emptyBtnNext.addEventListener('click', function () {
+                calendar.next();
+            });
+        }
+        if (emptyBtnToday) {
+            emptyBtnToday.addEventListener('click', function () {
+                calendar.today();
+            });
+        }
+        if (toggleDispo) {
+            toggleDispo.addEventListener('change', function () {
+                showDisponibilites = toggleDispo.checked;
+                localStorage.setItem(LS_KEY_AGENDA_DISPONIBILITES, showDisponibilites ? 'true' : 'false');
+                var srcCreneaux = calendar.getEventSourceById('creneaux-personnel');
+                if (srcCreneaux) {
+                    srcCreneaux.refetch();
+                }
+            });
+        }
+
+        var titreCal = calendarEl.querySelector('.fc-toolbar-title');
+        if (titreCal) titreCal.setAttribute('aria-live', 'polite');
+    });
+    </script>
+{% endblock %}
