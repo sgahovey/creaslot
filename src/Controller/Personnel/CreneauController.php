@@ -45,6 +45,12 @@ class CreneauController extends AbstractController
         ]);
     }
 
+    #[Route('/creneau/agenda', name: 'app_creneau_agenda', methods: ['GET'])]
+    public function agenda(): Response
+    {
+        return $this->render('personnel/creneau/agenda.html.twig');
+    }
+
     #[Route('/creneau/{id}/modifier', name: 'app_creneau_modifier', methods: ['GET', 'POST'])]
     public function modifier(Creneau $creneau, Request $request): Response
     {
