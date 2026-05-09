@@ -128,6 +128,39 @@ class CreneauRepository extends ServiceEntityRepository
     /**
      * Prochain créneau actif réservé (réservation ACTIVE) pour l'agenda.
      */
+    /**
+     * Créneaux actifs du personnel dont l’intervalle chevauche ]debut, fin[
+     * (sans adjacence : fin == début d’un autre créneau n’est pas un chevauchement).
+     *
+     * @return list<Creneau>
+     */
+    public function findChevauchements(
+        Utilisateur $utilisateur,
+        \DateTimeImmutable $debut,
+        \DateTimeImmutable $fin,
+        ?int $excludeId = null,
+    ): array {
+        $qb = $this->createQueryBuilder('c')
+            ->innerJoin('c.typeRdv', 't')->addSelect('t')
+            ->andWhere('c.utilisateur = :utilisateur')
+            ->setParameter('utilisateur', $utilisateur)
+            ->andWhere('c.estActif = true')
+            ->andWhere('c.dateFin > :maintenantChevauch')
+            ->setParameter('maintenantChevauch', new \DateTimeImmutable())
+            ->andWhere('c.dateDebut < :nouveauFin')
+            ->andWhere('c.dateFin > :nouveauDebut')
+            ->setParameter('nouveauDebut', $debut)
+            ->setParameter('nouveauFin', $fin)
+            ->orderBy('c.dateDebut', 'ASC');
+
+        if ($excludeId !== null) {
+            $qb->andWhere('c.id != :excludeId')->setParameter('excludeId', $excludeId);
+        }
+
+        /** @var list<Creneau> */
+        return $qb->getQuery()->getResult();
+    }
+
     public function findNextReservedCreneau(Utilisateur $personnel): ?Creneau
     {
         return $this->createQueryBuilder('c')

@@ -10,6 +10,7 @@ use App\Form\CreneauType;
 use App\Repository\CreneauRepository;
 use App\Enum\StatutReservation;
 use App\Security\CreneauVoter;
+use App\Service\SlotService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -25,6 +26,7 @@ class CreneauController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly LoggerInterface $logger,
+        private readonly SlotService $slotService,
     ) {}
 
     #[Route('/creneau', name: 'app_creneau_liste', methods: ['GET'])]
@@ -81,6 +83,24 @@ class CreneauController extends AbstractController
                 $this->mettreAJourHoraires($formulaire, $creneau);
             }
 
+            $conflits = $this->slotService->detecteChevauchements(
+                $creneau->getUtilisateur(),
+                $creneau->getDateDebut(),
+                $creneau->getDateFin(),
+                $creneau->getId(),
+            );
+
+            if ($conflits !== []) {
+                $this->slotService->enregistrerPremierChevauchement($creneau, $conflits, 'modification');
+                $this->addFlash('error', $this->slotService->construireMessageChevauchement($conflits[0]));
+
+                return $this->render('personnel/creneau/modifier.html.twig', [
+                    'formulaire' => $formulaire,
+                    'creneau'    => $creneau,
+                    'estReserve' => $estReserve,
+                ]);
+            }
+
             $this->entityManager->flush();
 
             /** @var Utilisateur $utilisateur */
@@ -123,6 +143,22 @@ class CreneauController extends AbstractController
                 ->setUtilisateur($utilisateur)
                 ->setDateDebut($dateDebut)
                 ->setDateFin($dateFin);
+
+            $conflits = $this->slotService->detecteChevauchements(
+                $utilisateur,
+                $creneau->getDateDebut(),
+                $creneau->getDateFin(),
+                null,
+            );
+
+            if ($conflits !== []) {
+                $this->slotService->enregistrerPremierChevauchement($creneau, $conflits, 'creation');
+                $this->addFlash('error', $this->slotService->construireMessageChevauchement($conflits[0]));
+
+                return $this->render('personnel/creneau/nouveau.html.twig', [
+                    'formulaire' => $formulaire,
+                ]);
+            }
 
             $this->entityManager->persist($creneau);
             $this->entityManager->flush();
