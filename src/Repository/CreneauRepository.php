@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Creneau;
 use App\Entity\Utilisateur;
+use App\Enum\StatutReservation;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Tools\Pagination\Paginator;
@@ -70,6 +71,43 @@ class CreneauRepository extends ServiceEntityRepository
     }
 
     /**
+     * Créneaux actifs du personnel dont l'intervalle chevauche ]debutPlage, finPlage[.
+     * JOIN eager pour éviter le N+1 (type RDV, réservation, auditeur).
+     *
+     * @return Creneau[]
+     */
+    public function findByPersonnelInDateRange(
+        Utilisateur $personnel,
+        \DateTimeImmutable $debutPlage,
+        \DateTimeImmutable $finPlage,
+        bool $reserveOnly = false,
+    ): array {
+        $qb = $this->createQueryBuilder('c')
+            ->leftJoin('c.typeRdv', 't')->addSelect('t');
+
+        if ($reserveOnly) {
+            $qb->innerJoin('c.reservation', 'r')->addSelect('r')
+                ->andWhere('r.statut = :statutReservationActive')
+                ->setParameter('statutReservationActive', StatutReservation::ACTIVE);
+        } else {
+            $qb->leftJoin('c.reservation', 'r')->addSelect('r');
+        }
+
+        return $qb
+            ->leftJoin('r.utilisateur', 'aud')->addSelect('aud')
+            ->andWhere('c.utilisateur = :personnel')
+            ->andWhere('c.estActif = true')
+            ->andWhere('c.dateFin > :debut')
+            ->andWhere('c.dateDebut < :fin')
+            ->setParameter('personnel', $personnel)
+            ->setParameter('debut', $debutPlage)
+            ->setParameter('fin', $finPlage)
+            ->orderBy('c.dateDebut', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Retourne les créneaux disponibles (sans réservation) d'un Personnel, triés par date de début.
      *
      * @return Creneau[]
@@ -85,5 +123,58 @@ class CreneauRepository extends ServiceEntityRepository
             ->orderBy('c.dateDebut', 'ASC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Prochain créneau actif réservé (réservation ACTIVE) pour l'agenda.
+     */
+    /**
+     * Créneaux actifs du personnel dont l’intervalle chevauche ]debut, fin[
+     * (sans adjacence : fin == début d’un autre créneau n’est pas un chevauchement).
+     *
+     * @return list<Creneau>
+     */
+    public function findChevauchements(
+        Utilisateur $utilisateur,
+        \DateTimeImmutable $debut,
+        \DateTimeImmutable $fin,
+        ?int $excludeId = null,
+    ): array {
+        $qb = $this->createQueryBuilder('c')
+            ->innerJoin('c.typeRdv', 't')->addSelect('t')
+            ->andWhere('c.utilisateur = :utilisateur')
+            ->setParameter('utilisateur', $utilisateur)
+            ->andWhere('c.estActif = true')
+            ->andWhere('c.dateFin > :maintenantChevauch')
+            ->setParameter('maintenantChevauch', new \DateTimeImmutable())
+            ->andWhere('c.dateDebut < :nouveauFin')
+            ->andWhere('c.dateFin > :nouveauDebut')
+            ->setParameter('nouveauDebut', $debut)
+            ->setParameter('nouveauFin', $fin)
+            ->orderBy('c.dateDebut', 'ASC');
+
+        if ($excludeId !== null) {
+            $qb->andWhere('c.id != :excludeId')->setParameter('excludeId', $excludeId);
+        }
+
+        /** @var list<Creneau> */
+        return $qb->getQuery()->getResult();
+    }
+
+    public function findNextReservedCreneau(Utilisateur $personnel): ?Creneau
+    {
+        return $this->createQueryBuilder('c')
+            ->innerJoin('c.reservation', 'r')->addSelect('r')
+            ->andWhere('r.statut = :statutActif')
+            ->setParameter('statutActif', StatutReservation::ACTIVE)
+            ->andWhere('c.utilisateur = :personnel')
+            ->setParameter('personnel', $personnel)
+            ->andWhere('c.estActif = true')
+            ->andWhere('c.dateDebut > :now')
+            ->setParameter('now', new \DateTimeImmutable())
+            ->orderBy('c.dateDebut', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 }

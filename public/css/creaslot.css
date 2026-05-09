@@ -505,7 +505,52 @@
 }
 
 /* ============================================================
-   13. RESPONSIVE
+   13. FullCalendar — agenda personnel (contraste RGAA)
+   ============================================================ */
+
+.cs-agenda-page .fc-v-event.cs-fc-creneau,
+.cs-agenda-page .fc-v-event.cs-fc-creneau .fc-event-main,
+.cs-agenda-page .fc-v-event.cs-fc-creneau .fc-event-main-frame,
+.cs-agenda-page .fc-v-event.cs-fc-creneau .fc-event-title,
+.cs-agenda-page .fc-v-event.cs-fc-creneau .fc-event-time {
+    color: #1a1a1a !important;
+}
+
+.cs-agenda-page .fc-v-event.cs-fc-creneau .cs-fc-line-time {
+    font-weight: 700;
+    font-size: 0.7rem;
+    line-height: 1.2;
+}
+
+.cs-agenda-page .fc-v-event.cs-fc-creneau .cs-fc-line-type {
+    font-weight: 600;
+    font-size: 0.72rem;
+    line-height: 1.15;
+}
+
+.cs-agenda-page .fc-v-event.cs-fc-creneau .cs-fc-line-etat {
+    font-weight: 600;
+    font-size: 0.65rem;
+    line-height: 1.15;
+    opacity: 0.92;
+}
+
+.cs-agenda-page .fc-v-event.cs-fc-creneau.fc-event-passe,
+.cs-agenda-page .fc-v-event.cs-fc-creneau.fc-event-past {
+    opacity: 0.62 !important;
+    filter: grayscale(0.08);
+}
+
+.cs-agenda-page .fc-v-event.cs-fc-creneau.fc-event-reservee.creneau-reserve {
+    box-shadow: inset 4px 0 0 0 var(--cs-blue-primary);
+}
+
+.cs-agenda-page .fc-v-event.cs-fc-creneau.fc-event-reservee .cs-fc-line-etat {
+    font-weight: 700;
+}
+
+/* ============================================================
+   14. RESPONSIVE
    ============================================================ */
 
 @media (max-width: 768px) {
