@@ -61,6 +61,13 @@
                             </li>
                         {% elseif is_granted('ROLE_AUDITEUR') %}
                             <li class="nav-item">
+                                <a class="nav-link cs-nav-link d-flex align-items-center gap-1"
+                                   href="{{ path('app_creneaux_disponibles') }}">
+                                    <i class="bi bi-search" aria-hidden="true"></i>
+                                    Trouver un RDV
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link cs-nav-link d-flex align-items-center gap-1" href="#">
                                     <i class="bi bi-calendar-check" aria-hidden="true"></i>
                                     Mes réservations

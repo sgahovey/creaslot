@@ -204,6 +204,62 @@ class CreneauRepository extends ServiceEntityRepository
     }
 
     /**
+     * Retourne les créneaux disponibles pour les Auditeurs, paginés.
+     * Un créneau est disponible si : actif, futur, personnel actif, sans réservation ACTIVE.
+     * JOINs eager pour éviter le problème N+1 (typeRdv, utilisateur, service).
+     *
+     * @return Paginator<Creneau>
+     */
+    public function findDisponibles(
+        ?int $typeRdvId,
+        ?int $serviceId,
+        ?\DateTimeImmutable $date,
+        int $page,
+        int $limit = 12,
+    ): Paginator {
+        $qb = $this->createQueryBuilder('c')
+            ->innerJoin('c.typeRdv', 't')->addSelect('t')
+            ->innerJoin('c.utilisateur', 'u')->addSelect('u')
+            ->leftJoin('u.service', 's')->addSelect('s')
+            ->leftJoin('c.reservation', 'r')->addSelect('r')
+            ->andWhere('c.estActif = true')
+            ->andWhere('c.dateDebut > :now')
+            ->andWhere('u.estActif = true')
+            ->andWhere('r.id IS NULL OR r.statut != :statutActif')
+            ->setParameter('now', new \DateTimeImmutable())
+            ->setParameter('statutActif', StatutReservation::ACTIVE)
+            ->orderBy('c.dateDebut', 'ASC')
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);
+
+        $this->appliquerFiltresDisponibles($qb, $typeRdvId, $serviceId, $date);
+
+        return new Paginator($qb->getQuery(), false);
+    }
+
+    private function appliquerFiltresDisponibles(
+        QueryBuilder $qb,
+        ?int $typeRdvId,
+        ?int $serviceId,
+        ?\DateTimeImmutable $date,
+    ): void {
+        if ($typeRdvId !== null) {
+            $qb->andWhere('t.id = :typeRdvId')->setParameter('typeRdvId', $typeRdvId);
+        }
+
+        if ($serviceId !== null) {
+            $qb->andWhere('s.id = :serviceId')->setParameter('serviceId', $serviceId);
+        }
+
+        if ($date !== null) {
+            $qb->andWhere('c.dateDebut >= :debutJour')
+               ->andWhere('c.dateDebut < :finJour')
+               ->setParameter('debutJour', $date->setTime(0, 0, 0))
+               ->setParameter('finJour', $date->setTime(23, 59, 59));
+        }
+    }
+
+    /**
      * Vérifie l'existence d'au moins un créneau actif futur ou en cours (dateFin >= $maintenant).
      * Utilisé pour masquer de la liste les collègues sans disponibilité visible.
      */
