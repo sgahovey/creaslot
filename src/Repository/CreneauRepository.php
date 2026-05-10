@@ -165,6 +165,7 @@ class CreneauRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('c')
             ->innerJoin('c.reservation', 'r')->addSelect('r')
+            ->leftJoin('r.utilisateur', 'a')->addSelect('a')
             ->andWhere('r.statut = :statutActif')
             ->setParameter('statutActif', StatutReservation::ACTIVE)
             ->andWhere('c.utilisateur = :personnel')
@@ -176,5 +177,50 @@ class CreneauRepository extends ServiceEntityRepository
             ->setMaxResults(1)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /**
+     * Retourne le créneau actif en cours (dateDebut <= $maintenant < dateFin)
+     * ayant une réservation ACTIVE, pour calculer le statut "En RDV".
+     */
+    public function findCreneauEnCoursAvecRdv(
+        Utilisateur $utilisateur,
+        \DateTimeImmutable $maintenant,
+    ): ?Creneau {
+        return $this->createQueryBuilder('c')
+            ->innerJoin('c.reservation', 'r')->addSelect('r')
+            ->leftJoin('r.utilisateur', 'a')->addSelect('a')
+            ->andWhere('c.utilisateur = :utilisateur')
+            ->andWhere('c.estActif = true')
+            ->andWhere('c.dateDebut <= :maintenant')
+            ->andWhere('c.dateFin > :maintenant')
+            ->andWhere('r.statut = :statutActif')
+            ->setParameter('utilisateur', $utilisateur)
+            ->setParameter('maintenant', $maintenant)
+            ->setParameter('statutActif', StatutReservation::ACTIVE)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
+     * Vérifie l'existence d'au moins un créneau actif futur ou en cours (dateFin >= $maintenant).
+     * Utilisé pour masquer de la liste les collègues sans disponibilité visible.
+     */
+    public function existeCreneauActifFuturOuEnCours(
+        Utilisateur $utilisateur,
+        \DateTimeImmutable $maintenant,
+    ): bool {
+        $count = (int) $this->createQueryBuilder('c')
+            ->select('COUNT(c.id)')
+            ->andWhere('c.utilisateur = :utilisateur')
+            ->andWhere('c.estActif = true')
+            ->andWhere('c.dateFin >= :maintenant')
+            ->setParameter('utilisateur', $utilisateur)
+            ->setParameter('maintenant', $maintenant)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $count > 0;
     }
 }
