@@ -17,4 +17,14 @@ class ServiceRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Service::class);
     }
+
+    /**
+     * Retourne les services actifs, triés par nom alphabétique.
+     *
+     * @return Service[]
+     */
+    public function findActifs(): array
+    {
+        return $this->findBy(['estActif' => true], ['nom' => 'ASC']);
+    }
 }
