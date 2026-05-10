@@ -1,0 +1,161 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Créneaux disponibles{% endblock %}
+
+{% block body %}
+<div class="container py-4" style="max-width: 1100px;">
+
+    {# ── En-tête ─────────────────────────────────────────────────────── #}
+    <div class="mb-4">
+        <h1 class="h4 fw-bold mb-1" style="color: var(--cs-text-primary);">
+            <i class="bi bi-search me-2" aria-hidden="true"></i>Créneaux disponibles
+        </h1>
+        <p class="text-muted mb-0" style="font-size: .875rem;" aria-live="polite" aria-atomic="true">
+            {% if total == 0 %}
+                Aucun créneau ne correspond à votre recherche.
+            {% elseif total == 1 %}
+                1 créneau disponible correspond à votre recherche.
+            {% else %}
+                {{ total }} créneaux disponibles correspondent à votre recherche.
+            {% endif %}
+        </p>
+    </div>
+
+    {# ── Formulaire de filtres ────────────────────────────────────────── #}
+    <form method="GET" action="{{ path('app_creneaux_disponibles') }}"
+          class="card border-0 shadow-sm mb-4 p-3"
+          style="border-radius: var(--cs-radius-lg);"
+          aria-label="Filtrer les créneaux disponibles">
+
+        <div class="row g-3 align-items-end">
+
+            {# Type de RDV #}
+            <div class="col-12 col-md-4">
+                <label for="filtre-type" class="form-label fw-medium" style="font-size: .875rem;">
+                    Type de RDV
+                </label>
+                <select id="filtre-type" name="type" class="form-select form-select-sm">
+                    <option value="">Tous les types</option>
+                    {% for typeRdv in typesRdv %}
+                        <option value="{{ typeRdv.id }}"
+                                {% if filtres.type == typeRdv.id %}selected{% endif %}>
+                            {{ typeRdv.libelle }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# Service #}
+            <div class="col-12 col-md-4">
+                <label for="filtre-service" class="form-label fw-medium" style="font-size: .875rem;">
+                    Service
+                </label>
+                <select id="filtre-service" name="service" class="form-select form-select-sm">
+                    <option value="">Tous les services</option>
+                    {% for service in services %}
+                        <option value="{{ service.id }}"
+                                {% if filtres.service == service.id %}selected{% endif %}>
+                            {{ service.nom }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# Date #}
+            <div class="col-12 col-md-4">
+                <label for="filtre-date" class="form-label fw-medium" style="font-size: .875rem;">
+                    Date
+                </label>
+                <input type="date"
+                       id="filtre-date"
+                       name="date"
+                       class="form-control form-control-sm"
+                       value="{{ filtres.date }}"
+                       aria-label="Filtrer par date">
+            </div>
+
+            {# Boutons #}
+            <div class="col-12 d-flex gap-2 flex-wrap">
+                <button type="submit"
+                        class="btn btn-sm btn-primary d-flex align-items-center gap-1"
+                        aria-label="Appliquer les filtres">
+                    <i class="bi bi-funnel" aria-hidden="true"></i>
+                    Filtrer
+                </button>
+                <a href="{{ path('app_creneaux_disponibles') }}"
+                   class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+                   aria-label="Réinitialiser les filtres">
+                    <i class="bi bi-x-circle" aria-hidden="true"></i>
+                    Réinitialiser
+                </a>
+            </div>
+
+        </div>
+    </form>
+
+    {# ── Grille de créneaux ───────────────────────────────────────────── #}
+    {% if total == 0 %}
+
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-calendar-x fs-1 d-block mb-3" aria-hidden="true"></i>
+            <p class="mb-1 fw-semibold">Aucun créneau ne correspond à votre recherche.</p>
+            <p class="mb-3">Essayez d'élargir vos critères ou revenez plus tard.</p>
+            <a href="{{ path('app_creneaux_disponibles') }}"
+               class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>
+                Voir tous les créneaux
+            </a>
+        </div>
+
+    {% else %}
+
+        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3"
+             aria-label="Liste des créneaux disponibles">
+            {% for creneau in creneaux %}
+                <div class="col">
+                    {{ include('components/carte_creneau_disponible.html.twig', { creneau: creneau }) }}
+                </div>
+            {% endfor %}
+        </div>
+
+        {# ── Pagination ───────────────────────────────────────────────── #}
+        {% if nbPages > 1 %}
+            <nav class="mt-4" aria-label="Pagination des créneaux disponibles">
+                <ul class="pagination justify-content-center">
+
+                    <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                        <a class="page-link"
+                           href="{{ path('app_creneaux_disponibles', filtres|merge({ page: page - 1 })) }}"
+                           aria-label="Page précédente"
+                           {% if page == 1 %}aria-disabled="true" tabindex="-1"{% endif %}>
+                            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                        </a>
+                    </li>
+
+                    {% for p in 1..nbPages %}
+                        <li class="page-item {% if p == page %}active{% endif %}"
+                            {% if p == page %}aria-current="page"{% endif %}>
+                            <a class="page-link"
+                               href="{{ path('app_creneaux_disponibles', filtres|merge({ page: p })) }}">
+                                {{ p }}
+                            </a>
+                        </li>
+                    {% endfor %}
+
+                    <li class="page-item {% if page == nbPages %}disabled{% endif %}">
+                        <a class="page-link"
+                           href="{{ path('app_creneaux_disponibles', filtres|merge({ page: page + 1 })) }}"
+                           aria-label="Page suivante"
+                           {% if page == nbPages %}aria-disabled="true" tabindex="-1"{% endif %}>
+                            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                        </a>
+                    </li>
+
+                </ul>
+            </nav>
+        {% endif %}
+
+    {% endif %}
+
+</div>
+{% endblock %}
