@@ -127,8 +127,7 @@ class ReservationController extends AbstractController
         }
 
         $this->addFlash('success', 'Votre réservation a été confirmée. Vous recevrez un email de confirmation.');
-        // TODO: Rediriger vers app_mes_reservations après US-3.3
-        return $this->redirectToRoute('app_creneaux_disponibles');
+        return $this->redirectToRoute('app_mes_reservations');
     }
 
     private function creneauEstEncoreDisponible(Creneau $creneau): bool
