@@ -121,4 +121,6 @@
     </div>
 </article>
 
-{# TODO US-3.4 : inclure ici la modale d'annulation, ciblée par #modal-annuler-{{ reservation.id }} #}
+{% if peutAnnuler %}
+    {% include 'components/modal_annulation_reservation.html.twig' with { reservation: reservation } only %}
+{% endif %}
