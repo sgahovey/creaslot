@@ -293,8 +293,10 @@
                     <dd class="col-sm-8" id="modal-statut"></dd>
                     <dt class="col-sm-4 text-muted">Auditeur</dt>
                     <dd class="col-sm-8" id="modal-auditeur"></dd>
-                    <dt class="col-sm-4 text-muted">Commentaire</dt>
+                    <dt class="col-sm-4 text-muted">Note</dt>
                     <dd class="col-sm-8" id="modal-commentaire"></dd>
+                    <dt class="col-sm-4 text-muted">Motif auditeur</dt>
+                    <dd class="col-sm-8" id="modal-motif-auditeur"></dd>
                 </dl>
             </div>
             <div class="modal-footer border-0 flex-wrap gap-2">
@@ -350,8 +352,9 @@
         var modalDate         = document.getElementById('modal-date');
         var modalHoraires     = document.getElementById('modal-horaires');
         var modalStatut       = document.getElementById('modal-statut');
-        var modalAuditeur     = document.getElementById('modal-auditeur');
-        var modalCommentaire  = document.getElementById('modal-commentaire');
+        var modalAuditeur      = document.getElementById('modal-auditeur');
+        var modalCommentaire   = document.getElementById('modal-commentaire');
+        var modalMotifAuditeur = document.getElementById('modal-motif-auditeur');
         var lienModifier      = document.getElementById('modal-lien-modifier');
 
         function formaterDateFr(date) {
@@ -668,6 +671,9 @@
 
                 var com = (p.commentaire || '').trim();
                 if (modalCommentaire) modalCommentaire.textContent = com !== '' ? com : '—';
+
+                var motif = (p.motifAuditeur || '').trim();
+                if (modalMotifAuditeur) modalMotifAuditeur.textContent = motif !== '' ? motif : '—';
 
                 var id = ev.id;
                 var futurPasPasse = p.isPasse !== true && p.isPasse !== 'true';
