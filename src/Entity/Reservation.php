@@ -128,8 +128,26 @@ class Reservation
         return $this;
     }
 
+    /**
+     * Une réservation est annulable si elle est encore active ET que le créneau
+     * n'a pas encore commencé. Cette règle métier vit ici (Domain-Driven Design),
+     * le contrôleur d'annulation s'y réfère sans la dupliquer.
+     */
     public function isAnnulable(): bool
     {
-        return $this->statut === StatutReservation::ACTIVE;
+        return $this->statut === StatutReservation::ACTIVE
+            && $this->creneau->getDateDebut() > new \DateTimeImmutable();
+    }
+
+    /**
+     * Transition d'état atomique : annule la réservation et trace la date + le motif.
+     * Le contrôleur appelant DOIT avoir validé l'annulabilité au préalable via
+     * isAnnulable() — cette méthode ne re-valide pas (laissée aux invariants futurs).
+     */
+    public function annuler(?string $motif): void
+    {
+        $this->statut          = StatutReservation::ANNULEE;
+        $this->dateAnnulation  = new \DateTimeImmutable();
+        $this->motifAnnulation = $motif;
     }
 }
