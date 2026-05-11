@@ -110,7 +110,7 @@
                     Annuler
                 </button>
             {% endif %}
-            <a href="#"
+            <a href="{{ path('app_reservation_detail', { id: reservation.id }) }}"
                class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
                aria-label="Voir les détails de la réservation du {{ nomJour }} {{ creneau.dateDebut|date('d/m/Y') }}">
                 <i class="bi bi-info-circle" aria-hidden="true"></i>
