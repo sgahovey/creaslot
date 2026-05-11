@@ -21,9 +21,9 @@ class ReservationType extends AbstractType
                 'class'       => 'form-control',
                 'rows'        => 4,
                 'maxlength'   => 500,
-                'placeholder' => 'Précisez le motif de votre demande si nécessaire…',
+                'placeholder' => 'Optionnel — précisez brièvement la raison de votre demande (sans information personnelle sensible)…',
             ],
-            'help'        => 'Optionnel — vous pouvez préciser le motif de votre demande.',
+            'help'        => 'Optionnel — précisez brièvement (sans donnée médicale, santé ou autre information sensible).',
             'constraints' => [
                 new Length(max: 500, maxMessage: 'Le commentaire ne peut pas dépasser {{ limit }} caractères.'),
             ],

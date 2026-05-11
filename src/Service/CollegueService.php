@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\DTO\CollegueDTO;
-use App\Entity\Reservation;
 use App\Entity\Utilisateur;
 use App\Repository\CreneauRepository;
 use App\Repository\UtilisateurRepository;
@@ -68,16 +67,6 @@ class CollegueService
     }
 
     /**
-     * Retourne la prochaine réservation active à venir pour un utilisateur.
-     */
-    public function getProchainRdv(Utilisateur $utilisateur): ?Reservation
-    {
-        $creneau = $this->creneauRepository->findNextReservedCreneau($utilisateur);
-
-        return $creneau?->getReservation();
-    }
-
-    /**
      * Vérifie qu'un utilisateur possède au moins un créneau actif futur ou en cours.
      * Permet de masquer les collègues sans disponibilité visible.
      */
@@ -86,13 +75,19 @@ class CollegueService
         return $this->creneauRepository->existeCreneauActifFuturOuEnCours($utilisateur, $maintenant);
     }
 
+    /**
+     * Construit le DTO d'un collègue en exposant uniquement la date du prochain RDV
+     * (pas l'entité Reservation) — minimisation RGPD pour ne jamais exposer
+     * l'identité de l'Auditeur côté autres Personnels.
+     */
     private function construireDTO(Utilisateur $collegue, \DateTimeImmutable $maintenant): CollegueDTO
     {
-        $creneauEnCours = $this->creneauRepository->findCreneauEnCoursAvecRdv($collegue, $maintenant);
-        $statut         = $creneauEnCours !== null ? self::STATUT_EN_RDV : self::STATUT_LIBRE;
-        $heureFinRdv    = $creneauEnCours?->getDateFin()->format('H\hi');
-        $prochainRdv    = $this->getProchainRdv($collegue);
+        $creneauEnCours  = $this->creneauRepository->findCreneauEnCoursAvecRdv($collegue, $maintenant);
+        $statut          = $creneauEnCours !== null ? self::STATUT_EN_RDV : self::STATUT_LIBRE;
+        $heureFinRdv     = $creneauEnCours?->getDateFin()->format('H\hi');
+        $prochainCreneau = $this->creneauRepository->findNextReservedCreneau($collegue);
+        $prochainRdvDate = $prochainCreneau?->getDateDebut();
 
-        return new CollegueDTO($collegue, $statut, $heureFinRdv, $prochainRdv);
+        return new CollegueDTO($collegue, $statut, $heureFinRdv, $prochainRdvDate);
     }
 }
