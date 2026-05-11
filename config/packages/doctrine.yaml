@@ -6,7 +6,10 @@ doctrine:
         # either here or in the DATABASE_URL env var (see .env file)
         #server_version: '16'
 
-        profiling_collect_backtrace: '%kernel.debug%'
+        # Désactivée en dev : la capture d'une backtrace PHP par requête SQL
+        # coûte 3–5 ms/requête, amplifiée par le bind mount Windows.
+        # Le profiling SQL reste actif (visible dans la toolbar), seule la stack est omise.
+        profiling_collect_backtrace: false
     orm:
         validate_xml_mapping: true
         naming_strategy: doctrine.orm.naming_strategy.underscore
