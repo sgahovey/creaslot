@@ -64,14 +64,12 @@
 
         {# ── CTA Réserver ──────────────────────────────────────────────── #}
         <div class="mt-auto pt-2">
-            <button type="button"
-                    class="btn btn-sm btn-primary w-100"
-                    disabled
-                    title="La réservation sera disponible très prochainement."
-                    aria-label="Réserver ce créneau (bientôt disponible)">
-                <i class="bi bi-calendar-check me-1" aria-hidden="true"></i>
+            <a href="{{ path('app_reservation_nouvelle', { id: creneau.id }) }}"
+               class="btn btn-sm btn-primary w-100 d-flex align-items-center justify-content-center gap-1"
+               aria-label="Réserver le créneau du {{ nomJour }} {{ creneau.dateDebut|date('d/m/Y') }} avec {{ creneau.utilisateur.prenom }} {{ creneau.utilisateur.nom }}">
+                <i class="bi bi-calendar-check" aria-hidden="true"></i>
                 Réserver
-            </button>
+            </a>
         </div>
 
     </div>
