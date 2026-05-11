@@ -37,4 +37,30 @@ class ReservationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Vérifie si l'Auditeur a déjà une réservation ACTIVE qui chevauche la plage horaire donnée.
+     * Utilisé pour empêcher les réservations simultanées.
+     */
+    public function existeReservationActiveEnChevauchement(
+        Utilisateur $auditeur,
+        \DateTimeImmutable $debut,
+        \DateTimeImmutable $fin,
+    ): bool {
+        $count = (int) $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->join('r.creneau', 'c')
+            ->andWhere('r.utilisateur = :auditeur')
+            ->andWhere('r.statut = :statut')
+            ->andWhere('c.dateDebut < :fin')
+            ->andWhere('c.dateFin > :debut')
+            ->setParameter('auditeur', $auditeur)
+            ->setParameter('statut', StatutReservation::ACTIVE)
+            ->setParameter('debut', $debut)
+            ->setParameter('fin', $fin)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $count > 0;
+    }
 }
