@@ -67,10 +67,11 @@ final class ReservationAnnulationController extends AbstractController
             throw $e;
         }
 
+        // Minimisation RGPD : on logue uniquement la longueur du motif (pas le contenu sensible).
         $this->logger->info('Réservation annulée', [
             'reservation_id' => $reservation->getId(),
             'user_id'        => $reservation->getUtilisateur()->getId(),
-            'motif'          => $motif,
+            'motif_longueur' => strlen($motif ?? ''),
         ]);
 
         $this->addFlash('success', 'Votre réservation a été annulée. Le créneau est de nouveau disponible.');

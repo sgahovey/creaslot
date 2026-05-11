@@ -68,17 +68,15 @@
         {# ── Prochain RDV ──────────────────────────────────── #}
         <p class="mb-0 mt-auto" style="font-size: .8125rem; color: var(--cs-text-secondary);">
             <i class="bi bi-calendar-event me-1" aria-hidden="true"></i>
-            {% if dto.prochainRdv %}
-                {% set prochainCreneau = dto.prochainRdv.creneau %}
+            {% if dto.prochainRdvDate %}
                 {% set joursFR = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'] %}
-                {% set nomJour = joursFR[prochainCreneau.dateDebut|date('N') - 1] %}
+                {% set nomJour = joursFR[dto.prochainRdvDate|date('N') - 1] %}
                 <span>
                     Prochain RDV :
                     <strong>
-                        {{ nomJour }} {{ prochainCreneau.dateDebut|date('d/m') }}
-                        à {{ prochainCreneau.dateDebut|date('H\\hi') }}
+                        {{ nomJour }} {{ dto.prochainRdvDate|date('d/m') }}
+                        à {{ dto.prochainRdvDate|date('H\\hi') }}
                     </strong>
-                    avec {{ dto.prochainRdv.utilisateur.prenom }} {{ dto.prochainRdv.utilisateur.nom }}
                 </span>
             {% else %}
                 <span class="fst-italic">Aucun RDV à venir</span>

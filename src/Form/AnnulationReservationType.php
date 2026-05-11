@@ -21,9 +21,9 @@ class AnnulationReservationType extends AbstractType
                 'class'       => 'form-control',
                 'rows'        => 3,
                 'maxlength'   => 500,
-                'placeholder' => 'Si vous le souhaitez, précisez la raison de votre annulation…',
+                'placeholder' => 'Optionnel — précisez brièvement la raison (sans information personnelle sensible)…',
             ],
-            'help'        => 'Optionnel — vous pouvez préciser le motif de votre annulation.',
+            'help'        => 'Optionnel — précisez brièvement (sans donnée médicale, santé ou autre information sensible).',
             'constraints' => [
                 new Length(max: 500, maxMessage: 'Le motif ne peut pas dépasser {{ limit }} caractères.'),
             ],
