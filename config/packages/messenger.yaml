@@ -18,6 +18,11 @@ framework:
             messenger.bus.default: []
 
         routing:
+            # En preprod/prod : SendEmailMessage est routé vers `async` (Doctrine
+            # queue) pour ne pas bloquer la requête HTTP sur l'envoi SMTP — un
+            # worker `messenger:consume async` dépile en arrière-plan.
+            # En dev : override par config/packages/dev/messenger.yaml qui force
+            # `sync` (envoi immédiat, pas de worker à lancer pour les tests).
             Symfony\Component\Mailer\Messenger\SendEmailMessage: async
             Symfony\Component\Notifier\Message\ChatMessage: async
             Symfony\Component\Notifier\Message\SmsMessage: async
