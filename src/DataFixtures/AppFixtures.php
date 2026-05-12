@@ -87,9 +87,9 @@ class AppFixtures extends Fixture
     private function creerPersonnel(ObjectManager $manager, array $services): array
     {
         $donnees = [
-            ['Marie',     'Dupont',   'marie.dupont@cnam-reunion.fr',    $services[0]],
-            ['Jean',      'Martin',   'jean.martin@cnam-reunion.fr',     $services[1]],
-            ['Sophie',    'Lefevre',  'sophie.lefevre@cnam-reunion.fr',  $services[2]],
+            ['Marie',     'Dupont',   'creaslotdemo+marie@gmail.com',    $services[0]],
+            ['Jean',      'Martin',   'creaslotdemo+jean@gmail.com',     $services[1]],
+            ['Sophie',    'Lefevre',  'creaslotdemo+sophie@gmail.com',   $services[2]],
         ];
 
         $personnels = [];
@@ -115,11 +115,11 @@ class AppFixtures extends Fixture
     private function creerAuditeurs(ObjectManager $manager): array
     {
         $donnees = [
-            ['Xavier',    'Dijoux',   'xavier.dijoux@auditeur.cnam-reunion.fr'],
-            ['Julie',     'Potier',   'julie.potier@auditeur.cnam-reunion.fr'],
-            ['Timothée',  'Perez',    'timothee.perez@auditeur.cnam-reunion.fr'],
-            ['Célina',    'Pasquier', 'celina.pasquier@auditeur.cnam-reunion.fr'],
-            ['Margot',    'Robin',    'margot.robin@auditeur.cnam-reunion.fr'],
+            ['Xavier',    'Dijoux',   'creaslotdemo+xavier@gmail.com'],
+            ['Julie',     'Potier',   'creaslotdemo+julie@gmail.com'],
+            ['Timothée',  'Perez',    'creaslotdemo+timothee@gmail.com'],
+            ['Célina',    'Pasquier', 'creaslotdemo+celina@gmail.com'],
+            ['Margot',    'Robin',    'creaslotdemo+margot@gmail.com'],
         ];
 
         $auditeurs = [];
@@ -143,7 +143,7 @@ class AppFixtures extends Fixture
     private function creerAdmin(ObjectManager $manager): void
     {
         $admin = new Utilisateur();
-        $admin->setEmail('admin@cnam-reunion.fr')
+        $admin->setEmail('creaslotdemo+admin@gmail.com')
               ->setPrenom('Super')
               ->setNom('Admin')
               ->setRole(RoleUtilisateur::SUPER_ADMIN)

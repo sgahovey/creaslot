@@ -20,6 +20,8 @@ services:
       - ./docker/php/php.ini:/usr/local/etc/php/conf.d/app.ini:ro
     env_file:
       - .env
+      - path: .env.local
+        required: false
     networks:
       - creaslot-net
     depends_on:
