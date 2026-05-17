@@ -33,6 +33,7 @@ FROM php:8.4-fpm-alpine AS production
 # Les headers de build sont groupés dans .build-deps et supprimés après compilation
 RUN apk add --no-cache \
         icu-libs \
+        icu-data-full \
         libzip \
         git \
         unzip \

@@ -10,6 +10,7 @@ use App\Entity\Utilisateur;
 use App\Enum\StatutReservation;
 use App\Form\ReservationType;
 use App\Repository\ReservationRepository;
+use App\Service\NotificationService;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -26,6 +27,7 @@ class ReservationController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly ReservationRepository  $reservationRepository,
         private readonly LoggerInterface        $logger,
+        private readonly NotificationService    $notificationService,
     ) {}
 
     #[Route('/creneau/{id}/reserver', name: 'app_reservation_nouvelle', methods: ['GET', 'POST'])]
@@ -126,7 +128,13 @@ class ReservationController extends AbstractController
             throw $e;
         }
 
-        $this->addFlash('success', 'Votre réservation a été confirmée. Vous recevrez un email de confirmation.');
+        // Envoi des emails de notification HORS de la transaction Doctrine :
+        // un échec SMTP ne doit pas rollback la réservation (politique Option B
+        // documentée dans NotificationService::notifier*Reservation).
+        $this->notificationService->notifierAuditeurReservation($reservation);
+        $this->notificationService->notifierPersonnelReservation($reservation);
+
+        $this->addFlash('success', 'Votre réservation a été confirmée. Un email de confirmation vous est envoyé.');
         return $this->redirectToRoute('app_mes_reservations');
     }
 
