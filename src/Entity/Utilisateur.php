@@ -172,6 +172,20 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    /**
+     * Retourne le nom complet de l'utilisateur sous la forme "Prénom Nom".
+     *
+     * Utilisé principalement dans les notifications email et les vues
+     * où l'identité complète est requise (templates emails US-4.2,
+     * agenda Personnel, futur dashboard Super-admin).
+     *
+     * @return string Le prénom et le nom concaténés par un espace simple.
+     */
+    public function getNomComplet(): string
+    {
+        return $this->prenom . ' ' . $this->nom;
+    }
+
     public function getDateCreation(): \DateTimeImmutable
     {
         return $this->dateCreation;
