@@ -1,0 +1,131 @@
+{#
+ # Composant : carte d'un créneau (vue Personnel)
+ # Paramètres attendus :
+ #   creneau  Creneau  — l'entité créneau à afficher
+ #}
+
+{% set estPasse    = creneau.isPasse() %}
+{% set estReserve  = creneau.isReserve() %}
+{% set estActif    = creneau.estActif %}
+
+{# ── Badge statut ─────────────────────────────────────── #}
+{% if not estActif %}
+    {% set badgeClass  = 'text-bg-danger'   %}
+    {% set badgeLabel  = 'Annulé'           %}
+    {% set badgeIcone  = 'bi-x-circle'      %}
+{% elseif estPasse %}
+    {% set badgeClass  = 'text-bg-secondary' %}
+    {% set badgeLabel  = 'Passé'             %}
+    {% set badgeIcone  = 'bi-clock-history'  %}
+{% elseif estReserve %}
+    {% set badgeClass  = 'text-bg-info'     %}
+    {% set badgeLabel  = 'Réservé'          %}
+    {% set badgeIcone  = 'bi-person-check'  %}
+{% else %}
+    {% set badgeClass  = 'text-bg-success'  %}
+    {% set badgeLabel  = 'Disponible'       %}
+    {% set badgeIcone  = 'bi-check-circle'  %}
+{% endif %}
+
+{# ── Désactivation des boutons si passé ou annulé ─────── #}
+{% set actionsDesactivees = estPasse or not estActif %}
+{% set tooltipDesactive   = actionsDesactivees ? 'Créneau passé ou annulé, modification impossible' : '' %}
+
+<div class="card border-0 shadow-sm mb-3" style="border-radius: var(--cs-radius-lg);">
+    <div class="card-body p-3 p-md-4">
+
+        <div class="d-flex flex-wrap align-items-start gap-2 justify-content-between">
+
+            {# ── Informations principales ──────────────── #}
+            <div class="flex-grow-1">
+
+                {# Date et plage horaire #}
+                <div class="fw-semibold mb-1" style="color: var(--cs-text-primary); font-size: .95rem;">
+                    <i class="bi bi-calendar3 me-1" aria-hidden="true"></i>
+                    {{ creneau.dateDebut|date('d/m/Y') }}
+                    &nbsp;·&nbsp;
+                    {{ creneau.dateDebut|date('H\\hi') }} — {{ creneau.dateFin|date('H\\hi') }}
+                </div>
+
+                {# Type de RDV #}
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="rounded-circle flex-shrink-0"
+                          aria-hidden="true"
+                          style="width: 12px; height: 12px; background: {{ creneau.typeRdv.couleurHex }};"></span>
+                    <span class="text-muted" style="font-size: .875rem;">
+                        {{ creneau.typeRdv.libelle }}
+                    </span>
+                </div>
+
+                {# Commentaire (tronqué à 80 caractères) #}
+                {% if creneau.commentaireAuditeur %}
+                    <div class="text-muted d-flex align-items-start gap-1" style="font-size: .8rem;">
+                        <i class="bi bi-chat-left-text flex-shrink-0 mt-1" aria-hidden="true"></i>
+                        <span>{{ creneau.commentaireAuditeur|slice(0, 80) }}{% if creneau.commentaireAuditeur|length > 80 %}…{% endif %}</span>
+                    </div>
+                {% endif %}
+
+                {# Auditeur si réservé #}
+                {% if estReserve %}
+                    <div class="mt-1 d-flex align-items-center gap-1" style="font-size: .875rem; color: var(--cs-info);">
+                        <i class="bi bi-person" aria-hidden="true"></i>
+                        <span>
+                            {{ creneau.reservation.utilisateur.prenom }}
+                            {{ creneau.reservation.utilisateur.nom }}
+                        </span>
+                    </div>
+                {% endif %}
+
+            </div>
+
+            {# ── Badge statut ──────────────────────────── #}
+            <div>
+                <span class="badge {{ badgeClass }} d-flex align-items-center gap-1 px-2 py-1">
+                    <i class="bi {{ badgeIcone }}" aria-hidden="true"></i>
+                    {{ badgeLabel }}
+                </span>
+            </div>
+
+        </div>
+
+        {# ── Boutons d'action ──────────────────────────── #}
+        <div class="d-flex gap-2 mt-3 flex-wrap">
+
+            {% if actionsDesactivees %}
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary disabled"
+                        disabled
+                        aria-disabled="true"
+                        title="{{ tooltipDesactive }}"
+                        aria-label="Modifier ce créneau (désactivé)">
+                    <i class="bi bi-pencil" aria-hidden="true"></i> Modifier
+                </button>
+                <button type="button"
+                        class="btn btn-sm btn-outline-danger disabled"
+                        disabled
+                        aria-disabled="true"
+                        title="{{ tooltipDesactive }}"
+                        aria-label="Supprimer ce créneau (désactivé)">
+                    <i class="bi bi-trash" aria-hidden="true"></i> Supprimer
+                </button>
+            {% else %}
+                <a href="{{ path('app_creneau_modifier', { id: creneau.id }) }}"
+                   class="btn btn-sm btn-outline-secondary"
+                   aria-label="Modifier le créneau du {{ creneau.dateDebut|date('d/m/Y') }}">
+                    <i class="bi bi-pencil" aria-hidden="true"></i> Modifier
+                </a>
+                <button type="button"
+                        class="btn btn-sm btn-outline-danger"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modal-suppr-{{ creneau.id }}"
+                        aria-label="Supprimer le créneau du {{ creneau.dateDebut|date('d/m/Y') }}">
+                    <i class="bi bi-trash" aria-hidden="true"></i> Supprimer
+                </button>
+            {% endif %}
+
+        </div>
+
+    </div>
+</div>
+
+{{ include('components/modal_suppression_creneau.html.twig', { creneau: creneau }) }}

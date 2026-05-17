@@ -1,0 +1,160 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Inscription{% endblock %}
+
+{# Pages d'auth : masquer header, footer et flash (ils sont dans la carte) #}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block flash_messages %}{% endblock %}
+
+{% block body %}
+<div class="cs-auth-wrapper">
+    <div class="cs-auth-card">
+
+        {# Logo #}
+        <div class="text-center mb-4">
+            <a href="{{ path('app_home') }}" class="cs-auth-logo" aria-label="CreaSlot — Retour à l'accueil">
+                <i class="bi bi-calendar-check" aria-hidden="true"></i> CreaSlot
+            </a>
+        </div>
+
+        <h1 class="cs-auth-title text-center">Créer un compte</h1>
+        <p class="cs-auth-subtitle text-center">Inscription Auditeur — Cnam Réunion</p>
+
+        {# Messages flash #}
+        {% for message in app.flashes('success') %}
+            <div class="alert alert-success d-flex align-items-center gap-2 mb-3" role="alert">
+                <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+
+        {% for message in app.flashes('error') %}
+            <div class="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
+                <i class="bi bi-x-circle-fill" aria-hidden="true"></i>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+
+        {# Formulaire #}
+        {{ form_start(formulaire, { attr: { class: 'needs-validation' } }) }}
+
+            {# Prénom + Nom sur la même ligne #}
+            <div class="row g-3 mb-3">
+                <div class="col-6">
+                    {{ form_label(formulaire.prenom) }}
+                    {{ form_widget(formulaire.prenom, { attr: { class: 'form-control' ~ (formulaire.prenom.vars.errors|length > 0 ? ' is-invalid' : '') } }) }}
+                    {% if formulaire.prenom.vars.errors|length > 0 %}
+                        <div class="invalid-feedback d-block" role="alert">
+                            {% for erreur in formulaire.prenom.vars.errors %}
+                                <span>{{ erreur.message }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="col-6">
+                    {{ form_label(formulaire.nom) }}
+                    {{ form_widget(formulaire.nom, { attr: { class: 'form-control' ~ (formulaire.nom.vars.errors|length > 0 ? ' is-invalid' : '') } }) }}
+                    {% if formulaire.nom.vars.errors|length > 0 %}
+                        <div class="invalid-feedback d-block" role="alert">
+                            {% for erreur in formulaire.nom.vars.errors %}
+                                <span>{{ erreur.message }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Email #}
+            <div class="mb-3">
+                {{ form_label(formulaire.email) }}
+                {{ form_widget(formulaire.email, { attr: { class: 'form-control' ~ (formulaire.email.vars.errors|length > 0 ? ' is-invalid' : '') } }) }}
+                {% if formulaire.email.vars.errors|length > 0 %}
+                    <div class="invalid-feedback d-block" role="alert">
+                        {% for erreur in formulaire.email.vars.errors %}
+                            <span>{{ erreur.message }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            {# Mot de passe #}
+            <div class="mb-3">
+                {{ form_label(formulaire.motDePasse.first) }}
+                {{ form_widget(formulaire.motDePasse.first, {
+                    attr: {
+                        class: 'form-control' ~ (formulaire.motDePasse.first.vars.errors|length > 0 ? ' is-invalid' : ''),
+                        minlength: '12',
+                        pattern: '(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@!?#_%\\-&*+=.,;:()\\[\\]{}|\\\\/]).{12,}',
+                        title: 'Minimum 12 caractères, avec au moins 1 majuscule, 1 minuscule, 1 chiffre et 1 caractère spécial (@ ! ? # _ - etc.)'
+                    }
+                }) }}
+                {% if formulaire.motDePasse.first.vars.errors|length > 0 %}
+                    <div class="invalid-feedback d-block" role="alert">
+                        {% for erreur in formulaire.motDePasse.first.vars.errors %}
+                            <span>{{ erreur.message }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="form-text">
+                        <i class="bi bi-info-circle" aria-hidden="true"></i>
+                        Minimum 12 caractères, avec au moins 1 majuscule, 1 minuscule, 1 chiffre et 1 caractère spécial (@ ! ? # _ - etc.).
+                    </div>
+                {% endif %}
+            </div>
+
+            {# Confirmation mot de passe #}
+            <div class="mb-3">
+                {{ form_label(formulaire.motDePasse.second) }}
+                {{ form_widget(formulaire.motDePasse.second, {
+                    attr: {
+                        class: 'form-control' ~ (formulaire.motDePasse.vars.errors|length > 0 ? ' is-invalid' : ''),
+                        minlength: '12'
+                    }
+                }) }}
+                {% if formulaire.motDePasse.vars.errors|length > 0 %}
+                    <div class="invalid-feedback d-block" role="alert">
+                        {% for erreur in formulaire.motDePasse.vars.errors %}
+                            <span>{{ erreur.message }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            {# CGU #}
+            <div class="mb-4">
+                <div class="form-check">
+                    {{ form_widget(formulaire.cgu, { attr: { class: 'form-check-input' ~ (formulaire.cgu.vars.errors|length > 0 ? ' is-invalid' : '') } }) }}
+                    <label class="form-check-label" for="{{ formulaire.cgu.vars.id }}">
+                        J'accepte les <a href="#" class="text-decoration-none" style="color: var(--cs-blue-primary);">conditions générales d'utilisation</a>.
+                    </label>
+                    {% if formulaire.cgu.vars.errors|length > 0 %}
+                        <div class="invalid-feedback d-block" role="alert">
+                            {% for erreur in formulaire.cgu.vars.errors %}
+                                <span>{{ erreur.message }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Bouton de soumission #}
+            <div class="d-grid mb-3">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-person-check" aria-hidden="true"></i>
+                    Créer mon compte
+                </button>
+            </div>
+
+            {# Lien connexion #}
+            <p class="text-center mb-0" style="font-size: var(--cs-fs-small); color: var(--cs-text-secondary);">
+                Vous avez déjà un compte ?
+                <a href="{{ path('app_login') }}" class="text-decoration-none fw-semibold" style="color: var(--cs-blue-primary);">
+                    Se connecter
+                </a>
+            </p>
+
+        {{ form_end(formulaire) }}
+    </div>
+</div>
+{% endblock %}

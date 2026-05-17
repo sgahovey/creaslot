@@ -1,0 +1,203 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouveau créneau{% endblock %}
+
+{% block body %}
+<div class="container py-4" style="max-width: 580px;">
+
+    <h1 class="h4 fw-bold mb-4" style="color: var(--cs-text-primary);">
+        <i class="bi bi-calendar-plus me-2" aria-hidden="true"></i>Créer un créneau
+    </h1>
+
+    <div class="card border-0 shadow-sm" style="border-radius: var(--cs-radius-lg);">
+        <div class="card-body p-4 p-md-5">
+
+            {{ form_start(formulaire, {'attr': {'id': 'form-creneau'}}) }}
+
+            {{ form_errors(formulaire) }}
+
+            {# ── Type de RDV ──────────────────────────────────────── #}
+            <fieldset class="mb-4">
+                <legend class="fw-semibold mb-3" style="font-size: 1rem; color: var(--cs-text-primary);">
+                    Type de RDV <span class="text-danger" aria-hidden="true">*</span>
+                </legend>
+
+                <div class="d-flex flex-column gap-1">
+                    {% for option in formulaire.typeRdv %}
+                        {% set couleur     = option.vars.attr['data-couleur']     ?? '#888' %}
+                        {% set description = option.vars.attr['data-description'] ?? '' %}
+                        <label class="d-flex align-items-center gap-3 px-3 py-2 rounded-3"
+                               for="{{ option.vars.id }}"
+                               style="cursor: pointer; border: 1.5px solid transparent; transition: border-color .15s, background .15s;"
+                               data-cs-type-label>
+                            {{ form_widget(option) }}
+                            <span class="rounded-circle flex-shrink-0"
+                                  aria-hidden="true"
+                                  style="width: 14px; height: 14px; background: {{ couleur }};"></span>
+                            <span>
+                                {{ option.vars.label }}
+                                {% if description %}
+                                    <span class="text-muted ms-1" style="font-size: .875rem;">
+                                        ({{ description }})
+                                    </span>
+                                {% endif %}
+                            </span>
+                        </label>
+                    {% endfor %}
+                </div>
+
+                {{ form_errors(formulaire.typeRdv) }}
+            </fieldset>
+
+            {# ── Date + Heure de début ─────────────────────────────── #}
+            <div class="row g-3 mb-3">
+                <div class="col-sm-7">
+                    <label class="form-label fw-semibold" for="{{ formulaire.date.vars.id }}">
+                        Date <span class="text-danger" aria-hidden="true">*</span>
+                    </label>
+                    {{ form_widget(formulaire.date) }}
+                    {{ form_errors(formulaire.date) }}
+                </div>
+                <div class="col-sm-5">
+                    <label class="form-label fw-semibold" for="{{ formulaire.heureDebut.vars.id }}">
+                        Heure de début <span class="text-danger" aria-hidden="true">*</span>
+                    </label>
+                    {{ form_widget(formulaire.heureDebut) }}
+                    {{ form_errors(formulaire.heureDebut) }}
+                </div>
+            </div>
+
+            {# ── Durée ────────────────────────────────────────────── #}
+            <div class="mb-3">
+                <span class="form-label fw-semibold d-block mb-2">
+                    Durée <span class="text-danger" aria-hidden="true">*</span>
+                </span>
+
+                <div class="d-flex gap-2 flex-wrap" role="group" aria-label="Durée du créneau">
+                    {% for option in formulaire.duree %}
+                        {{ form_widget(option, {'attr': {'class': 'btn-check', 'autocomplete': 'off'}}) }}
+                        <label class="btn btn-sm btn-outline-secondary px-3 py-2 fw-normal"
+                               for="{{ option.vars.id }}">
+                            {{ option.vars.label }}
+                        </label>
+                    {% endfor %}
+                </div>
+
+                {{ form_errors(formulaire.duree) }}
+
+                {# Heure de fin — visible uniquement si Personnalisée #}
+                <div id="champ-heure-fin" class="mt-3" style="display: none;">
+                    <label class="form-label fw-semibold" for="{{ formulaire.heureFin.vars.id }}">
+                        Heure de fin <span class="text-danger" aria-hidden="true">*</span>
+                    </label>
+                    {{ form_widget(formulaire.heureFin) }}
+                    {{ form_errors(formulaire.heureFin) }}
+                </div>
+            </div>
+
+            {# ── Commentaire ──────────────────────────────────────── #}
+            <div class="mb-4">
+                <label class="form-label fw-semibold" for="{{ formulaire.commentaireAuditeur.vars.id }}">
+                    {{ formulaire.commentaireAuditeur.vars.label }}
+                </label>
+                {{ form_widget(formulaire.commentaireAuditeur) }}
+                {{ form_errors(formulaire.commentaireAuditeur) }}
+                <div class="d-flex justify-content-end mt-1">
+                    <span id="compteur-commentaire"
+                          class="text-muted"
+                          style="font-size: .8rem;"
+                          aria-live="polite">
+                        <span id="nb-caracteres">0</span>/500 caractères
+                    </span>
+                </div>
+            </div>
+
+            {# CSRF token et champs cachés #}
+            {{ form_rest(formulaire) }}
+
+            {# ── Boutons ──────────────────────────────────────────── #}
+            <div class="d-flex gap-2">
+                <a href="{{ path('app_home') }}"
+                   class="btn btn-outline-secondary flex-grow-1 py-2">
+                    Annuler
+                </a>
+                <button type="submit"
+                        class="btn cs-btn-primary flex-grow-1 py-2 fw-semibold">
+                    Créer le créneau
+                </button>
+            </div>
+
+            {{ form_end(formulaire, {'render_rest': false}) }}
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+(function () {
+    'use strict';
+
+    // ── Mise en valeur du label TypeRdv sélectionné ──────────────
+    const radiosType = document.querySelectorAll('#form-creneau input[type="radio"][name^="creneau[typeRdv]"]');
+
+    function majStyleTypeRdv() {
+        document.querySelectorAll('[data-cs-type-label]').forEach(function (label) {
+            const input = document.getElementById(label.getAttribute('for'));
+            if (!input) return;
+            if (input.checked) {
+                label.style.borderColor = 'var(--cs-blue-primary)';
+                label.style.background  = 'rgba(31,78,121,.05)';
+            } else {
+                label.style.borderColor = 'transparent';
+                label.style.background  = '';
+            }
+        });
+    }
+
+    radiosType.forEach(function (r) { r.addEventListener('change', majStyleTypeRdv); });
+    majStyleTypeRdv();
+
+    // ── Min sur la date (interdit les dates passées) ──────────────
+    const champDate = document.getElementById('{{ formulaire.date.vars.id }}');
+    if (champDate) {
+        champDate.min = new Date().toISOString().split('T')[0];
+    }
+
+    // ── Heure de fin — affichage conditionnel (Personnalisée) ─────
+    const radiosDuree    = document.querySelectorAll('#form-creneau input[name="creneau[duree]"]');
+    const champHeureFin  = document.getElementById('champ-heure-fin');
+
+    const inputHeureFin = document.getElementById('{{ formulaire.heureFin.vars.id }}');
+
+    function majVisibiliteHeureFin() {
+        const selectionnee     = document.querySelector('#form-creneau input[name="creneau[duree]"]:checked');
+        const estPersonnalisee = selectionnee && selectionnee.value === 'custom';
+
+        champHeureFin.style.display = estPersonnalisee ? '' : 'none';
+
+        // required dynamique : obligatoire seulement si Personnalisée est sélectionné
+        if (inputHeureFin) {
+            estPersonnalisee ? inputHeureFin.setAttribute('required', '') : inputHeureFin.removeAttribute('required');
+        }
+    }
+
+    radiosDuree.forEach(function (r) { r.addEventListener('change', majVisibiliteHeureFin); });
+    majVisibiliteHeureFin();
+
+    // ── Compteur de caractères ─────────────────────────────────────
+    const textarea     = document.getElementById('{{ formulaire.commentaireAuditeur.vars.id }}');
+    const nbCaracteres = document.getElementById('nb-caracteres');
+
+    if (textarea && nbCaracteres) {
+        function majCompteur() {
+            nbCaracteres.textContent = textarea.value.length;
+        }
+        textarea.addEventListener('input', majCompteur);
+        majCompteur();
+    }
+}());
+</script>
+{% endblock %}

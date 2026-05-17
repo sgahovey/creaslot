@@ -1,0 +1,8 @@
+# En développement uniquement : bcrypt avec coût réduit pour accélérer le hachage.
+# En production, argon2id avec les paramètres par défaut est utilisé (config/packages/security.yaml).
+when@dev:
+    security:
+        password_hashers:
+            App\Entity\Utilisateur:
+                algorithm: bcrypt
+                cost: 4

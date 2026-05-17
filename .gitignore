@@ -1,5 +1,5 @@
 # Fichiers IA – rester en local uniquement
-.cursorrules.txt
+.cursorrules
 docs/design-tokens.md
 design-tokens.md
 
@@ -12,6 +12,7 @@ desktop.ini
 .idea/
 .vscode/
 .cursor/
+.claude/
 *.swp
 *.swo
 
@@ -20,7 +21,33 @@ desktop.ini
 *.tmp
 *.bak
 
+# Surcharges Docker générées automatiquement par Symfony Flex (incompatibles avec notre MySQL)
+compose.override.yaml
+compose.override.yml
+
 # Variables d'environnement
 .env.local
 .env.*.local
 .env.production
+
+# Symfony — répertoires générés (seront présents après US-1.2)
+/var/
+/vendor/
+/public/build/
+
+# Node.js (Webpack Encore / Asset Mapper)
+/node_modules/
+
+# PHPUnit
+.phpunit.result.cache
+/coverage/
+
+###> phpunit/phpunit ###
+/phpunit.xml
+/.phpunit.cache/
+###< phpunit/phpunit ###
+
+###> symfony/asset-mapper ###
+/public/assets/
+/assets/vendor/
+###< symfony/asset-mapper ###

@@ -1,0 +1,87 @@
+{#
+ # Composant : carte d'un collègue Personnel
+ # Paramètres attendus :
+ #   dto  CollegueDTO  — données du collègue avec statut calculé
+ #}
+
+{% set utilisateur = dto.utilisateur %}
+{% set initiales   = utilisateur.prenom|first|upper ~ utilisateur.nom|first|upper %}
+
+{# ── Badge statut ─────────────────────────────────────────── #}
+{% if dto.statut == 'EN_RDV' %}
+    {% set badgeClass = 'cs-badge-en-rdv' %}
+    {% set badgeIcone = '🟠'             %}
+    {% set badgeLabel = 'En RDV (jusqu\'à ' ~ dto.heureFinRdv ~ ')' %}
+{% else %}
+    {% set badgeClass = 'cs-badge-libre' %}
+    {% set badgeIcone = '🟢'            %}
+    {% set badgeLabel = 'Libre'          %}
+{% endif %}
+
+<article class="card border-0 shadow-sm h-100" style="border-radius: var(--cs-radius-lg);"
+         aria-label="Fiche de {{ utilisateur.prenom }} {{ utilisateur.nom }}">
+    <div class="card-body p-3 d-flex flex-column gap-2">
+
+        {# ── Avatar + identité ─────────────────────────────── #}
+        <div class="d-flex align-items-center gap-3">
+            <span class="cs-avatar flex-shrink-0"
+                  aria-hidden="true"
+                  style="width: 2.75rem; height: 2.75rem; font-size: 1rem;">
+                {{ initiales }}
+            </span>
+            <div class="min-w-0">
+                <p class="fw-semibold mb-0 text-truncate"
+                   style="color: var(--cs-text-primary); font-size: .9375rem;">
+                    {{ utilisateur.prenom }} {{ utilisateur.nom|upper }}
+                </p>
+                {% if utilisateur.service %}
+                    <p class="mb-0 text-truncate" style="font-size: .8125rem; color: var(--cs-text-secondary);">
+                        <i class="bi bi-building me-1" aria-hidden="true"></i>
+                        {{ utilisateur.service.nom }}
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+
+        {# ── Email ─────────────────────────────────────────── #}
+        <p class="mb-0 text-truncate" style="font-size: .8125rem; color: var(--cs-text-secondary);">
+            <i class="bi bi-envelope me-1" aria-hidden="true"></i>
+            <a href="mailto:{{ utilisateur.email }}"
+               class="text-decoration-none"
+               style="color: var(--cs-text-secondary);"
+               aria-label="Envoyer un email à {{ utilisateur.prenom }} {{ utilisateur.nom }}">
+                {{ utilisateur.email }}
+            </a>
+        </p>
+
+        {# ── Séparateur ────────────────────────────────────── #}
+        <hr class="my-1" style="border-color: var(--cs-border);">
+
+        {# ── Statut actuel ─────────────────────────────────── #}
+        <p class="mb-0 d-flex align-items-center gap-2 {{ badgeClass }}"
+           style="font-size: .875rem; font-weight: 500;"
+           aria-label="Statut : {{ badgeLabel }}">
+            <span aria-hidden="true">{{ badgeIcone }}</span>
+            {{ badgeLabel }}
+        </p>
+
+        {# ── Prochain RDV ──────────────────────────────────── #}
+        <p class="mb-0 mt-auto" style="font-size: .8125rem; color: var(--cs-text-secondary);">
+            <i class="bi bi-calendar-event me-1" aria-hidden="true"></i>
+            {% if dto.prochainRdvDate %}
+                {% set joursFR = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'] %}
+                {% set nomJour = joursFR[dto.prochainRdvDate|date('N') - 1] %}
+                <span>
+                    Prochain RDV :
+                    <strong>
+                        {{ nomJour }} {{ dto.prochainRdvDate|date('d/m') }}
+                        à {{ dto.prochainRdvDate|date('H\\hi') }}
+                    </strong>
+                </span>
+            {% else %}
+                <span class="fst-italic">Aucun RDV à venir</span>
+            {% endif %}
+        </p>
+
+    </div>
+</article>

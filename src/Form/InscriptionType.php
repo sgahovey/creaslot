@@ -1,0 +1,92 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Form;
+
+use App\Entity\Utilisateur;
+use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\PasswordType;
+use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\IsTrue;
+use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Validator\Constraints\Regex;
+
+class InscriptionType extends AbstractType
+{
+    public function buildForm(FormBuilderInterface $builder, array $options): void
+    {
+        $builder
+            ->add('prenom', TextType::class, [
+                'label'    => 'Prénom',
+                'required' => true,
+                'attr'     => ['placeholder' => 'Votre prénom', 'autocomplete' => 'given-name'],
+            ])
+            ->add('nom', TextType::class, [
+                'label'    => 'Nom',
+                'required' => true,
+                'attr'     => ['placeholder' => 'Votre nom de famille', 'autocomplete' => 'family-name'],
+            ])
+            ->add('email', EmailType::class, [
+                'label'    => 'Adresse email',
+                'required' => true,
+                'attr'     => ['placeholder' => 'votre.email@exemple.fr', 'autocomplete' => 'email'],
+            ])
+            ->add('motDePasse', RepeatedType::class, [
+                'type'            => PasswordType::class,
+                'mapped'          => false,
+                'first_options'   => [
+                    'label' => 'Mot de passe',
+                    'attr'  => [
+                        'placeholder'  => 'Minimum 12 caractères',
+                        'autocomplete' => 'new-password',
+                        'minlength'    => '12',
+                    ],
+                    'help'        => 'Minimum 12 caractères, avec au moins 1 majuscule, 1 minuscule, 1 chiffre et 1 caractère spécial (@ ! ? # _ - etc.).',
+                    // Contraintes sur le premier champ : c'est là qu'elles sont évaluées
+                    'constraints' => [
+                        new NotBlank(message: 'Le mot de passe est obligatoire.'),
+                        new Length(
+                            min: 12,
+                            minMessage: 'Le mot de passe doit contenir au moins {{ limit }} caractères.',
+                        ),
+                        new Regex(
+                            pattern: '/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@!?#_\-%&*+=.,;:()\[\]{}\/\\\\|])/',
+                            message: 'Le mot de passe doit contenir au moins 1 majuscule, 1 minuscule, 1 chiffre et 1 caractère spécial (@ ! ? # _ - etc.).',
+                        ),
+                    ],
+                ],
+                'second_options'  => [
+                    'label' => 'Confirmer le mot de passe',
+                    'attr'  => [
+                        'placeholder'  => 'Répétez votre mot de passe',
+                        'autocomplete' => 'new-password',
+                        'minlength'    => '12',
+                    ],
+                ],
+                'invalid_message' => 'Les mots de passe ne correspondent pas.',
+            ])
+            ->add('cgu', CheckboxType::class, [
+                'label'       => "J'accepte les conditions générales d'utilisation.",
+                'mapped'      => false,
+                'constraints' => [
+                    new IsTrue(message: "Vous devez accepter les conditions générales d'utilisation."),
+                ],
+            ]);
+    }
+
+    public function configureOptions(OptionsResolver $resolver): void
+    {
+        $resolver->setDefaults([
+            'data_class'         => Utilisateur::class,
+            'csrf_protection'    => true,
+            'csrf_token_id'      => 'inscription',
+        ]);
+    }
+}

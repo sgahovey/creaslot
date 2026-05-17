@@ -1,0 +1,144 @@
+<header class="cs-header" role="banner">
+    <nav class="navbar navbar-expand-lg cs-nav" aria-label="Navigation principale">
+        <div class="container">
+
+            {# Logo #}
+            <a class="navbar-brand cs-navbar-brand d-flex align-items-center gap-2" href="{{ path('app_home') }}">
+                <i class="bi bi-calendar-check-fill" aria-hidden="true"></i>
+                CreaSlot
+            </a>
+
+            {# Burger mobile #}
+            <button class="navbar-toggler border-0" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#cs-navbar"
+                    aria-controls="cs-navbar" aria-expanded="false"
+                    aria-label="Afficher/masquer le menu"
+                    style="filter: invert(1);">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="cs-navbar">
+
+                {# Navigation centrale selon le rôle #}
+                {% if is_granted('IS_AUTHENTICATED_FULLY') %}
+                    <ul class="navbar-nav mx-auto align-items-lg-center gap-lg-1">
+
+                        {% if is_granted('ROLE_SUPER_ADMIN') %}
+                            <li class="nav-item">
+                                <a class="nav-link cs-nav-link d-flex align-items-center gap-1" href="#">
+                                    <i class="bi bi-speedometer2" aria-hidden="true"></i>
+                                    Dashboard admin
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link cs-nav-link d-flex align-items-center gap-1"
+                                   href="{{ path('app_creneau_agenda') }}">
+                                    <i class="bi bi-calendar3" aria-hidden="true"></i>
+                                    Mon agenda
+                                </a>
+                            </li>
+                        {% elseif is_granted('ROLE_PERSONNEL') %}
+                            <li class="nav-item">
+                                <a class="nav-link cs-nav-link d-flex align-items-center gap-1"
+                                   href="{{ path('app_creneau_agenda') }}">
+                                    <i class="bi bi-calendar3" aria-hidden="true"></i>
+                                    Mon agenda
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link cs-nav-link d-flex align-items-center gap-1"
+                                   href="{{ path('app_creneau_liste') }}">
+                                    <i class="bi bi-calendar-week" aria-hidden="true"></i>
+                                    Mes créneaux
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link cs-nav-link d-flex align-items-center gap-1"
+                                   href="{{ path('app_collegues_liste') }}">
+                                    <i class="bi bi-people-fill" aria-hidden="true"></i>
+                                    Mes collègues
+                                </a>
+                            </li>
+                        {% elseif is_granted('ROLE_AUDITEUR') %}
+                            <li class="nav-item">
+                                <a class="nav-link cs-nav-link d-flex align-items-center gap-1"
+                                   href="{{ path('app_creneaux_disponibles') }}">
+                                    <i class="bi bi-search" aria-hidden="true"></i>
+                                    Trouver un RDV
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link cs-nav-link d-flex align-items-center gap-1"
+                                   href="{{ path('app_mes_reservations') }}">
+                                    <i class="bi bi-calendar-check" aria-hidden="true"></i>
+                                    Mes réservations
+                                </a>
+                            </li>
+                        {% endif %}
+
+                    </ul>
+                {% endif %}
+
+                {# Zone droite : non connecté / connecté #}
+                <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
+
+                    {% if is_granted('IS_AUTHENTICATED_FULLY') %}
+                        {# Dropdown utilisateur connecté #}
+                        {% set initiales = app.user.prenom|first|upper ~ app.user.nom|first|upper %}
+                        <li class="nav-item dropdown">
+                            <button class="btn btn-link nav-link cs-nav-link dropdown-toggle d-flex align-items-center gap-2 border-0 p-0 px-2"
+                                    type="button"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false"
+                                    aria-label="Menu utilisateur">
+                                <span class="cs-avatar" aria-hidden="true">{{ initiales }}</span>
+                                <span class="d-none d-lg-inline">
+                                    Bonjour, <strong>{{ app.user.prenom }}</strong>
+                                </span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-1" style="border-radius: var(--cs-radius-lg); min-width: 200px;">
+                                <li>
+                                    <span class="dropdown-item-text text-muted" style="font-size: 0.8rem; padding-bottom: 4px;">
+                                        {{ app.user.prenom }} {{ app.user.nom }}
+                                    </span>
+                                </li>
+                                <li><hr class="dropdown-divider my-1"></li>
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center gap-2" href="#">
+                                        <i class="bi bi-person-circle" aria-hidden="true"></i>
+                                        Mon profil
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider my-1"></li>
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center gap-2 text-danger" href="{{ path('app_logout') }}">
+                                        <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                                        Déconnexion
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        {# Non connecté #}
+                        <li class="nav-item">
+                            <a class="nav-link cs-nav-link d-flex align-items-center gap-1" href="{{ path('app_login') }}">
+                                <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>
+                                Se connecter
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-sm px-3 py-1"
+                               href="{{ path('app_inscription') }}"
+                               style="background-color: rgba(255,255,255,0.15); color: var(--cs-text-light);
+                                      border: 1px solid rgba(255,255,255,0.35); border-radius: var(--cs-radius-md);
+                                      font-weight: 600; font-size: 0.875rem;">
+                                S'inscrire
+                            </a>
+                        </li>
+                    {% endif %}
+
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>
