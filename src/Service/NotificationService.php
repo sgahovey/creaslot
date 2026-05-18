@@ -6,6 +6,7 @@ namespace App\Service;
 
 use App\Entity\Creneau;
 use App\Entity\Reservation;
+use App\Enum\StatutReservation;
 use Psr\Log\LoggerInterface;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -430,6 +431,76 @@ final readonly class NotificationService
                 'commentaire_apres_len' => strlen($creneau->getCommentaireAuditeur() ?? ''),
                 'exception'             => $e::class,
                 'message'               => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Notifie l'Auditeur quand le Personnel supprime le créneau qu'il avait
+     * réservé (US-4.5).
+     *
+     * Envoie l'email transactionnel creneau_suppression_auditeur.html.twig.
+     * Politique Option B : erreurs SMTP loguées (sans PII) puis ignorées —
+     * la suppression du créneau reste valide en BDD même si l'email échoue.
+     *
+     * Garde-fou defensive : la méthode exige que la Reservation associée
+     * existe ET soit déjà au statut ANNULEE (le contrôleur appelant doit
+     * avoir déjà appelé annulerReservationLiee() avant cet appel).
+     *
+     * Note d'architecture : la méthode accède à l'Auditeur via
+     * $creneau->getReservation()->getUtilisateur() et NON via
+     * $creneau->getAuditeurReservation(), car cette dernière retourne null
+     * dès que le statut Reservation passe à ANNULEE (cf. Creneau::isReserve()).
+     *
+     * RGPD : le log error ne contient AUCUN contenu sensible (pas de motif,
+     * pas de nom en clair), uniquement les identifiants techniques.
+     *
+     * @param Creneau $creneau Le créneau venant d'être supprimé (estActif=false, Reservation statut ANNULEE)
+     */
+    public function notifierAuditeurSuppressionCreneau(Creneau $creneau): void
+    {
+        // Garde-fou strict : Reservation présente ET annulée (préserve l'invariant).
+        $reservation = $creneau->getReservation();
+        if ($reservation === null || $reservation->getStatut() !== StatutReservation::ANNULEE) {
+            return;
+        }
+
+        // Accès auditeur via Reservation (PAS via getAuditeurReservation()
+        // qui retourne null après passage ACTIVE → ANNULEE).
+        $auditeur  = $reservation->getUtilisateur();
+        $personnel = $creneau->getUtilisateur();
+
+        $subject = sprintf(
+            'Votre créneau a été supprimé par le Personnel — %s',
+            $creneau->getDateDebut()
+                ->setTimezone(new \DateTimeZone('Indian/Reunion'))
+                ->format('d/m/Y \à H\hi'),
+        );
+
+        $context = [
+            'auditeur_prenom'           => $auditeur->getPrenom(),
+            'personnel_nom_complet'     => $personnel->getNomComplet(),
+            'service_nom'               => $personnel->getService()?->getNom(),
+            'creneau_debut'             => $creneau->getDateDebut(),
+            'creneau_fin'               => $creneau->getDateFin(),
+            'lien_creneaux_disponibles' => $this->genererLienAbsolu('app_creneaux_disponibles'),
+        ];
+
+        try {
+            $this->envoyer(
+                $auditeur->getEmail(),
+                $subject,
+                'emails/creneau_suppression_auditeur.html.twig',
+                $context,
+            );
+        } catch (\Throwable $e) {
+            $this->logger->error('Echec envoi notification suppression creneau', [
+                'type'           => 'auditeur_suppression_creneau',
+                'creneau_id'     => $creneau->getId(),
+                'reservation_id' => $reservation->getId(),
+                'auditeur_id'    => $auditeur->getId(),
+                'exception'      => $e::class,
+                'message'        => $e->getMessage(),
             ]);
         }
     }
