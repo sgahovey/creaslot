@@ -244,4 +244,122 @@ final readonly class NotificationService
             ]);
         }
     }
+
+    /**
+     * Notifie l'Auditeur de la confirmation d'annulation de sa réservation.
+     *
+     * Envoie l'email transactionnel reservation_annulation_auditeur.html.twig.
+     * Politique Option B : erreurs SMTP loguées (sans PII) puis ignorées —
+     * l'annulation reste valide en BDD même si l'email échoue.
+     * Le motif d'annulation est transmis tel quel (peut être null, affichage
+     * conditionnel côté template).
+     *
+     * @param Reservation $reservation La réservation venant d'être annulée
+     */
+    public function notifierAuditeurAnnulationReservation(Reservation $reservation): void
+    {
+        // Une Reservation::utilisateur représente l'Auditeur (règle métier).
+        // Un Creneau::utilisateur représente le Personnel (règle métier).
+        // Le typage Utilisateur reste neutre côté ORM.
+        $auditeur  = $reservation->getUtilisateur();
+        $creneau   = $reservation->getCreneau();
+        $personnel = $creneau->getUtilisateur();
+
+        $subject = sprintf(
+            'Votre rendez-vous a été annulé — %s',
+            $creneau->getDateDebut()
+                ->setTimezone(new \DateTimeZone('Indian/Reunion'))
+                ->format('d/m/Y \à H\hi'),
+        );
+
+        $context = [
+            'auditeur_prenom'       => $auditeur->getPrenom(),
+            'creneau_debut'         => $creneau->getDateDebut(),
+            'creneau_fin'           => $creneau->getDateFin(),
+            'personnel_nom_complet' => $personnel->getNomComplet(),
+            'service_nom'           => $personnel->getService()?->getNom(),
+            'type_rdv_libelle'      => $creneau->getTypeRdv()->getLibelle(),
+            'motif_annulation'      => $reservation->getMotifAnnulation(),
+            'lien_mes_reservations' => $this->genererLienAbsolu('app_mes_reservations'),
+        ];
+
+        try {
+            $this->envoyer(
+                $auditeur->getEmail(),
+                $subject,
+                'emails/reservation_annulation_auditeur.html.twig',
+                $context,
+            );
+        } catch (\Throwable $e) {
+            $this->logger->error('Echec envoi notification annulation auditeur', [
+                'type'           => 'auditeur_annulation',
+                'reservation_id' => $reservation->getId(),
+                'exception'      => $e::class,
+                'message'        => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Notifie le Personnel qu'un auditeur a annulé sa réservation sur l'un
+     * de ses créneaux. Le créneau redevient disponible.
+     *
+     * Politique Option B : erreurs SMTP loguées (sans PII) puis ignorées.
+     *
+     * ── Asymétrie volontaire sur le motif d'annulation ──
+     * - motif_annulation N'EST PAS dans le contexte (minimisation RGPD :
+     *   peut contenir des données médicales ou personnelles sensibles ;
+     *   aucune utilité opérationnelle pour le Personnel).
+     * - Cohérence US-4.2 : aucune coordonnée Auditeur n'a été exposée
+     *   côté Personnel ; le motif suit la même politique de minimisation.
+     * Réf : US-4.3 audit section 3, dossier MSP3 section 6.6 Sécurité/RGPD.
+     *
+     * auditeur_categorie : passée à null (décision A1 audit 3.1 US-4.2,
+     * cf. regression test NotificationServiceTest step 5.b).
+     *
+     * @param Reservation $reservation La réservation venant d'être annulée
+     */
+    public function notifierPersonnelAnnulationReservation(Reservation $reservation): void
+    {
+        // Une Reservation::utilisateur représente l'Auditeur (règle métier).
+        // Un Creneau::utilisateur représente le Personnel (règle métier).
+        // Le typage Utilisateur reste neutre côté ORM.
+        $auditeur  = $reservation->getUtilisateur();
+        $creneau   = $reservation->getCreneau();
+        $personnel = $creneau->getUtilisateur();
+
+        $subject = sprintf(
+            'Annulation par %s — %s',
+            $auditeur->getNomComplet(),
+            $creneau->getDateDebut()
+                ->setTimezone(new \DateTimeZone('Indian/Reunion'))
+                ->format('d/m/Y \à H\hi'),
+        );
+
+        $context = [
+            'personnel_prenom'     => $personnel->getPrenom(),
+            'auditeur_nom_complet' => $auditeur->getNomComplet(),
+            'auditeur_categorie'   => null, // décision A1 US-4.2 (cf. regression test step 5.b)
+            'creneau_debut'        => $creneau->getDateDebut(),
+            'creneau_fin'          => $creneau->getDateFin(),
+            'type_rdv_libelle'     => $creneau->getTypeRdv()->getLibelle(),
+            'lien_mon_agenda'      => $this->genererLienAbsolu('app_creneau_agenda'),
+        ];
+
+        try {
+            $this->envoyer(
+                $personnel->getEmail(),
+                $subject,
+                'emails/reservation_annulation_personnel.html.twig',
+                $context,
+            );
+        } catch (\Throwable $e) {
+            $this->logger->error('Echec envoi notification annulation personnel', [
+                'type'           => 'personnel_annulation',
+                'reservation_id' => $reservation->getId(),
+                'exception'      => $e::class,
+                'message'        => $e->getMessage(),
+            ]);
+        }
+    }
 }
