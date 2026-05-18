@@ -10,6 +10,7 @@ use App\Entity\Service;
 use App\Entity\TypeRdv;
 use App\Entity\Utilisateur;
 use App\Enum\RoleUtilisateur;
+use App\Enum\StatutReservation;
 use App\Service\NotificationService;
 use DateTimeImmutable;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -22,10 +23,11 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 /**
  * Tests d'intégration légers du NotificationService.
  *
- * Couverture actuelle : 12 tests (4 US-4.2 confirmation + 5 US-4.3 annulation
- * + 3 US-4.4 commentaire créneau) sur notifier{Auditeur,Personnel}{,Annulation}
- * Reservation() / notifierAuditeurCommentaireCreneau() et la politique
- * Option B (capture exceptions).
+ * Couverture actuelle : 15 tests (4 US-4.2 confirmation + 5 US-4.3 annulation
+ * + 3 US-4.4 commentaire créneau + 3 US-4.5 suppression créneau) sur
+ * notifier{Auditeur,Personnel}{,Annulation}Reservation() /
+ * notifierAuditeurCommentaireCreneau() / notifierAuditeurSuppressionCreneau()
+ * et la politique Option B (capture exceptions).
  *
  * Dette technique tests identifiée — la branche if ($redirige) de envoyer()
  * (US-4.1) n'est pas couverte unitairement. Validation actuelle uniquement
@@ -48,11 +50,12 @@ final class NotificationServiceTest extends TestCase
         $this->urlGenerator = $this->createMock(UrlGeneratorInterface::class);
         $this->logger       = $this->createMock(LoggerInterface::class);
 
-        // URLs absolues retournées de façon déterministe pour les 2 routes utilisées.
+        // URLs absolues retournées de façon déterministe pour les 3 routes utilisées.
         $this->urlGenerator->method('generate')
             ->willReturnMap([
-                ['app_mes_reservations', [], UrlGeneratorInterface::ABSOLUTE_URL, 'https://test.local/mes-reservations'],
-                ['app_creneau_agenda',   [], UrlGeneratorInterface::ABSOLUTE_URL, 'https://test.local/creneau/agenda'],
+                ['app_mes_reservations',     [], UrlGeneratorInterface::ABSOLUTE_URL, 'https://test.local/mes-reservations'],
+                ['app_creneau_agenda',       [], UrlGeneratorInterface::ABSOLUTE_URL, 'https://test.local/creneau/agenda'],
+                ['app_creneaux_disponibles', [], UrlGeneratorInterface::ABSOLUTE_URL, 'https://test.local/creneaux-disponibles'],
             ]);
 
         $this->service = new NotificationService(
@@ -508,13 +511,112 @@ final class NotificationServiceTest extends TestCase
         self::assertArrayHasKey('exception', $errorCalls[1]['context']);
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Tests US-4.5 — Suppression créneau
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function test_notifierAuditeurSuppressionCreneau_envoie_un_email_avec_bon_template(): void
+    {
+        $reservation = $this->creerReservationComplete();
+        $creneau     = $reservation->getCreneau();
+        // Reproduit annulerReservationLiee() côté controller (set statut ANNULEE).
+        $reservation->annuler('Créneau supprimé par le Personnel');
+
+        $emailCapture = null;
+        $this->mailer->expects($this->once())
+            ->method('send')
+            ->willReturnCallback(function (TemplatedEmail $email) use (&$emailCapture): void {
+                $emailCapture = $email;
+            });
+
+        $this->service->notifierAuditeurSuppressionCreneau($creneau);
+
+        self::assertNotNull($emailCapture);
+
+        // Destinataire = Auditeur.
+        $to = $emailCapture->getTo();
+        self::assertCount(1, $to);
+        self::assertSame('xavier@test.local', $to[0]->getAddress());
+
+        // Subject + template.
+        self::assertStringContainsString('Votre créneau a été supprimé par le Personnel', $emailCapture->getSubject());
+        self::assertSame(
+            'emails/creneau_suppression_auditeur.html.twig',
+            $emailCapture->getHtmlTemplate(),
+        );
+
+        // Context (6 clés attendues par le template).
+        $context = $emailCapture->getContext();
+        self::assertSame('Xavier', $context['auditeur_prenom']);
+        self::assertSame('Marie Dupont', $context['personnel_nom_complet']);
+        self::assertSame('Service Commercial', $context['service_nom']);
+        self::assertSame('https://test.local/creneaux-disponibles', $context['lien_creneaux_disponibles']);
+        self::assertInstanceOf(\DateTimeInterface::class, $context['creneau_debut']);
+        self::assertInstanceOf(\DateTimeInterface::class, $context['creneau_fin']);
+    }
+
+    public function test_notifierAuditeurSuppressionCreneau_ne_fait_rien_si_reservation_non_annulee(): void
+    {
+        // Réservation créée mais PAS annulée → garde-fou refuse (statut === ACTIVE).
+        $reservation = $this->creerReservationComplete();
+        $creneau     = $reservation->getCreneau();
+
+        // Sanity check : la réservation est ACTIVE.
+        self::assertSame(StatutReservation::ACTIVE, $reservation->getStatut());
+
+        // Garde-fou : aucun envoi mail.
+        $this->mailer->expects($this->never())->method('send');
+
+        $this->service->notifierAuditeurSuppressionCreneau($creneau);
+    }
+
+    public function test_notifierAuditeurSuppressionCreneau_capture_les_exceptions_sans_propager(): void
+    {
+        $reservation = $this->creerReservationComplete();
+        $creneau     = $reservation->getCreneau();
+        $reservation->annuler('Créneau supprimé par le Personnel');
+
+        $this->mailer->method('send')
+            ->willThrowException(new \RuntimeException('Panne SMTP simulée'));
+
+        // Capture des 2 appels logger->error attendus :
+        //   1) depuis envoyer()                                  : 'Envoi email échoué'
+        //   2) depuis notifierAuditeurSuppressionCreneau()       : 'Echec envoi notification suppression creneau'
+        $errorCalls = [];
+        $this->logger->method('error')
+            ->willReturnCallback(function (string $message, array $context = []) use (&$errorCalls): void {
+                $errorCalls[] = ['message' => $message, 'context' => $context];
+            });
+
+        // L'appel NE DOIT PAS lever d'exception malgré le throw du mailer.
+        $this->service->notifierAuditeurSuppressionCreneau($creneau);
+
+        self::assertCount(2, $errorCalls);
+
+        // 1er log : envoyer() RGPD-friendly (template, exception_class).
+        self::assertSame('Envoi email échoué', $errorCalls[0]['message']);
+        self::assertSame(
+            'emails/creneau_suppression_auditeur.html.twig',
+            $errorCalls[0]['context']['template'],
+        );
+        self::assertSame(\RuntimeException::class, $errorCalls[0]['context']['exception_class']);
+
+        // 2e log : contexte métier suppression (type, creneau_id) + clés présentes (reservation_id, auditeur_id, exception).
+        self::assertSame('Echec envoi notification suppression creneau', $errorCalls[1]['message']);
+        self::assertSame('auditeur_suppression_creneau', $errorCalls[1]['context']['type']);
+        self::assertSame(10, $errorCalls[1]['context']['creneau_id']);
+        self::assertArrayHasKey('reservation_id', $errorCalls[1]['context']);
+        self::assertArrayHasKey('auditeur_id', $errorCalls[1]['context']);
+        self::assertArrayHasKey('exception', $errorCalls[1]['context']);
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     //
     // Anticipation refacto : si une 3e classe de test (ex: tests/Controller/
     // ou US-4.3 sur l'annulation) a besoin de fabriquer des Reservation
     // peuplées, extraire ces helpers dans tests/Fixture/ReservationFactory.php
-    // pour DRY. Pour l'instant 12 tests ici → on garde local.
+    // pour DRY. Pour l'instant 15 tests ici → on garde local.
     // -------------------------------------------------------------------------
 
     private function creerReservationComplete(?string $commentaire = null): Reservation

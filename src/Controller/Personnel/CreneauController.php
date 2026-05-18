@@ -217,13 +217,18 @@ class CreneauController extends AbstractController
         /** @var Utilisateur $utilisateur */
         $utilisateur = $this->getUser();
         $this->logger->info('Créneau supprimé', [
-            'creneau_id'          => $creneau->getId(),
-            'user_id'             => $utilisateur->getId(),
-            'reservation_annulee' => $auditeur !== null ? 'oui' : 'non',
+            'creneau_id'           => $creneau->getId(),
+            'user_id'              => $utilisateur->getId(),
+            'reservation_annulee'  => $auditeur !== null ? 'oui' : 'non',
+            'notification_envoyee' => $auditeur !== null ? 'oui' : 'non',
         ]);
 
+        if ($auditeur !== null) {
+            $this->notificationService->notifierAuditeurSuppressionCreneau($creneau);
+        }
+
         $this->addFlash('success', $auditeur !== null
-            ? "Le créneau a été supprimé et la réservation de {$auditeur->getPrenom()} {$auditeur->getNom()} a été annulée."
+            ? "Le créneau a été supprimé et la réservation de {$auditeur->getPrenom()} {$auditeur->getNom()} a été annulée. L'auditeur a été notifié par email."
             : 'Le créneau a été supprimé.');
 
         return $this->redirectToRoute('app_creneau_liste');
