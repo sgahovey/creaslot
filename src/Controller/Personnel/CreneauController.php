@@ -10,6 +10,7 @@ use App\Form\CreneauType;
 use App\Repository\CreneauRepository;
 use App\Enum\StatutReservation;
 use App\Security\CreneauVoter;
+use App\Service\NotificationService;
 use App\Service\SlotService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -26,6 +27,7 @@ class CreneauController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly LoggerInterface $logger,
+        private readonly NotificationService $notificationService,
         private readonly SlotService $slotService,
     ) {}
 
@@ -76,6 +78,8 @@ class CreneauController extends AbstractController
             $this->preremplirChampsNonMappes($formulaire, $creneau);
         }
 
+        $commentaireAuditeurAvant = $creneau->getCommentaireAuditeur();
+
         $formulaire->handleRequest($request);
 
         if ($formulaire->isSubmitted() && $formulaire->isValid()) {
@@ -103,10 +107,24 @@ class CreneauController extends AbstractController
 
             $this->entityManager->flush();
 
+            $emailEnvoye = $estReserve && $commentaireAuditeurAvant !== $creneau->getCommentaireAuditeur();
+
             /** @var Utilisateur $utilisateur */
             $utilisateur = $this->getUser();
-            $this->logger->info('Créneau modifié', ['creneau_id' => $creneau->getId(), 'user_id' => $utilisateur->getId()]);
-            $this->addFlash('success', 'Le créneau a été modifié.');
+            $this->logger->info('Créneau modifié', [
+                'creneau_id'         => $creneau->getId(),
+                'user_id'            => $utilisateur->getId(),
+                'commentaire_change' => $emailEnvoye,
+            ]);
+
+            if ($emailEnvoye) {
+                $this->notificationService->notifierAuditeurCommentaireCreneau($creneau, $commentaireAuditeurAvant);
+            }
+
+            $messageFlash = $emailEnvoye
+                ? 'Le créneau a été modifié. L\'auditeur a été notifié par email.'
+                : 'Le créneau a été modifié.';
+            $this->addFlash('success', $messageFlash);
 
             return $this->redirectToRoute('app_creneau_liste');
         }

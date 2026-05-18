@@ -22,8 +22,9 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 /**
  * Tests d'intégration légers du NotificationService.
  *
- * Couverture actuelle : 9 tests (4 US-4.2 confirmation + 5 US-4.3 annulation)
- * sur notifier{Auditeur,Personnel}{,Annulation}Reservation() et la politique
+ * Couverture actuelle : 12 tests (4 US-4.2 confirmation + 5 US-4.3 annulation
+ * + 3 US-4.4 commentaire créneau) sur notifier{Auditeur,Personnel}{,Annulation}
+ * Reservation() / notifierAuditeurCommentaireCreneau() et la politique
  * Option B (capture exceptions).
  *
  * Dette technique tests identifiée — la branche if ($redirige) de envoyer()
@@ -391,13 +392,129 @@ final class NotificationServiceTest extends TestCase
         self::assertNull($emailsCaptured[1]->getContext()['motif_annulation']);
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Tests US-4.4 — Commentaire créneau
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function test_notifierAuditeurCommentaireCreneau_envoie_un_email_avec_bon_template_et_commentaire(): void
+    {
+        $reservation = $this->creerReservationComplete();
+        $creneau     = $reservation->getCreneau();
+        // Le commentaire est porté par Creneau (cf. CreneauType data_class = Creneau).
+        $creneau->setCommentaireAuditeur('Nouveau message du personnel');
+        $commentaireAvant = 'Ancien commentaire';
+
+        $emailCapture = null;
+        $this->mailer->expects($this->once())
+            ->method('send')
+            ->willReturnCallback(function (TemplatedEmail $email) use (&$emailCapture): void {
+                $emailCapture = $email;
+            });
+
+        $this->service->notifierAuditeurCommentaireCreneau($creneau, $commentaireAvant);
+
+        self::assertNotNull($emailCapture);
+
+        // Destinataire = l'auditeur de la réservation.
+        $to = $emailCapture->getTo();
+        self::assertCount(1, $to);
+        self::assertSame('xavier@test.local', $to[0]->getAddress());
+
+        // Subject + template.
+        self::assertStringContainsString('Mise à jour de votre rendez-vous', $emailCapture->getSubject());
+        self::assertSame(
+            'emails/reservation_modification_auditeur.html.twig',
+            $emailCapture->getHtmlTemplate(),
+        );
+
+        // Context (7 clés attendues par le template).
+        $context = $emailCapture->getContext();
+        self::assertSame('Xavier', $context['auditeur_prenom']);
+        self::assertSame('Marie Dupont', $context['personnel_nom_complet']);
+        self::assertSame('Service Commercial', $context['service_nom']);
+        self::assertSame('Nouveau message du personnel', $context['commentaire_apres']);
+        self::assertSame('https://test.local/mes-reservations', $context['lien_mes_reservations']);
+        self::assertInstanceOf(\DateTimeInterface::class, $context['creneau_debut']);
+        self::assertInstanceOf(\DateTimeInterface::class, $context['creneau_fin']);
+    }
+
+    public function test_notifierAuditeurCommentaireCreneau_ne_fait_rien_si_creneau_non_reserve(): void
+    {
+        // Créneau standalone (pas de Reservation associée) → isReserve() = false.
+        $personnel = $this->creerUtilisateur(
+            id:     1,
+            role:   RoleUtilisateur::PERSONNEL,
+            prenom: 'Marie',
+            nom:    'Dupont',
+            email:  'marie@test.local',
+        );
+        $creneau   = $this->creerCreneau(
+            id:        10,
+            personnel: $personnel,
+            type:      $this->creerTypeRdv('Présentiel'),
+            debut:     '2026-06-15 14:00',
+            fin:       '2026-06-15 15:00',
+        );
+
+        // Sanity check : le créneau N'EST PAS réservé.
+        self::assertFalse($creneau->isReserve());
+
+        // Garde-fou : aucun envoi mail (return early sur isReserve() == false).
+        $this->mailer->expects($this->never())->method('send');
+
+        $this->service->notifierAuditeurCommentaireCreneau($creneau, 'commentaire bidon');
+    }
+
+    public function test_notifierAuditeurCommentaireCreneau_capture_les_exceptions_sans_propager(): void
+    {
+        $reservation = $this->creerReservationComplete();
+        $creneau     = $reservation->getCreneau();
+        $creneau->setCommentaireAuditeur('Nouveau message');
+        $commentaireAvant = 'Ancien';
+
+        $this->mailer->method('send')
+            ->willThrowException(new \RuntimeException('Panne SMTP simulée'));
+
+        // Capture des 2 appels logger->error attendus :
+        //   1) depuis envoyer()                                  : 'Envoi email échoué'
+        //   2) depuis notifierAuditeurCommentaireCreneau()       : 'Echec envoi notification commentaire creneau'
+        $errorCalls = [];
+        $this->logger->method('error')
+            ->willReturnCallback(function (string $message, array $context = []) use (&$errorCalls): void {
+                $errorCalls[] = ['message' => $message, 'context' => $context];
+            });
+
+        // L'appel NE DOIT PAS lever d'exception malgré le throw du mailer.
+        $this->service->notifierAuditeurCommentaireCreneau($creneau, $commentaireAvant);
+
+        self::assertCount(2, $errorCalls);
+
+        // 1er log : envoyer() RGPD-friendly (template, exception_class).
+        self::assertSame('Envoi email échoué', $errorCalls[0]['message']);
+        self::assertSame(
+            'emails/reservation_modification_auditeur.html.twig',
+            $errorCalls[0]['context']['template'],
+        );
+        self::assertSame(\RuntimeException::class, $errorCalls[0]['context']['exception_class']);
+
+        // 2e log : contexte métier (type, creneau_id) + longueurs RGPD-friendly du commentaire.
+        self::assertSame('Echec envoi notification commentaire creneau', $errorCalls[1]['message']);
+        self::assertSame('auditeur_commentaire_creneau', $errorCalls[1]['context']['type']);
+        self::assertSame(10, $errorCalls[1]['context']['creneau_id']);
+        self::assertArrayHasKey('commentaire_avant_len', $errorCalls[1]['context']);
+        self::assertArrayHasKey('commentaire_apres_len', $errorCalls[1]['context']);
+        self::assertSame(strlen('Ancien'), $errorCalls[1]['context']['commentaire_avant_len']);
+        self::assertSame(strlen('Nouveau message'), $errorCalls[1]['context']['commentaire_apres_len']);
+        self::assertArrayHasKey('exception', $errorCalls[1]['context']);
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     //
     // Anticipation refacto : si une 3e classe de test (ex: tests/Controller/
     // ou US-4.3 sur l'annulation) a besoin de fabriquer des Reservation
     // peuplées, extraire ces helpers dans tests/Fixture/ReservationFactory.php
-    // pour DRY. Pour l'instant 9 tests ici → on garde local.
+    // pour DRY. Pour l'instant 12 tests ici → on garde local.
     // -------------------------------------------------------------------------
 
     private function creerReservationComplete(?string $commentaire = null): Reservation
@@ -519,6 +636,13 @@ final class NotificationServiceTest extends TestCase
 
         $p = new \ReflectionProperty(Reservation::class, 'id');
         $p->setValue($r, $id);
+
+        // US-4.4 : Lier le côté inverse de la relation OneToOne Creneau↔Reservation.
+        // Doctrine UnitOfWork synchronise cela automatiquement après flush en runtime,
+        // mais en environnement de tests pur (sans persistance BDD), on doit le faire
+        // manuellement pour que $creneau->isReserve() retourne true.
+        $refReservation = new \ReflectionProperty(Creneau::class, 'reservation');
+        $refReservation->setValue($creneau, $r);
 
         return $r;
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\Creneau;
 use App\Entity\Reservation;
 use Psr\Log\LoggerInterface;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
@@ -359,6 +360,76 @@ final readonly class NotificationService
                 'reservation_id' => $reservation->getId(),
                 'exception'      => $e::class,
                 'message'        => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Notifie l'Auditeur quand le commentaire/motif de son créneau réservé
+     * est modifié par le Personnel (US-4.4).
+     *
+     * Envoie l'email transactionnel reservation_modification_auditeur.html.twig.
+     * Politique Option B : erreurs SMTP loguées (sans PII) puis ignorées —
+     * la modification du créneau reste valide en BDD même si l'email échoue.
+     *
+     * Garde-fou defensive : si le créneau n'est plus réservé au moment de
+     * l'appel (race-condition possible si l'auditeur annule entre-temps),
+     * la méthode retourne sans rien faire.
+     *
+     * Note : la décision d'appeler ou non cette méthode (en fonction du
+     * changement effectif du commentaire) revient au contrôleur appelant.
+     * Le service ne re-vérifie PAS le delta commentaire.
+     *
+     * RGPD : le log error ne contient QUE les longueurs (avant/après) du
+     * commentaire, jamais son contenu (potentiellement données sensibles).
+     *
+     * @param Creneau $creneau Le créneau venant d'être modifié
+     * @param ?string $commentaireAvant Le commentaire AVANT modification (snapshot pris dans le contrôleur)
+     */
+    public function notifierAuditeurCommentaireCreneau(Creneau $creneau, ?string $commentaireAvant): void
+    {
+        // Garde-fou defensive (race-condition possible si auditeur annule en parallèle).
+        if (!$creneau->isReserve()) {
+            return;
+        }
+
+        $auditeur  = $creneau->getAuditeurReservation();
+        $personnel = $creneau->getUtilisateur();
+
+        $subject = sprintf(
+            'Mise à jour de votre rendez-vous — %s',
+            $creneau->getDateDebut()
+                ->setTimezone(new \DateTimeZone('Indian/Reunion'))
+                ->format('d/m/Y \à H\hi'),
+        );
+
+        $context = [
+            'auditeur_prenom'       => $auditeur->getPrenom(),
+            'personnel_nom_complet' => $personnel->getNomComplet(),
+            'service_nom'           => $personnel->getService()?->getNom(),
+            'creneau_debut'         => $creneau->getDateDebut(),
+            'creneau_fin'           => $creneau->getDateFin(),
+            'commentaire_apres'     => $creneau->getCommentaireAuditeur(),
+            'lien_mes_reservations' => $this->genererLienAbsolu('app_mes_reservations'),
+        ];
+
+        try {
+            $this->envoyer(
+                $auditeur->getEmail(),
+                $subject,
+                'emails/reservation_modification_auditeur.html.twig',
+                $context,
+            );
+        } catch (\Throwable $e) {
+            $this->logger->error('Echec envoi notification commentaire creneau', [
+                'type'                  => 'auditeur_commentaire_creneau',
+                'creneau_id'            => $creneau->getId(),
+                'reservation_id'        => $creneau->getReservation()?->getId(),
+                'auditeur_id'           => $auditeur->getId(),
+                'commentaire_avant_len' => strlen($commentaireAvant ?? ''),
+                'commentaire_apres_len' => strlen($creneau->getCommentaireAuditeur() ?? ''),
+                'exception'             => $e::class,
+                'message'               => $e->getMessage(),
             ]);
         }
     }
