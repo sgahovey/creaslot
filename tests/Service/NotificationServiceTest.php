@@ -20,10 +20,11 @@ use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /**
- * Tests d'intégration légers du NotificationService pour les méthodes US-4.2.
+ * Tests d'intégration légers du NotificationService.
  *
- * Couverture actuelle : 4 tests sur notifier{Auditeur,Personnel}Reservation()
- * et la politique Option B (capture exceptions).
+ * Couverture actuelle : 9 tests (4 US-4.2 confirmation + 5 US-4.3 annulation)
+ * sur notifier{Auditeur,Personnel}{,Annulation}Reservation() et la politique
+ * Option B (capture exceptions).
  *
  * Dette technique tests identifiée — la branche if ($redirige) de envoyer()
  * (US-4.1) n'est pas couverte unitairement. Validation actuelle uniquement
@@ -62,6 +63,10 @@ final class NotificationServiceTest extends TestCase
             redirectionDev: null, // pas de redirection en tests : sujet et destinataire non modifiés
         );
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Tests US-4.2 — Confirmation de réservation
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function test_notifierAuditeurReservation_envoie_un_email_avec_bon_template(): void
     {
@@ -198,13 +203,201 @@ final class NotificationServiceTest extends TestCase
         self::assertNull($context['auditeur_categorie']);
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Tests US-4.3 — Annulation de réservation
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function test_notifierAuditeurAnnulationReservation_envoie_un_email_avec_bon_template(): void
+    {
+        $reservation = $this->creerReservationAnnulee(motif: 'Empêchement de dernière minute.');
+
+        $emailCapture = null;
+        $this->mailer->expects($this->once())
+            ->method('send')
+            ->willReturnCallback(function (TemplatedEmail $email) use (&$emailCapture): void {
+                $emailCapture = $email;
+            });
+
+        $this->service->notifierAuditeurAnnulationReservation($reservation);
+
+        self::assertNotNull($emailCapture);
+        self::assertSame(
+            'emails/reservation_annulation_auditeur.html.twig',
+            $emailCapture->getHtmlTemplate(),
+        );
+        self::assertStringContainsString('Votre rendez-vous a été annulé', $emailCapture->getSubject());
+        self::assertSame('xavier@test.local', $emailCapture->getTo()[0]->getAddress());
+
+        $context = $emailCapture->getContext();
+        self::assertSame('Xavier', $context['auditeur_prenom']);
+        self::assertSame('Marie Dupont', $context['personnel_nom_complet']);
+        self::assertSame('Service Commercial', $context['service_nom']);
+        self::assertSame('Présentiel', $context['type_rdv_libelle']);
+        self::assertSame('Empêchement de dernière minute.', $context['motif_annulation']);
+        self::assertSame('https://test.local/mes-reservations', $context['lien_mes_reservations']);
+        self::assertInstanceOf(\DateTimeInterface::class, $context['creneau_debut']);
+        self::assertInstanceOf(\DateTimeInterface::class, $context['creneau_fin']);
+    }
+
+    public function test_notifierPersonnelAnnulationReservation_envoie_un_email_avec_bon_template(): void
+    {
+        // Note : on passe volontairement un motif renseigné à la fixture pour
+        // prouver qu'il N'EST PAS transmis au contexte du template Personnel
+        // (asymétrie RGPD volontaire, cf. PHPDoc des 2 templates US-4.3).
+        $reservation = $this->creerReservationAnnulee(motif: 'Données sensibles bidons.');
+
+        $emailCapture = null;
+        $this->mailer->expects($this->once())
+            ->method('send')
+            ->willReturnCallback(function (TemplatedEmail $email) use (&$emailCapture): void {
+                $emailCapture = $email;
+            });
+
+        $this->service->notifierPersonnelAnnulationReservation($reservation);
+
+        self::assertNotNull($emailCapture);
+        self::assertSame(
+            'emails/reservation_annulation_personnel.html.twig',
+            $emailCapture->getHtmlTemplate(),
+        );
+        self::assertStringContainsString('Annulation par Xavier Dijoux', $emailCapture->getSubject());
+        self::assertSame('marie@test.local', $emailCapture->getTo()[0]->getAddress());
+
+        $context = $emailCapture->getContext();
+        self::assertSame('Marie', $context['personnel_prenom']);
+        self::assertSame('Xavier Dijoux', $context['auditeur_nom_complet']);
+        self::assertSame('Présentiel', $context['type_rdv_libelle']);
+        self::assertSame('https://test.local/creneau/agenda', $context['lien_mon_agenda']);
+        self::assertInstanceOf(\DateTimeInterface::class, $context['creneau_debut']);
+        self::assertInstanceOf(\DateTimeInterface::class, $context['creneau_fin']);
+
+        // Asymétrie RGPD : motif_annulation NE DOIT PAS être dans le contexte
+        // (cf. PHPDoc reservation_annulation_personnel.html.twig — minimisation).
+        self::assertArrayNotHasKey('motif_annulation', $context);
+    }
+
+    public function test_notifierAuditeurAnnulationReservation_capture_les_exceptions_sans_propager(): void
+    {
+        $reservation = $this->creerReservationAnnulee();
+
+        $this->mailer->method('send')
+            ->willThrowException(new \RuntimeException('Panne SMTP simulée'));
+
+        // Capture des 2 appels logger->error attendus :
+        //   1) depuis envoyer()                                      : 'Envoi email échoué'
+        //   2) depuis notifierAuditeurAnnulationReservation()         : 'Echec envoi notification annulation auditeur'
+        $errorCalls = [];
+        $this->logger->method('error')
+            ->willReturnCallback(function (string $message, array $context = []) use (&$errorCalls): void {
+                $errorCalls[] = ['message' => $message, 'context' => $context];
+            });
+
+        // L'appel NE DOIT PAS lever d'exception malgré le throw du mailer.
+        $this->service->notifierAuditeurAnnulationReservation($reservation);
+
+        self::assertCount(2, $errorCalls);
+
+        // 1er log : envoyer() RGPD-friendly (to_hash, template, exception_class)
+        self::assertSame('Envoi email échoué', $errorCalls[0]['message']);
+        self::assertSame(
+            'emails/reservation_annulation_auditeur.html.twig',
+            $errorCalls[0]['context']['template'],
+        );
+        self::assertSame(\RuntimeException::class, $errorCalls[0]['context']['exception_class']);
+
+        // 2e log : contexte métier additionnel (reservation_id, type)
+        self::assertSame('Echec envoi notification annulation auditeur', $errorCalls[1]['message']);
+        self::assertSame('auditeur_annulation', $errorCalls[1]['context']['type']);
+        self::assertSame(42, $errorCalls[1]['context']['reservation_id']);
+        self::assertSame(\RuntimeException::class, $errorCalls[1]['context']['exception']);
+        self::assertSame('Panne SMTP simulée', $errorCalls[1]['context']['message']);
+    }
+
+    /**
+     * Regression test — décision A1 actée à l'audit 3.1 de l'US-4.2, étendue à US-4.3.
+     *
+     * Symétrique du test_notifierPersonnelReservation_passe_auditeur_categorie_a_null
+     * (US-4.2) mais appliqué au flow d'annulation : le champ categorie_auditeur
+     * n'est PAS implémenté dans l'entité Utilisateur. Le template Personnel
+     * d'annulation attend néanmoins la clé `auditeur_categorie` dans son contexte,
+     * que NotificationService::notifierPersonnelAnnulationReservation() doit
+     * donc passer explicitement à `null`. Le template gère ce cas via un
+     * `{% if auditeur_categorie %}` conditionnel.
+     *
+     * Le jour où categorie_auditeur sera implémentée en BDD, ce test ET son
+     * homologue US-4.2 devront être modifiés pour vérifier la valeur attendue.
+     */
+    public function test_notifierPersonnelAnnulationReservation_passe_auditeur_categorie_a_null(): void
+    {
+        $reservation = $this->creerReservationAnnulee();
+
+        $emailCapture = null;
+        $this->mailer->expects($this->once())
+            ->method('send')
+            ->willReturnCallback(function (TemplatedEmail $email) use (&$emailCapture): void {
+                $emailCapture = $email;
+            });
+
+        $this->service->notifierPersonnelAnnulationReservation($reservation);
+
+        self::assertNotNull($emailCapture);
+        $context = $emailCapture->getContext();
+        self::assertArrayHasKey('auditeur_categorie', $context);
+        self::assertNull($context['auditeur_categorie']);
+    }
+
+    /**
+     * Regression test — décision RGPD US-4.3 audit section 3.
+     *
+     * Vérifie le comportement conditionnel du motif d'annulation côté
+     * Auditeur (asymétrie volontaire avec le template Personnel qui ne le
+     * reçoit JAMAIS — cf. PHPDoc reservation_annulation_{auditeur,personnel}.html.twig).
+     *
+     * 2 sub-cases dans un même test via `exactly(2)` + capture en tableau :
+     *   - motif renseigné : transmis tel quel au contexte (template l'affiche)
+     *   - motif null       : transmis tel quel (null), template skip l'encadré
+     *
+     * Le jour où la politique d'affichage du motif change (ex: filtrage,
+     * troncature, anonymisation), ce test devra être ajusté.
+     */
+    public function test_notifierAuditeurAnnulationReservation_affiche_motif_si_renseigne_et_passe_null_sinon(): void
+    {
+        $emailsCaptured = [];
+        $this->mailer->expects($this->exactly(2))
+            ->method('send')
+            ->willReturnCallback(function (TemplatedEmail $email) use (&$emailsCaptured): void {
+                $emailsCaptured[] = $email;
+            });
+
+        // 1er appel : motif renseigné
+        $this->service->notifierAuditeurAnnulationReservation(
+            $this->creerReservationAnnulee(motif: 'Empêchement médical'),
+        );
+
+        // 2e appel : motif null (équivalent à motif vide non saisi par l'auditeur)
+        $this->service->notifierAuditeurAnnulationReservation(
+            $this->creerReservationAnnulee(),
+        );
+
+        self::assertCount(2, $emailsCaptured);
+
+        // 1er email : motif transmis tel quel
+        self::assertSame(
+            'Empêchement médical',
+            $emailsCaptured[0]->getContext()['motif_annulation'],
+        );
+
+        // 2e email : motif null transmis tel quel
+        self::assertNull($emailsCaptured[1]->getContext()['motif_annulation']);
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     //
     // Anticipation refacto : si une 3e classe de test (ex: tests/Controller/
     // ou US-4.3 sur l'annulation) a besoin de fabriquer des Reservation
     // peuplées, extraire ces helpers dans tests/Fixture/ReservationFactory.php
-    // pour DRY. Pour l'instant 4 tests ici → on garde local.
+    // pour DRY. Pour l'instant 9 tests ici → on garde local.
     // -------------------------------------------------------------------------
 
     private function creerReservationComplete(?string $commentaire = null): Reservation
@@ -241,6 +434,14 @@ final class NotificationServiceTest extends TestCase
             auditeur:    $auditeur,
             commentaire: $commentaire,
         );
+    }
+
+    private function creerReservationAnnulee(?string $motif = null): Reservation
+    {
+        $reservation = $this->creerReservationComplete();
+        $reservation->annuler($motif);
+
+        return $reservation;
     }
 
     private function creerUtilisateur(

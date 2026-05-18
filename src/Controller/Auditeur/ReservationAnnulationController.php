@@ -8,6 +8,7 @@ use App\Entity\Reservation;
 use App\Enum\StatutReservation;
 use App\Form\AnnulationReservationType;
 use App\Security\ReservationVoter;
+use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,6 +23,7 @@ final class ReservationAnnulationController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly LoggerInterface        $logger,
+        private readonly NotificationService    $notificationService,
     ) {}
 
     #[Route('/reservation/{id}/annuler', name: 'app_reservation_annulation', methods: ['POST'])]
@@ -74,7 +76,12 @@ final class ReservationAnnulationController extends AbstractController
             'motif_longueur' => strlen($motif ?? ''),
         ]);
 
-        $this->addFlash('success', 'Votre réservation a été annulée. Le créneau est de nouveau disponible.');
+        // US-4.3 — Emails post-flush, hors transaction.
+        // Politique Option B : non-propagation des erreurs (cf. NotificationService).
+        $this->notificationService->notifierAuditeurAnnulationReservation($reservation);
+        $this->notificationService->notifierPersonnelAnnulationReservation($reservation);
+
+        $this->addFlash('success', 'Votre réservation a été annulée. Un email de confirmation vous est envoyé.');
 
         return $this->redirigerVersListe($request);
     }
