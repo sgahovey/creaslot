@@ -11,6 +11,7 @@ use App\Entity\TypeRdv;
 use App\Entity\Utilisateur;
 use App\Enum\RoleUtilisateur;
 use App\Enum\StatutReservation;
+use App\Service\DateFormatterService;
 use App\Service\NotificationService;
 use DateTimeImmutable;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -62,6 +63,7 @@ final class NotificationServiceTest extends TestCase
             mailer:         $this->mailer,
             urlGenerator:   $this->urlGenerator,
             logger:         $this->logger,
+            dateFormatter:  new DateFormatterService(), // instance réelle, service stateless
             expediteur:     'noreply@test.local',
             replyTo:        'contact@test.local',
             redirectionDev: null, // pas de redirection en tests : sujet et destinataire non modifiés

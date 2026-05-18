@@ -48,6 +48,7 @@ final readonly class NotificationService
         private MailerInterface $mailer,
         private UrlGeneratorInterface $urlGenerator,
         private LoggerInterface $logger,
+        private DateFormatterService $dateFormatter,
         #[Autowire('%env(APP_NOTIFICATION_FROM)%')]
         private string $expediteur,
         #[Autowire('%env(APP_NOTIFICATION_REPLY_TO)%')]
@@ -157,9 +158,7 @@ final readonly class NotificationService
 
         $subject = sprintf(
             'Rendez-vous confirmé — %s',
-            $creneau->getDateDebut()
-                ->setTimezone(new \DateTimeZone('Indian/Reunion'))
-                ->format('d/m/Y \à H\hi'),
+            $this->dateFormatter->pourSujetEmail($creneau->getDateDebut()),
         );
 
         $context = [
@@ -214,9 +213,7 @@ final readonly class NotificationService
 
         $subject = sprintf(
             'Nouveau rendez-vous — %s',
-            $creneau->getDateDebut()
-                ->setTimezone(new \DateTimeZone('Indian/Reunion'))
-                ->format('d/m/Y \à H\hi'),
+            $this->dateFormatter->pourSujetEmail($creneau->getDateDebut()),
         );
 
         $context = [
@@ -269,9 +266,7 @@ final readonly class NotificationService
 
         $subject = sprintf(
             'Votre rendez-vous a été annulé — %s',
-            $creneau->getDateDebut()
-                ->setTimezone(new \DateTimeZone('Indian/Reunion'))
-                ->format('d/m/Y \à H\hi'),
+            $this->dateFormatter->pourSujetEmail($creneau->getDateDebut()),
         );
 
         $context = [
@@ -333,9 +328,7 @@ final readonly class NotificationService
         $subject = sprintf(
             'Annulation par %s — %s',
             $auditeur->getNomComplet(),
-            $creneau->getDateDebut()
-                ->setTimezone(new \DateTimeZone('Indian/Reunion'))
-                ->format('d/m/Y \à H\hi'),
+            $this->dateFormatter->pourSujetEmail($creneau->getDateDebut()),
         );
 
         $context = [
@@ -399,9 +392,7 @@ final readonly class NotificationService
 
         $subject = sprintf(
             'Mise à jour de votre rendez-vous — %s',
-            $creneau->getDateDebut()
-                ->setTimezone(new \DateTimeZone('Indian/Reunion'))
-                ->format('d/m/Y \à H\hi'),
+            $this->dateFormatter->pourSujetEmail($creneau->getDateDebut()),
         );
 
         $context = [
@@ -472,9 +463,7 @@ final readonly class NotificationService
 
         $subject = sprintf(
             'Votre créneau a été supprimé par le Personnel — %s',
-            $creneau->getDateDebut()
-                ->setTimezone(new \DateTimeZone('Indian/Reunion'))
-                ->format('d/m/Y \à H\hi'),
+            $this->dateFormatter->pourSujetEmail($creneau->getDateDebut()),
         );
 
         $context = [
