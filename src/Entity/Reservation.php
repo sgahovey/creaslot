@@ -41,6 +41,9 @@ class Reservation
     #[ORM\Column(name: 'motif_annulation', type: 'text', nullable: true)]
     private ?string $motifAnnulation = null;
 
+    #[ORM\Column(name: 'rappel_envoye_at', nullable: true)]
+    private ?\DateTimeImmutable $rappelEnvoyeAt = null;
+
     public function __construct()
     {
         $this->dateReservation = new \DateTimeImmutable();
@@ -149,5 +152,17 @@ class Reservation
         $this->statut          = StatutReservation::ANNULEE;
         $this->dateAnnulation  = new \DateTimeImmutable();
         $this->motifAnnulation = $motif;
+    }
+
+    public function getRappelEnvoyeAt(): ?\DateTimeImmutable
+    {
+        return $this->rappelEnvoyeAt;
+    }
+
+    public function setRappelEnvoyeAt(?\DateTimeImmutable $rappelEnvoyeAt): static
+    {
+        $this->rappelEnvoyeAt = $rappelEnvoyeAt;
+
+        return $this;
     }
 }

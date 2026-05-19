@@ -42,7 +42,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
  * 'redirige' => true et un 'redirige_vers_hash' (hash partiel SHA-256 de
  * l'adresse de redirection) quand la redirection est active.
  */
-final readonly class NotificationService
+readonly class NotificationService
 {
     public function __construct(
         private MailerInterface $mailer,
@@ -485,6 +485,70 @@ final readonly class NotificationService
         } catch (\Throwable $e) {
             $this->logger->error('Echec envoi notification suppression creneau', [
                 'type'           => 'auditeur_suppression_creneau',
+                'creneau_id'     => $creneau->getId(),
+                'reservation_id' => $reservation->getId(),
+                'auditeur_id'    => $auditeur->getId(),
+                'exception'      => $e::class,
+                'message'        => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Notifie l'Auditeur de son rendez-vous prévu le lendemain (US-4.6).
+     *
+     * Envoie l'email transactionnel reservation_rappel_auditeur.html.twig
+     * via la commande planifiée EnvoyerRappelsJ1Command, exécutée chaque
+     * jour à 18h Réunion par cron Linux côté serveur.
+     *
+     * Politique Option B : erreurs SMTP loguées (sans PII) puis ignorées —
+     * l'erreur d'envoi ne bloque pas le reste du batch côté Command, qui
+     * continue avec la réservation suivante.
+     *
+     * Garde-fou defensive : la méthode exige Reservation au statut ACTIVE
+     * (cohérent US-4.4/4.5). Si la réservation a été annulée entre la query
+     * Repository et l'envoi (race condition), on skip silencieusement.
+     *
+     * RGPD : le log error ne contient AUCUN contenu sensible, uniquement
+     * les identifiants techniques (creneau_id, reservation_id, auditeur_id).
+     *
+     * @param Reservation $reservation La réservation ACTIVE à rappeler
+     */
+    public function notifierAuditeurRappel(Reservation $reservation): void
+    {
+        // Garde-fou strict : Reservation ACTIVE uniquement.
+        if ($reservation->getStatut() !== StatutReservation::ACTIVE) {
+            return;
+        }
+
+        $creneau   = $reservation->getCreneau();
+        $auditeur  = $reservation->getUtilisateur();
+        $personnel = $creneau->getUtilisateur();
+
+        $subject = sprintf(
+            'Rappel : votre rendez-vous le %s',
+            $this->dateFormatter->pourSujetEmail($creneau->getDateDebut()),
+        );
+
+        $context = [
+            'auditeur_prenom'       => $auditeur->getPrenom(),
+            'personnel_nom_complet' => $personnel->getNomComplet(),
+            'service_nom'           => $personnel->getService()?->getNom(),
+            'creneau_debut'         => $creneau->getDateDebut(),
+            'creneau_fin'           => $creneau->getDateFin(),
+            'lien_mes_reservations' => $this->genererLienAbsolu('app_mes_reservations'),
+        ];
+
+        try {
+            $this->envoyer(
+                $auditeur->getEmail(),
+                $subject,
+                'emails/reservation_rappel_auditeur.html.twig',
+                $context,
+            );
+        } catch (\Throwable $e) {
+            $this->logger->error('Echec envoi rappel J-1', [
+                'type'           => 'auditeur_rappel_j1',
                 'creneau_id'     => $creneau->getId(),
                 'reservation_id' => $reservation->getId(),
                 'auditeur_id'    => $auditeur->getId(),
