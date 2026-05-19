@@ -67,6 +67,38 @@ class ReservationRepository extends ServiceEntityRepository
     }
 
     /**
+     * Retourne les réservations ACTIVE dont le créneau a lieu dans la plage donnée
+     * et qui n'ont pas encore reçu de rappel email.
+     *
+     * Utilisée par EnvoyerRappelsJ1Command (US-4.6) pour le cron quotidien J-1
+     * à 18h Réunion : on cherche tous les RDV de demain sans rappel envoyé.
+     *
+     * Filtre garde-fou estActif = true sur le Creneau pour exclure les
+     * créneaux soft-deleted (cohérent avec la sémantique métier).
+     *
+     * @param \DateTimeImmutable $demainDebut Demain 00:00:00 (timezone applicative Réunion)
+     * @param \DateTimeImmutable $demainFin   Demain 23:59:59 (timezone applicative Réunion)
+     * @return Reservation[]
+     */
+    public function findActivesPourDemainSansRappel(
+        \DateTimeImmutable $demainDebut,
+        \DateTimeImmutable $demainFin,
+    ): array {
+        return $this->createQueryBuilder('r')
+            ->innerJoin('r.creneau', 'c')
+            ->andWhere('r.statut = :statut')
+            ->andWhere('r.rappelEnvoyeAt IS NULL')
+            ->andWhere('c.dateDebut BETWEEN :debut AND :fin')
+            ->andWhere('c.estActif = true')
+            ->setParameter('statut', StatutReservation::ACTIVE)
+            ->setParameter('debut', $demainDebut)
+            ->setParameter('fin', $demainFin)
+            ->orderBy('c.dateDebut', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Retourne les réservations d'un Auditeur, paginées et filtrées.
      * JOINs eager pour éviter le N+1 (créneau, type RDV, personnel, service).
      *

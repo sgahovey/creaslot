@@ -1,0 +1,149 @@
+{#
+ # Template email — Notification de rappel J-1 d'un rendez-vous (US-4.6).
+ #
+ # Envoyé à l'Auditeur la veille de son rendez-vous (jour J-1 à 18h heure
+ # Réunion) par la commande EnvoyerRappelsJ1Command exécutée via cron Linux.
+ # Émis UNIQUEMENT si la Reservation est au statut ACTIVE et que
+ # rappelEnvoyeAt IS NULL (idempotence : un seul rappel par RDV).
+ #
+ # ── Sémantique métier ─────────────────────────────────────────────────────
+ # Cet email n'attend pas d'action de l'Auditeur. C'est un rappel courtois
+ # pour qu'il pense au rendez-vous du lendemain. Le CTA "Voir mes
+ # réservations" lui permet de consulter le détail ou d'annuler si besoin.
+ #
+ # ── Asymétrie destinataire ───────────────────────────────────────────────
+ # Le Personnel n'est PAS notifié par ce rappel (US-4.6 scope α : Auditeur
+ # uniquement). Le Personnel consulte son agenda CreaSlot quotidiennement
+ # dans son workflow normal et n'a pas besoin de rappel email.
+ # Ajout futur Personnel possible via US-4.8 (préférences notifications).
+ #
+ # Le sujet de l'email est construit en PHP par
+ # NotificationService::notifierAuditeurRappel(), pas via un
+ # {% block subject %}. Pattern : "Rappel : votre rendez-vous demain à HHhMM"
+ # avec timezone Indian/Reunion forcée.
+ #
+ # Variables :
+ #   auditeur_prenom         string                — pour la salutation
+ #   personnel_nom_complet   string                — "Prénom Nom"
+ #   service_nom             ?string               — null si Super-admin
+ #   creneau_debut           \DateTimeInterface    — début du RDV
+ #   creneau_fin             \DateTimeInterface    — fin du RDV
+ #   lien_mes_reservations   string                — URL absolue app_mes_reservations
+ #}
+
+{% block body_html %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rappel de votre rendez-vous — CreaSlot</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f8f9fa;">
+
+    {# ── Wrapper centrant ─────────────────────────────────────────────── #}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+           style="background-color: #f8f9fa; padding: 24px 12px;">
+        <tr>
+            <td align="center">
+
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"
+                       style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+
+                    {# ── Header — bandeau bleu marine ─────────────────── #}
+                    <tr>
+                        <td style="background-color: #1A3E6F; padding: 24px; text-align: center;">
+                            <p style="margin: 0 0 4px 0; color: #ffffff; font-size: 24px; font-weight: bold; font-family: Arial, sans-serif; letter-spacing: 0.5px;">
+                                CreaSlot
+                            </p>
+                            <p style="margin: 0; color: #ffffff; font-size: 14px; font-family: Arial, sans-serif; opacity: 0.85;">
+                                Rappel de votre rendez-vous
+                            </p>
+                        </td>
+                    </tr>
+
+                    {# ── Corps ────────────────────────────────────────── #}
+                    <tr>
+                        <td style="padding: 32px 24px;">
+
+                            <p style="margin: 0 0 16px 0; color: #333333; font-size: 15px; font-family: Arial, sans-serif;">
+                                Bonjour {{ auditeur_prenom }},
+                            </p>
+
+                            <p style="margin: 0 0 24px 0; color: #333333; font-size: 14px; line-height: 1.5; font-family: Arial, sans-serif;">
+                                Petit rappel : vous avez un rendez-vous <strong>demain à {{ creneau_debut|date('H\\hi', 'Indian/Reunion') }}</strong>.
+                            </p>
+
+                            {# ── Encadré récap (bordure gauche bleu marine) ── #}
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                                   style="margin: 0 0 24px 0;">
+                                <tr>
+                                    <td style="background-color: #f8f9fa; border-left: 4px solid #1A3E6F; padding: 16px 20px; color: #333333; font-size: 14px; line-height: 1.6; font-family: Arial, sans-serif;">
+
+                                        <p style="margin: 0 0 8px 0;">
+                                            <strong style="color: #1A3E6F;">Date&nbsp;:</strong>
+                                            {{ creneau_debut|format_date(locale='fr_FR', pattern='EEEE d MMMM y', timezone='Indian/Reunion')|capitalize }}
+                                        </p>
+
+                                        <p style="margin: 0 0 8px 0;">
+                                            <strong style="color: #1A3E6F;">Horaire&nbsp;:</strong>
+                                            {{ creneau_debut|date('H\\hi', 'Indian/Reunion') }} – {{ creneau_fin|date('H\\hi', 'Indian/Reunion') }}
+                                        </p>
+
+                                        <p style="margin: 0 0 8px 0;">
+                                            <strong style="color: #1A3E6F;">Avec&nbsp;:</strong>
+                                            {{ personnel_nom_complet }}
+                                        </p>
+
+                                        {% if service_nom %}
+                                        <p style="margin: 0 0 8px 0;">
+                                            <strong style="color: #1A3E6F;">Service&nbsp;:</strong>
+                                            {{ service_nom }}
+                                        </p>
+                                        {% endif %}
+
+                                    </td>
+                                </tr>
+                            </table>
+
+                            {# ── CTA "Voir mes réservations" ────────────── #}
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0"
+                                   style="margin: 8px auto 16px auto;">
+                                <tr>
+                                    <td align="center" style="background-color: #1A3E6F; border-radius: 4px;">
+                                        <a href="{{ lien_mes_reservations }}"
+                                           style="display: inline-block; padding: 12px 28px; color: #ffffff; font-size: 14px; font-weight: bold; font-family: Arial, sans-serif; text-decoration: none;">
+                                            Voir mes réservations
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin: 0; color: #555555; font-size: 13px; line-height: 1.5; font-family: Arial, sans-serif;">
+                                À bientôt au Cnam Réunion !
+                            </p>
+
+                        </td>
+                    </tr>
+
+                    {# ── Footer — bandeau gris ────────────────────────── #}
+                    <tr>
+                        <td style="background-color: #f8f9fa; padding: 16px 24px; text-align: center; border-top: 1px solid #e0e0e0;">
+                            <p style="margin: 0 0 4px 0; color: #555555; font-size: 12px; font-family: Arial, sans-serif;">
+                                Email automatique — merci de ne pas répondre directement à ce message.
+                            </p>
+                            <p style="margin: 0; color: #999999; font-size: 11px; font-family: Arial, sans-serif;">
+                                CreaSlot — Cnam Réunion — © 2026
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>
+{% endblock %}

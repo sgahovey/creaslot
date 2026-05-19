@@ -24,11 +24,11 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 /**
  * Tests d'intégration légers du NotificationService.
  *
- * Couverture actuelle : 15 tests (4 US-4.2 confirmation + 5 US-4.3 annulation
- * + 3 US-4.4 commentaire créneau + 3 US-4.5 suppression créneau) sur
- * notifier{Auditeur,Personnel}{,Annulation}Reservation() /
- * notifierAuditeurCommentaireCreneau() / notifierAuditeurSuppressionCreneau()
- * et la politique Option B (capture exceptions).
+ * Couverture actuelle : 18 tests (4 US-4.2 confirmation + 5 US-4.3 annulation
+ * + 3 US-4.4 commentaire créneau + 3 US-4.5 suppression créneau
+ * + 3 US-4.6 rappel J-1) sur notifier{Auditeur,Personnel}{,Annulation}Reservation()
+ * / notifierAuditeurCommentaireCreneau() / notifierAuditeurSuppressionCreneau()
+ * / notifierAuditeurRappel() et la politique Option B (capture exceptions).
  *
  * Dette technique tests identifiée — la branche if ($redirige) de envoyer()
  * (US-4.1) n'est pas couverte unitairement. Validation actuelle uniquement
@@ -612,13 +612,108 @@ final class NotificationServiceTest extends TestCase
         self::assertArrayHasKey('exception', $errorCalls[1]['context']);
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Tests US-4.6 — Rappel J-1
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function test_notifierAuditeurRappel_envoie_un_email_avec_bon_template(): void
+    {
+        $reservation = $this->creerReservationComplete();
+        $creneau     = $reservation->getCreneau();
+
+        $emailCapture = null;
+        $this->mailer->expects($this->once())
+            ->method('send')
+            ->willReturnCallback(function (TemplatedEmail $email) use (&$emailCapture): void {
+                $emailCapture = $email;
+            });
+
+        $this->service->notifierAuditeurRappel($reservation);
+
+        self::assertNotNull($emailCapture);
+
+        // Destinataire = Auditeur.
+        $to = $emailCapture->getTo();
+        self::assertCount(1, $to);
+        self::assertSame('xavier@test.local', $to[0]->getAddress());
+
+        // Subject + template.
+        self::assertStringContainsString('Rappel : votre rendez-vous le', $emailCapture->getSubject());
+        self::assertSame(
+            'emails/reservation_rappel_auditeur.html.twig',
+            $emailCapture->getHtmlTemplate(),
+        );
+
+        // Context (6 clés attendues par le template).
+        $context = $emailCapture->getContext();
+        self::assertSame('Xavier', $context['auditeur_prenom']);
+        self::assertSame('Marie Dupont', $context['personnel_nom_complet']);
+        self::assertSame('Service Commercial', $context['service_nom']);
+        self::assertSame('https://test.local/mes-reservations', $context['lien_mes_reservations']);
+        self::assertInstanceOf(\DateTimeInterface::class, $context['creneau_debut']);
+        self::assertInstanceOf(\DateTimeInterface::class, $context['creneau_fin']);
+    }
+
+    public function test_notifierAuditeurRappel_ne_fait_rien_si_reservation_non_active(): void
+    {
+        // Réservation annulée → garde-fou refuse (statut !== ACTIVE).
+        $reservation = $this->creerReservationComplete();
+        $reservation->annuler('Test annulation');
+
+        // Sanity check : la réservation n'est PAS ACTIVE.
+        self::assertSame(StatutReservation::ANNULEE, $reservation->getStatut());
+
+        // Garde-fou : aucun envoi mail.
+        $this->mailer->expects($this->never())->method('send');
+
+        $this->service->notifierAuditeurRappel($reservation);
+    }
+
+    public function test_notifierAuditeurRappel_capture_les_exceptions_sans_propager(): void
+    {
+        $reservation = $this->creerReservationComplete();
+
+        $this->mailer->method('send')
+            ->willThrowException(new \RuntimeException('Panne SMTP simulée'));
+
+        // Capture des 2 appels logger->error attendus :
+        //   1) depuis envoyer()                          : 'Envoi email échoué'
+        //   2) depuis notifierAuditeurRappel()           : 'Echec envoi rappel J-1'
+        $errorCalls = [];
+        $this->logger->method('error')
+            ->willReturnCallback(function (string $message, array $context = []) use (&$errorCalls): void {
+                $errorCalls[] = ['message' => $message, 'context' => $context];
+            });
+
+        // L'appel NE DOIT PAS lever d'exception malgré le throw du mailer.
+        $this->service->notifierAuditeurRappel($reservation);
+
+        self::assertCount(2, $errorCalls);
+
+        // 1er log : envoyer() RGPD-friendly (template, exception_class).
+        self::assertSame('Envoi email échoué', $errorCalls[0]['message']);
+        self::assertSame(
+            'emails/reservation_rappel_auditeur.html.twig',
+            $errorCalls[0]['context']['template'],
+        );
+        self::assertSame(\RuntimeException::class, $errorCalls[0]['context']['exception_class']);
+
+        // 2e log : contexte métier rappel (type, creneau_id) + clés présentes (reservation_id, auditeur_id, exception).
+        self::assertSame('Echec envoi rappel J-1', $errorCalls[1]['message']);
+        self::assertSame('auditeur_rappel_j1', $errorCalls[1]['context']['type']);
+        self::assertSame(10, $errorCalls[1]['context']['creneau_id']);
+        self::assertArrayHasKey('reservation_id', $errorCalls[1]['context']);
+        self::assertArrayHasKey('auditeur_id', $errorCalls[1]['context']);
+        self::assertArrayHasKey('exception', $errorCalls[1]['context']);
+    }
+
     // -------------------------------------------------------------------------
     // Helpers
     //
     // Anticipation refacto : si une 3e classe de test (ex: tests/Controller/
     // ou US-4.3 sur l'annulation) a besoin de fabriquer des Reservation
     // peuplées, extraire ces helpers dans tests/Fixture/ReservationFactory.php
-    // pour DRY. Pour l'instant 15 tests ici → on garde local.
+    // pour DRY. Pour l'instant 18 tests ici → on garde local.
     // -------------------------------------------------------------------------
 
     private function creerReservationComplete(?string $commentaire = null): Reservation
