@@ -52,7 +52,7 @@ final class CreneauCalendarSerializer
                 'typeRdv'        => $typeRdv->getLibelle(),
                 'typeCouleurHex' => $typeRdv->getCouleurHex(),
                 'commentaire'    => $creneau->getCommentaireAuditeur() ?? '',
-                'motifAuditeur'  => $creneau->getReservation()?->getCommentaireAuditeur() ?? '',
+                'motifAuditeur'  => $creneau->getReservationActive()?->getCommentaireAuditeur() ?? '',
                 'reserve'        => $creneau->isReserve(),
                 'auditeurNom'    => $nomAuditeur,
                 'estActif'       => $creneau->isEstActif(),

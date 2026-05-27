@@ -6,6 +6,8 @@ namespace App\Entity;
 
 use App\Enum\StatutReservation;
 use App\Repository\CreneauRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: CreneauRepository::class)]
@@ -41,12 +43,28 @@ class Creneau
     #[ORM\Column]
     private bool $estActif = true;
 
-    #[ORM\OneToOne(targetEntity: Reservation::class, mappedBy: 'creneau')]
-    private ?Reservation $reservation = null;
+    /**
+     * Reservations associées à ce Creneau (historique complet).
+     *
+     * 1 Creneau peut avoir 0..N Reservations au fil du temps :
+     * - 0..1 Reservation ACTIVE (invariant applicatif via PESSIMISTIC_WRITE
+     *   dans ReservationController::enregistrerReservation)
+     * - 0..N Reservations ANNULEE (historique RGPD, audit trail)
+     *
+     * Pour accéder rapidement à la Reservation ACTIVE (cas UI principal),
+     * utiliser getReservationActive() : ?Reservation.
+     *
+     * Apparition : refacto DT-1 (OneToOne → OneToMany), 19/05/2026.
+     *
+     * @var Collection<int, Reservation>
+     */
+    #[ORM\OneToMany(targetEntity: Reservation::class, mappedBy: 'creneau')]
+    private Collection $reservations;
 
     public function __construct()
     {
         $this->dateCreation = new \DateTimeImmutable();
+        $this->reservations = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -131,9 +149,47 @@ class Creneau
         return $this;
     }
 
-    public function getReservation(): ?Reservation
+    /**
+     * Retourne toutes les Reservations associées à ce Creneau (historique complet,
+     * incluant ACTIVE et ANNULEE).
+     *
+     * Note : 1 Creneau peut avoir 0..N Reservations au fil du temps :
+     * - 0..1 Reservation ACTIVE (invariant applicatif via PESSIMISTIC_WRITE)
+     * - 0..N Reservations ANNULEE (historique, RGPD audit trail)
+     *
+     * Pour récupérer la Reservation ACTIVE (cas UI le plus fréquent), utiliser
+     * getReservationActive() qui retourne ?Reservation et filtre par statut.
+     *
+     * @return Collection<int, Reservation>
+     */
+    public function getReservations(): Collection
     {
-        return $this->reservation;
+        return $this->reservations;
+    }
+
+    /**
+     * Retourne la Reservation ACTIVE associée à ce Creneau, ou null si aucune
+     * (créneau libre ou toutes les Reservations passées sont annulées).
+     *
+     * Invariant garanti : au plus 1 Reservation ACTIVE par Creneau, grâce au
+     * lock PESSIMISTIC_WRITE dans ReservationController::enregistrerReservation
+     * (cf. Doctrine\DBAL\LockMode::PESSIMISTIC_WRITE).
+     *
+     * Utilisé par : isReserve(), getAuditeurReservation(), templates Twig,
+     * controllers (suppression/annulation), services (NotificationService,
+     * CreneauCalendarSerializer).
+     *
+     * Apparition : refacto DT-1 (OneToOne → OneToMany), 19/05/2026.
+     */
+    public function getReservationActive(): ?Reservation
+    {
+        foreach ($this->reservations as $reservation) {
+            if ($reservation->getStatut() === StatutReservation::ACTIVE) {
+                return $reservation;
+            }
+        }
+
+        return null;
     }
 
     public function isPasse(): bool
@@ -143,8 +199,7 @@ class Creneau
 
     public function isReserve(): bool
     {
-        return $this->reservation !== null
-            && $this->reservation->getStatut() === StatutReservation::ACTIVE;
+        return $this->getReservationActive() !== null;
     }
 
     public function isDisponible(): bool
@@ -154,10 +209,6 @@ class Creneau
 
     public function getAuditeurReservation(): ?Utilisateur
     {
-        if (!$this->isReserve()) {
-            return null;
-        }
-
-        return $this->reservation->getUtilisateur();
+        return $this->getReservationActive()?->getUtilisateur();
     }
 }

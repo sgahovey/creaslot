@@ -205,9 +205,13 @@ class CreneauController extends AbstractController
             return $refus;
         }
 
-        $auditeur = $creneau->getAuditeurReservation();
+        // DT-1 : capture la Reservation ACTIVE AVANT annulation pour la passer
+        // explicitement à notifierAuditeurSuppressionCreneau() après. Cohérent
+        // avec OneToMany (évite l'ambiguïté sur quelle résa annulée notifier).
+        $reservationAAnnuler = $creneau->getReservationActive();
+        $auditeur            = $reservationAAnnuler?->getUtilisateur();
 
-        if ($auditeur !== null) {
+        if ($reservationAAnnuler !== null) {
             $this->annulerReservationLiee($creneau);
         }
 
@@ -219,12 +223,12 @@ class CreneauController extends AbstractController
         $this->logger->info('Créneau supprimé', [
             'creneau_id'           => $creneau->getId(),
             'user_id'              => $utilisateur->getId(),
-            'reservation_annulee'  => $auditeur !== null ? 'oui' : 'non',
-            'notification_envoyee' => $auditeur !== null ? 'oui' : 'non',
+            'reservation_annulee'  => $reservationAAnnuler !== null ? 'oui' : 'non',
+            'notification_envoyee' => $reservationAAnnuler !== null ? 'oui' : 'non',
         ]);
 
-        if ($auditeur !== null) {
-            $this->notificationService->notifierAuditeurSuppressionCreneau($creneau);
+        if ($reservationAAnnuler !== null) {
+            $this->notificationService->notifierAuditeurSuppressionCreneau($creneau, $reservationAAnnuler);
         }
 
         $this->addFlash('success', $auditeur !== null
@@ -259,8 +263,8 @@ class CreneauController extends AbstractController
 
     private function annulerReservationLiee(Creneau $creneau): void
     {
-        $creneau->getReservation()
-            ->setStatut(StatutReservation::ANNULEE)
+        $creneau->getReservationActive()
+            ?->setStatut(StatutReservation::ANNULEE)
             ->setDateAnnulation(new \DateTimeImmutable())
             ->setMotifAnnulation('Créneau supprimé par le Personnel');
     }

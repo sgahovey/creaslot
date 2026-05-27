@@ -46,8 +46,10 @@ class CreneauRepository extends ServiceEntityRepository
 
         $this->appliquerFiltre($qb, $filtre);
 
-        // fetchJoinCollection: false — pas de OneToMany dans les JOINs (pas de fan-out)
-        return new Paginator($qb->getQuery(), false);
+        // DT-1 : fetchJoinCollection: true — addSelect('r') hydrate désormais une
+        // Collection<Reservation> (OneToMany) côté Creneau. Paginator a besoin de
+        // distinguer les lignes SQL des entités root pour COUNT/LIMIT corrects.
+        return new Paginator($qb->getQuery(), true);
     }
 
     /**
@@ -107,27 +109,6 @@ class CreneauRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    /**
-     * Retourne les créneaux disponibles (sans réservation) d'un Personnel, triés par date de début.
-     *
-     * @return Creneau[]
-     */
-    public function findDisponiblesParUtilisateur(Utilisateur $utilisateur): array
-    {
-        return $this->createQueryBuilder('c')
-            ->leftJoin('c.reservation', 'r')
-            ->andWhere('c.utilisateur = :utilisateur')
-            ->andWhere('c.estActif = true')
-            ->andWhere('r.id IS NULL')
-            ->setParameter('utilisateur', $utilisateur)
-            ->orderBy('c.dateDebut', 'ASC')
-            ->getQuery()
-            ->getResult();
-    }
-
-    /**
-     * Prochain créneau actif réservé (réservation ACTIVE) pour l'agenda.
-     */
     /**
      * Créneaux actifs du personnel dont l’intervalle chevauche ]debut, fin[
      * (sans adjacence : fin == début d’un autre créneau n’est pas un chevauchement).
@@ -221,11 +202,22 @@ class CreneauRepository extends ServiceEntityRepository
             ->innerJoin('c.typeRdv', 't')->addSelect('t')
             ->innerJoin('c.utilisateur', 'u')->addSelect('u')
             ->leftJoin('u.service', 's')->addSelect('s')
-            ->leftJoin('c.reservation', 'r')->addSelect('r')
             ->andWhere('c.estActif = true')
             ->andWhere('c.dateDebut > :now')
             ->andWhere('u.estActif = true')
-            ->andWhere('r.id IS NULL OR r.statut != :statutActif')
+            // DT-1 : un créneau est disponible ssi AUCUNE Reservation ACTIVE ne le réserve.
+            // Les Reservations ANNULEE ne le rendent plus indisponible (refacto OneToMany).
+            // NOT EXISTS plutôt que LEFT JOIN + (r.id IS NULL OR r.statut != ACTIVE) :
+            // en OneToMany, un créneau avec [ACTIVE + ANNULEE] produirait 2 lignes, la
+            // ligne ANNULEE matcherait le filtre et le créneau apparaîtrait à tort disponible.
+            ->andWhere(
+                'NOT EXISTS (
+                    SELECT 1
+                    FROM App\Entity\Reservation r_active
+                    WHERE r_active.creneau = c
+                        AND r_active.statut = :statutActif
+                )'
+            )
             ->setParameter('now', new \DateTimeImmutable())
             ->setParameter('statutActif', StatutReservation::ACTIVE)
             ->orderBy('c.dateDebut', 'ASC')

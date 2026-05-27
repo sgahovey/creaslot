@@ -416,7 +416,7 @@ readonly class NotificationService
             $this->logger->error('Echec envoi notification commentaire creneau', [
                 'type'                  => 'auditeur_commentaire_creneau',
                 'creneau_id'            => $creneau->getId(),
-                'reservation_id'        => $creneau->getReservation()?->getId(),
+                'reservation_id'        => $creneau->getReservationActive()?->getId(),
                 'auditeur_id'           => $auditeur->getId(),
                 'commentaire_avant_len' => strlen($commentaireAvant ?? ''),
                 'commentaire_apres_len' => strlen($creneau->getCommentaireAuditeur() ?? ''),
@@ -434,30 +434,30 @@ readonly class NotificationService
      * Politique Option B : erreurs SMTP loguées (sans PII) puis ignorées —
      * la suppression du créneau reste valide en BDD même si l'email échoue.
      *
-     * Garde-fou defensive : la méthode exige que la Reservation associée
-     * existe ET soit déjà au statut ANNULEE (le contrôleur appelant doit
-     * avoir déjà appelé annulerReservationLiee() avant cet appel).
+     * Garde-fou defensive : la méthode exige que la Reservation passée
+     * soit déjà au statut ANNULEE (le contrôleur appelant doit avoir
+     * appelé annulerReservationLiee() avant cet appel).
      *
-     * Note d'architecture : la méthode accède à l'Auditeur via
-     * $creneau->getReservation()->getUtilisateur() et NON via
-     * $creneau->getAuditeurReservation(), car cette dernière retourne null
-     * dès que le statut Reservation passe à ANNULEE (cf. Creneau::isReserve()).
+     * Architecture (DT-1) : la Reservation est passée explicitement par
+     * le caller (CreneauController::supprimer()) qui la capture AVANT
+     * l'annulation. Cela élimine l'ambiguïté liée à la relation OneToMany
+     * (un Creneau peut avoir plusieurs Reservations ANNULEE historiques —
+     * on notifie spécifiquement l'auditeur de CELLE qu'on vient d'annuler).
      *
      * RGPD : le log error ne contient AUCUN contenu sensible (pas de motif,
      * pas de nom en clair), uniquement les identifiants techniques.
      *
-     * @param Creneau $creneau Le créneau venant d'être supprimé (estActif=false, Reservation statut ANNULEE)
+     * @param Creneau     $creneau     Le créneau venant d'être supprimé (estActif=false)
+     * @param Reservation $reservation La Reservation associée, déjà annulée par annulerReservationLiee()
      */
-    public function notifierAuditeurSuppressionCreneau(Creneau $creneau): void
+    public function notifierAuditeurSuppressionCreneau(Creneau $creneau, Reservation $reservation): void
     {
-        // Garde-fou strict : Reservation présente ET annulée (préserve l'invariant).
-        $reservation = $creneau->getReservation();
-        if ($reservation === null || $reservation->getStatut() !== StatutReservation::ANNULEE) {
+        // Garde-fou : la Reservation doit être annulée (précondition du caller).
+        // Statut différent => incohérence côté caller, retour silencieux.
+        if ($reservation->getStatut() !== StatutReservation::ANNULEE) {
             return;
         }
 
-        // Accès auditeur via Reservation (PAS via getAuditeurReservation()
-        // qui retourne null après passage ACTIVE → ANNULEE).
         $auditeur  = $reservation->getUtilisateur();
         $personnel = $creneau->getUtilisateur();
 

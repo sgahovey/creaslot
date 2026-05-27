@@ -14,6 +14,7 @@ use App\Enum\StatutReservation;
 use App\Service\DateFormatterService;
 use App\Service\NotificationService;
 use DateTimeImmutable;
+use Doctrine\Common\Collections\ArrayCollection;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -531,7 +532,7 @@ final class NotificationServiceTest extends TestCase
                 $emailCapture = $email;
             });
 
-        $this->service->notifierAuditeurSuppressionCreneau($creneau);
+        $this->service->notifierAuditeurSuppressionCreneau($creneau, $reservation);
 
         self::assertNotNull($emailCapture);
 
@@ -569,7 +570,7 @@ final class NotificationServiceTest extends TestCase
         // Garde-fou : aucun envoi mail.
         $this->mailer->expects($this->never())->method('send');
 
-        $this->service->notifierAuditeurSuppressionCreneau($creneau);
+        $this->service->notifierAuditeurSuppressionCreneau($creneau, $reservation);
     }
 
     public function test_notifierAuditeurSuppressionCreneau_capture_les_exceptions_sans_propager(): void
@@ -591,7 +592,7 @@ final class NotificationServiceTest extends TestCase
             });
 
         // L'appel NE DOIT PAS lever d'exception malgré le throw du mailer.
-        $this->service->notifierAuditeurSuppressionCreneau($creneau);
+        $this->service->notifierAuditeurSuppressionCreneau($creneau, $reservation);
 
         self::assertCount(2, $errorCalls);
 
@@ -836,12 +837,13 @@ final class NotificationServiceTest extends TestCase
         $p = new \ReflectionProperty(Reservation::class, 'id');
         $p->setValue($r, $id);
 
-        // US-4.4 : Lier le côté inverse de la relation OneToOne Creneau↔Reservation.
+        // DT-1 : injecte la Reservation dans la Collection OneToMany via Reflection.
         // Doctrine UnitOfWork synchronise cela automatiquement après flush en runtime,
         // mais en environnement de tests pur (sans persistance BDD), on doit le faire
-        // manuellement pour que $creneau->isReserve() retourne true.
-        $refReservation = new \ReflectionProperty(Creneau::class, 'reservation');
-        $refReservation->setValue($creneau, $r);
+        // manuellement pour que $creneau->getReservationActive() / isReserve() retournent
+        // la Reservation injectée. La propriété est `reservations` (Collection<Reservation>).
+        $refReservation = new \ReflectionProperty(Creneau::class, 'reservations');
+        $refReservation->setValue($creneau, new ArrayCollection([$r]));
 
         return $r;
     }
