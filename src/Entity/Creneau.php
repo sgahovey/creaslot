@@ -9,6 +9,8 @@ use App\Repository\CreneauRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 #[ORM\Entity(repositoryClass: CreneauRepository::class)]
 #[ORM\Table(name: 'creneau')]
@@ -210,5 +212,42 @@ class Creneau
     public function getAuditeurReservation(): ?Utilisateur
     {
         return $this->getReservationActive()?->getUtilisateur();
+    }
+
+    /**
+     * Validation cross-fields : dateFin doit être strictement postérieure à dateDebut.
+     *
+     * ⚠️ Subtilité architecturale (DT-2) :
+     * Dans le flux Form actuel (CreneauType), les champs date/heureDebut/heureFin
+     * sont en `mapped: false` et le Controller assemble dateDebut/dateFin APRÈS
+     * l'appel à `$form->isValid()`. Conséquence : cette `#[Assert\Callback]` n'est
+     * PAS déclenchée par le flux form normal (les setters dateDebut/dateFin sont
+     * appelés après la validation).
+     *
+     * Elle joue donc le rôle de FILET DOCUMENTÉ pour les voies d'entrée non-form :
+     * - Fixtures (si générées avec des données aberrantes)
+     * - API future (si elle persiste un Creneau via validator standalone)
+     * - Console commands (scripting de création de créneaux)
+     * - Tout code appelant explicitement `$validator->validate($creneau)`
+     *
+     * Le fix principal du bug DT-2 vit dans CreneauType::validerCoherenceHoraires
+     * (niveau 2 — defense in depth).
+     *
+     * Apparition : DT-2 (validation horaire créneau), 28/05/2026.
+     */
+    #[Assert\Callback]
+    public function validerHoraires(ExecutionContextInterface $context): void
+    {
+        // Propriétés \DateTimeImmutable non-nullables typées : avant l'appel des
+        // setters (Creneau fraîchement instancié), elles sont non-initialisées.
+        if (!isset($this->dateDebut, $this->dateFin)) {
+            return;
+        }
+
+        if ($this->dateFin <= $this->dateDebut) {
+            $context->buildViolation("L'heure de fin doit être postérieure à l'heure de début.")
+                ->atPath('dateFin')
+                ->addViolation();
+        }
     }
 }

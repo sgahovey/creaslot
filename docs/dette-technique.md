@@ -1,6 +1,6 @@
 # Dette technique CreaSlot — Suivi
 
-Date dernière mise à jour : 27 mai 2026.
+Date dernière mise à jour : 28 mai 2026.
 Convention : DT-N = Dette Technique numéro N.
 
 ---
@@ -53,7 +53,28 @@ Convention : DT-N = Dette Technique numéro N.
 
 ---
 
-## DT-2 — Validation horaire créneau manquante (🔴 ÉLEVÉ)
+## DT-2 — Validation horaire créneau manquante (🔴 ÉLEVÉ) — ✅ RESOLVED 28/05/2026
+
+> **✅ RESOLVED le 28/05/2026** sur branche `bugfix/validation-horaire-creneau`.
+>
+> **Résumé fix** : Defense in depth 3 niveaux pour garantir `dateFin > dateDebut` :
+> - **Niveau 2 (fix principal, serveur)** : extension `CreneauType::validerCoherenceHoraires` (hook POST_SUBMIT) — check `heureFin > heureDebut` strict (A1) en mode "Personnalisée".
+> - **Niveau 1 (UX)** : HTML5 `min` dynamique JS sur l'input heureFin (synchronisé sur `change` de heureDebut) dans `nouveau.html.twig` + `modifier.html.twig`.
+> - **Niveau 3 (filet documenté)** : `#[Assert\Callback] validerHoraires()` sur l'Entity `Creneau` (dateFin > dateDebut).
+>
+> **Subtilité architecturale documentée** : les champs date/heure du Form sont en `mapped:false` ; le Controller assemble dateDebut/dateFin APRÈS `$form->isValid()`. Conséquence : le niveau 3 n'est PAS déclenché par le flux form normal (filet dormant pour les voies non-form : API/console futures). Choix assumé : pas de `$validator->validate($creneau)` explicite dans le Controller pour éviter la duplication avec le niveau 2.
+>
+> **Validations** :
+> - ✅ 79/79 tests verts (66 baseline + 3 D1 Form + 3 D3 Entity + 7 intégration DQL)
+> - ✅ Smoke E2E manuel : cas 10h00→02h00 rejeté avec message exact ; cas 10h00→11h00 accepté
+>
+> **Co-correctif embarqué (hotfix DT-1 résiduel)** : 5 requêtes DQL de `CreneauRepository` référençaient encore `c.reservation` (singulier, association supprimée par le refacto OneToMany [[DT-1]]) → corrigées en `c.reservations`. HTTP 500 « has no association named reservation » détecté en E2E. Faille de couverture fermée par un test d'intégration dédié (`CreneauRepositoryQueriesTest`, 7 tests sur 8 méthodes DQL).
+>
+> **Fichiers impactés** : `CreneauType`, `Creneau`, 2 templates, `CreneauRepository` (hotfix) + 3 fichiers de tests.
+
+---
+
+### Contenu historique original (préservé pour traçabilité MSP3)
 
 **Détecté** : 18/05/2026, lors validation visuelle email US-4.6.
 
@@ -161,3 +182,21 @@ Sans ce setup, tout test d'intégration extending `KernelTestCase` échoue avec 
 **Recommandation** : Option C (init MySQL au démarrage) — totalement transparent pour le dev, aucune commande supplémentaire à mémoriser. Option B si on veut plus de contrôle (ex : truncate sélectif entre suites).
 
 **Priorité** : 🟢 basse, à faire avant si plusieurs devs rejoignent le projet OU avant déploiement CI/CD.
+
+---
+
+## DT-7 — Factorisation JS templates créneau (🟢 BAS)
+
+**Détecté** : 28/05/2026, lors du fix [[DT-2]] (niveau 1 UX).
+
+**Contexte** : Le JavaScript des templates `personnel/creneau/nouveau.html.twig` et `personnel/creneau/modifier.html.twig` est dupliqué (mise en valeur TypeRdv, visibilité conditionnelle heureFin, `required` dynamique, et désormais le `min` dynamique DT-2). Avec 2 templates, le DRY n'est pas critique ; mais un 3e point d'entrée (ex : modal de création rapide) ou un besoin de tester le JS rendrait la factorisation utile.
+
+**Stratégie de fix proposée** :
+
+- **Option A** : Fichier asset dédié `assets/js/creneau-form.js` (AssetMapper) importé dans les 2 templates
+- **Option B** : Stimulus controller `creneau_form_controller.js` (pattern Symfony moderne, déjà présent dans la stack via StimulusBundle)
+- **Option C** : Macro Twig `{% macro creneau_form_js() %}` (inline mais centralisé)
+
+**Recommandation** : Option B (Stimulus) — la stack embarque déjà StimulusBundle + AssetMapper, et c'est testable/réutilisable.
+
+**Priorité** : 🟢 basse, à faire si 3e template apparaît OU besoin de tests JS.

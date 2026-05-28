@@ -151,8 +151,20 @@ class CreneauType extends AbstractType
             }
         }
 
-        if ($dureeFld->getData() === 'custom' && $heureFinFld->getData() === null) {
-            $heureFinFld->addError(new FormError("L'heure de fin est obligatoire pour une durée personnalisée."));
+        if ($dureeFld->getData() === 'custom') {
+            $heureDebut = $heureFld->getData();
+            $heureFin   = $heureFinFld->getData();
+
+            if ($heureFin === null) {
+                $heureFinFld->addError(new FormError("L'heure de fin est obligatoire pour une durée personnalisée."));
+            } elseif ($heureDebut !== null && $heureFin->format('H:i') <= $heureDebut->format('H:i')) {
+                // DT-2 : heureFin doit être strictement postérieure à heureDebut (règle A1).
+                // Sans ce garde-fou, calculerDateFin() pose dateFin au même jour que
+                // dateDebut → un créneau 10h00→02h00 produit dateFin < dateDebut.
+                // Comparaison sur la composante horaire seule : les deux TimeType
+                // partagent une date conventionnelle, seule l'heure porte du sens métier.
+                $heureFinFld->addError(new FormError("L'heure de fin doit être postérieure à l'heure de début."));
+            }
         }
     }
 

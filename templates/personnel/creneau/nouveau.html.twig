@@ -187,6 +187,25 @@
     radiosDuree.forEach(function (r) { r.addEventListener('change', majVisibiliteHeureFin); });
     majVisibiliteHeureFin();
 
+    // ── DT-2 niveau 1 (UX) : min dynamique heureFin basé sur heureDebut ──
+    // Confort UX uniquement, PAS une sécurité : la validation serveur
+    // (CreneauType::validerCoherenceHoraires, niveau 2) reste le vrai filet.
+    const inputHeureDebut = document.getElementById('{{ formulaire.heureDebut.vars.id }}');
+
+    function syncMinHeureFin() {
+        if (!inputHeureFin) return;
+        if (inputHeureDebut && inputHeureDebut.value) {
+            inputHeureFin.min = inputHeureDebut.value;
+        } else {
+            inputHeureFin.removeAttribute('min');
+        }
+    }
+
+    if (inputHeureDebut) {
+        inputHeureDebut.addEventListener('change', syncMinHeureFin);
+    }
+    syncMinHeureFin();
+
     // ── Compteur de caractères ─────────────────────────────────────
     const textarea     = document.getElementById('{{ formulaire.commentaireAuditeur.vars.id }}');
     const nbCaracteres = document.getElementById('nb-caracteres');

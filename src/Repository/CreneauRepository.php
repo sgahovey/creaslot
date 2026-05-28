@@ -36,7 +36,7 @@ class CreneauRepository extends ServiceEntityRepository
     ): Paginator {
         $qb = $this->createQueryBuilder('c')
             ->leftJoin('c.typeRdv', 't')->addSelect('t')
-            ->leftJoin('c.reservation', 'r')->addSelect('r')
+            ->leftJoin('c.reservations', 'r')->addSelect('r')
             ->leftJoin('r.utilisateur', 'a')->addSelect('a')
             ->where('c.utilisateur = :personnel')
             ->setParameter('personnel', $personnel)
@@ -88,11 +88,11 @@ class CreneauRepository extends ServiceEntityRepository
             ->leftJoin('c.typeRdv', 't')->addSelect('t');
 
         if ($reserveOnly) {
-            $qb->innerJoin('c.reservation', 'r')->addSelect('r')
+            $qb->innerJoin('c.reservations', 'r')->addSelect('r')
                 ->andWhere('r.statut = :statutReservationActive')
                 ->setParameter('statutReservationActive', StatutReservation::ACTIVE);
         } else {
-            $qb->leftJoin('c.reservation', 'r')->addSelect('r');
+            $qb->leftJoin('c.reservations', 'r')->addSelect('r');
         }
 
         return $qb
@@ -145,7 +145,7 @@ class CreneauRepository extends ServiceEntityRepository
     public function findNextReservedCreneau(Utilisateur $personnel): ?Creneau
     {
         return $this->createQueryBuilder('c')
-            ->innerJoin('c.reservation', 'r')->addSelect('r')
+            ->innerJoin('c.reservations', 'r')->addSelect('r')
             ->leftJoin('r.utilisateur', 'a')->addSelect('a')
             ->andWhere('r.statut = :statutActif')
             ->setParameter('statutActif', StatutReservation::ACTIVE)
@@ -169,7 +169,7 @@ class CreneauRepository extends ServiceEntityRepository
         \DateTimeImmutable $maintenant,
     ): ?Creneau {
         return $this->createQueryBuilder('c')
-            ->innerJoin('c.reservation', 'r')->addSelect('r')
+            ->innerJoin('c.reservations', 'r')->addSelect('r')
             ->leftJoin('r.utilisateur', 'a')->addSelect('a')
             ->andWhere('c.utilisateur = :utilisateur')
             ->andWhere('c.estActif = true')
