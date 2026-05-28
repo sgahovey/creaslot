@@ -1,11 +1,31 @@
 # Dette technique CreaSlot — Suivi
 
-Date dernière mise à jour : 18 mai 2026.
+Date dernière mise à jour : 27 mai 2026.
 Convention : DT-N = Dette Technique numéro N.
 
 ---
 
-## DT-1 — Architecture OneToOne Creneau↔Reservation (🔴 CRITIQUE)
+## DT-1 — Architecture OneToOne Creneau↔Reservation (🔴 CRITIQUE) — ✅ RESOLVED 27/05/2026
+
+> **✅ RESOLVED le 27/05/2026** sur branche `bugfix/reservation-onetomany-creneau`.
+>
+> **Résumé fix** : Refacto vers OneToMany (Stratégie S4 retenue). Migration Doctrine `Version20260527155759` drop l'index UNIQUE sur `reservation.id_creneau` et le remplace par un index non-unique. L'invariant "1 Reservation ACTIVE max par Creneau" est désormais garanti applicatif via le `PESSIMISTIC_WRITE` dans `ReservationController::enregistrerReservation`.
+>
+> **Validations** :
+> - ✅ 66/66 tests verts (65 existants + 1 nouveau test d'intégration `tests/Integration/ReservationRereservationApresAnnulationTest.php` qui fige la non-régression)
+> - ✅ Smoke E2E manuel : Auditeur réserve → annule → re-réserve un créneau, le scénario qui causait HTTP 500 fonctionne désormais
+>
+> **Sous-correctifs notables** :
+> - R7 (`CreneauRepository::findDisponibles`) : conversion `LEFT JOIN + (r.id IS NULL OR r.statut != ACTIVE)` en `NOT EXISTS` (anti-régression OneToMany — sans cela, un créneau avec `[ACTIVE + ANNULEE]` apparaîtrait à tort disponible)
+> - Refacto signature `NotificationService::notifierAuditeurSuppressionCreneau(Creneau $c, Reservation $r)` : élimine le workaround documenté en PHPDoc (passage explicite de la Reservation par le caller, post-annulation)
+> - Premier test d'intégration `KernelTestCase` du projet — pattern réutilisable pour futurs cas (a généré [[DT-6]])
+> - Cleanup `findDisponiblesParUtilisateur` (méthode morte 0 consommateur)
+>
+> **Fichiers impactés** : 9 fichiers modifiés + 1 migration + 1 test d'intégration créé.
+
+---
+
+### Contenu historique original (préservé pour traçabilité MSP3)
 
 **Détecté** : 18/05/2026, lors validation US-4.6 (smoke test cron rappel J-1).
 
@@ -109,3 +129,35 @@ Recommandation : appliquer les 3 niveaux (defense in depth, best practice Symfon
 - Si pas de besoin futur, garder `readonly class` simple
 
 **Priorité** : 🟢 basse, statu quo acceptable.
+
+---
+
+## DT-6 — Setup BDD test à automatiser (🟢 BAS)
+
+**Détecté** : 27/05/2026, lors mise en place du 1er test d'intégration (cf. [[DT-1]]).
+
+**Contexte** : La création de la BDD `creaslot_test` + GRANT user est actuellement manuelle one-shot, à rejouer après chaque `docker compose down -v` ou sur tout nouveau clone du repo :
+
+```sql
+CREATE DATABASE IF NOT EXISTS creaslot_test;
+GRANT ALL PRIVILEGES ON creaslot_test.* TO 'creaslot'@'%';
+FLUSH PRIVILEGES;
+```
+
+Puis :
+
+```bash
+docker compose exec app php bin/console doctrine:migrations:migrate -n --env=test
+```
+
+Sans ce setup, tout test d'intégration extending `KernelTestCase` échoue avec « Access denied for user 'creaslot'@'%' to database 'creaslot_test' » (le `dbname_suffix: '_test%env(default::TEST_TOKEN)%'` de `config/packages/doctrine.yaml` sous `when@test` ajoute le suffix `_test` à la BDD).
+
+**Stratégie de fix proposée** :
+
+- **Option A** : Script `bin/setup-test-db.sh` à exécuter une fois après `git clone`
+- **Option B** : Commande Symfony custom `app:setup-test-db` (intégrée dans un `Makefile`)
+- **Option C** : `init.sql` exécuté au démarrage du conteneur MySQL (via volume monté dans `/docker-entrypoint-initdb.d/`)
+
+**Recommandation** : Option C (init MySQL au démarrage) — totalement transparent pour le dev, aucune commande supplémentaire à mémoriser. Option B si on veut plus de contrôle (ex : truncate sélectif entre suites).
+
+**Priorité** : 🟢 basse, à faire avant si plusieurs devs rejoignent le projet OU avant déploiement CI/CD.

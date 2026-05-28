@@ -18,8 +18,8 @@ class Reservation
     #[ORM\Column]
     private ?int $id = null;
 
-    #[ORM\OneToOne(targetEntity: Creneau::class, inversedBy: 'reservation')]
-    #[ORM\JoinColumn(name: 'id_creneau', nullable: false, unique: true)]
+    #[ORM\ManyToOne(targetEntity: Creneau::class, inversedBy: 'reservations')]
+    #[ORM\JoinColumn(name: 'id_creneau', nullable: false)]
     private Creneau $creneau;
 
     #[ORM\ManyToOne(targetEntity: Utilisateur::class, inversedBy: 'reservations')]
