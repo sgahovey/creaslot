@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\DataFixtures;
 
 use App\Entity\Creneau;
+use App\Entity\Notification;
 use App\Entity\Reservation;
 use App\Entity\Service;
 use App\Entity\TypeRdv;
 use App\Entity\Utilisateur;
 use App\Enum\RoleUtilisateur;
 use App\Enum\StatutReservation;
+use App\Enum\TypeNotification;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -31,6 +33,7 @@ class AppFixtures extends Fixture
 
         $creneaux = $this->creerCreneaux($manager, $personnels, $types);
         $this->creerReservations($manager, $creneaux, $auditeurs);
+        $this->creerNotifications($manager, $auditeurs);
 
         $manager->flush();
     }
@@ -235,5 +238,44 @@ class AppFixtures extends Fixture
                      ->setMotifAnnulation('Indisponibilité imprévue de l\'auditeur.')
                      ->setDateAnnulation(new \DateTimeImmutable('-1 day'));
         $manager->persist($reservation3);
+    }
+
+    /**
+     * Notifications in-app de démo (US-4.7), pour visualiser la page
+     * « Mes notifications » et le badge non-lues côté Auditeur.
+     *
+     * Données illustratives (non liées à une Reservation : le champ est nullable).
+     * Xavier (compte de test principal) reçoit 4 notifications de types variés
+     * dont 2 non lues ; Julie en reçoit 1.
+     *
+     * @param Utilisateur[] $auditeurs
+     */
+    private function creerNotifications(ObjectManager $manager, array $auditeurs): void
+    {
+        $xavier = $auditeurs[0];
+        $julie  = $auditeurs[1];
+
+        $donnees = [
+            [$xavier, TypeNotification::CONFIRMATION_RESERVATION, 'Réservation confirmée',
+                'Votre rendez-vous avec Marie Dupont le 06/06/2026 à 10h00 a été confirmé.', false],
+            [$xavier, TypeNotification::RAPPEL_J1, 'Rappel : rendez-vous demain',
+                'N\'oubliez pas votre rendez-vous demain, le 06/06/2026 à 10h00, avec Marie Dupont.', false],
+            [$xavier, TypeNotification::MODIFICATION_COMMENTAIRE, 'Modification du créneau',
+                'Le commentaire de votre rendez-vous du 06/06/2026 à 10h00 a été modifié par Marie Dupont.', true],
+            [$xavier, TypeNotification::ANNULATION_RESERVATION, 'Réservation annulée',
+                'Votre rendez-vous avec Jean Martin le 05/06/2026 à 14h00 a été annulé. Motif : Indisponibilité du conseiller.', true],
+            [$julie, TypeNotification::SUPPRESSION_CRENEAU, 'Créneau supprimé',
+                'Votre rendez-vous du 04/06/2026 à 09h00 avec Sophie Lefevre a été annulé : le créneau a été supprimé.', false],
+        ];
+
+        foreach ($donnees as [$destinataire, $type, $titre, $message, $lu]) {
+            $notification = (new Notification())
+                ->setDestinataire($destinataire)
+                ->setType($type)
+                ->setTitre($titre)
+                ->setMessage($message)
+                ->setLu($lu);
+            $manager->persist($notification);
+        }
     }
 }

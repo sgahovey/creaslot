@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\Creneau;
+use App\Entity\Notification;
 use App\Entity\Reservation;
+use App\Entity\Utilisateur;
 use App\Enum\StatutReservation;
+use App\Enum\TypeNotification;
+use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -49,6 +53,7 @@ readonly class NotificationService
         private UrlGeneratorInterface $urlGenerator,
         private LoggerInterface $logger,
         private DateFormatterService $dateFormatter,
+        private EntityManagerInterface $entityManager,
         #[Autowire('%env(APP_NOTIFICATION_FROM)%')]
         private string $expediteur,
         #[Autowire('%env(APP_NOTIFICATION_REPLY_TO)%')]
@@ -172,6 +177,19 @@ readonly class NotificationService
             'lien_mes_reservations'  => $this->genererLienAbsolu('app_mes_reservations'),
         ];
 
+        // US-4.7 : persiste la notification in-app AVANT l'envoi email (Q-US47-F).
+        $this->persisterNotification(
+            $auditeur,
+            TypeNotification::CONFIRMATION_RESERVATION,
+            'Réservation confirmée',
+            sprintf(
+                'Votre rendez-vous avec %s le %s a été confirmé.',
+                $personnel->getNomComplet(),
+                $this->dateFormatter->pourSujetEmail($creneau->getDateDebut()),
+            ),
+            $reservation,
+        );
+
         try {
             $this->envoyer(
                 $auditeur->getEmail(),
@@ -279,6 +297,26 @@ readonly class NotificationService
             'motif_annulation'      => $reservation->getMotifAnnulation(),
             'lien_mes_reservations' => $this->genererLienAbsolu('app_mes_reservations'),
         ];
+
+        // US-4.7 : persiste la notification in-app AVANT l'envoi email (Q-US47-F).
+        $message = sprintf(
+            'Votre rendez-vous avec %s le %s a été annulé.',
+            $personnel->getNomComplet(),
+            $this->dateFormatter->pourSujetEmail($creneau->getDateDebut()),
+        );
+
+        $motif = $reservation->getMotifAnnulation();
+        if ($motif !== null && $motif !== '') {
+            $message .= ' Motif : ' . $motif;
+        }
+
+        $this->persisterNotification(
+            $auditeur,
+            TypeNotification::ANNULATION_RESERVATION,
+            'Réservation annulée',
+            $message,
+            $reservation,
+        );
 
         try {
             $this->envoyer(
@@ -405,6 +443,21 @@ readonly class NotificationService
             'lien_mes_reservations' => $this->genererLienAbsolu('app_mes_reservations'),
         ];
 
+        // US-4.7 : persiste la notification in-app AVANT l'envoi email (Q-US47-F).
+        // Reservation liée = la résa ACTIVE courante (théoriquement non-null ici
+        // grâce au garde-fou isReserve() en tête de méthode ; le helper tolère null).
+        $this->persisterNotification(
+            $auditeur,
+            TypeNotification::MODIFICATION_COMMENTAIRE,
+            'Modification du créneau',
+            sprintf(
+                'Le commentaire de votre rendez-vous du %s a été modifié par %s.',
+                $this->dateFormatter->pourSujetEmail($creneau->getDateDebut()),
+                $personnel->getNomComplet(),
+            ),
+            $creneau->getReservationActive(),
+        );
+
         try {
             $this->envoyer(
                 $auditeur->getEmail(),
@@ -475,6 +528,19 @@ readonly class NotificationService
             'lien_creneaux_disponibles' => $this->genererLienAbsolu('app_creneaux_disponibles'),
         ];
 
+        // US-4.7 : persiste la notification in-app AVANT l'envoi email (Q-US47-F).
+        $this->persisterNotification(
+            $auditeur,
+            TypeNotification::SUPPRESSION_CRENEAU,
+            'Créneau supprimé',
+            sprintf(
+                'Votre rendez-vous du %s avec %s a été annulé : le créneau a été supprimé.',
+                $this->dateFormatter->pourSujetEmail($creneau->getDateDebut()),
+                $personnel->getNomComplet(),
+            ),
+            $reservation,
+        );
+
         try {
             $this->envoyer(
                 $auditeur->getEmail(),
@@ -539,6 +605,19 @@ readonly class NotificationService
             'lien_mes_reservations' => $this->genererLienAbsolu('app_mes_reservations'),
         ];
 
+        // US-4.7 : persiste la notification in-app AVANT l'envoi email (Q-US47-F).
+        $this->persisterNotification(
+            $auditeur,
+            TypeNotification::RAPPEL_J1,
+            'Rappel : rendez-vous demain',
+            sprintf(
+                "N'oubliez pas votre rendez-vous demain, le %s, avec %s.",
+                $this->dateFormatter->pourSujetEmail($creneau->getDateDebut()),
+                $personnel->getNomComplet(),
+            ),
+            $reservation,
+        );
+
         try {
             $this->envoyer(
                 $auditeur->getEmail(),
@@ -556,5 +635,35 @@ readonly class NotificationService
                 'message'        => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Persiste une Notification in-app pour le destinataire (US-4.7).
+     *
+     * Contrat d'appel : invoquée par les méthodes notifier* publiques APRÈS le
+     * commit du flux métier (Controller ou Command). NE doit PAS être appelée
+     * pendant une transaction PESSIMISTIC_WRITE active (cf. R7/R8 audit US-4.7),
+     * car flush() vide tout l'UnitOfWork.
+     *
+     * persist + flush AVANT l'envoi email (Q-US47-F) : la Notification in-app est
+     * indépendante de l'email et constitue le filet de traçabilité quand l'envoi
+     * SMTP échoue. La persister d'abord garantit la trace même en cas d'échec.
+     */
+    private function persisterNotification(
+        Utilisateur $destinataire,
+        TypeNotification $type,
+        string $titre,
+        string $message,
+        ?Reservation $reservation = null,
+    ): void {
+        $notification = (new Notification())
+            ->setDestinataire($destinataire)
+            ->setType($type)
+            ->setTitre($titre)
+            ->setMessage($message)
+            ->setReservation($reservation);
+
+        $this->entityManager->persist($notification);
+        $this->entityManager->flush();
     }
 }
