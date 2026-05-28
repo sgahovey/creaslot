@@ -109,13 +109,28 @@ Recommandation : appliquer les 3 niveaux (defense in depth, best practice Symfon
 
 ---
 
-## DT-3 — PHPUnit Notices willReturnCallback (🟢 BAS)
+## DT-3 — PHPUnit Notices willReturnCallback (🟢 BAS) — 🟡 PARTIELLEMENT RÉSOLU
+
+> **🟡 Résolution partielle le 28/05/2026 (US-4.7)** : le bon pattern a été identifié
+> et appliqué à TOUS les nouveaux tests US-4.7, sans introduire de nouvelle notice.
+>
+> **Cause réelle précisée** : la notice PHPUnit 13 est *« No expectations were
+> configured for the mock object ... Consider refactoring your test code to use a
+> test stub instead »*. Elle apparaît dès qu'un `createMock()` est utilisé comme
+> simple doublure (juste `->method()->willReturn()`) sans `->expects()`.
+>
+> **Pattern correctif** : `createStub()` pour les doublures sans expectations,
+> `createMock()` réservé aux vrais mocks (avec `->expects()`). Appliqué dans
+> `tests/Twig/NotificationExtensionTest.php`.
+>
+> **Reste à faire** : migrer les ~30 notices existantes (helpers de
+> `NotificationServiceTest`) au pattern `createStub()`. Non bloquant, cosmétique.
 
 **Détecté** : 18/05/2026, baseline US-4.2 à US-4.6.
 
-**Symptôme** : 30 PHPUnit Notices à l'exécution (pattern willReturnCallback dans helpers de tests).
+**Symptôme** : 30 PHPUnit Notices à l'exécution (mocks utilisés comme stubs sans expectations).
 
-**Stratégie de fix** : refacto progressif vers willReturn (cas simples) ou expectations strictes (cas complexes).
+**Stratégie de fix** : remplacer `createMock()` par `createStub()` pour les doublures sans `->expects()`.
 
 **Priorité** : 🟢 basse, cosmétique, n'impacte pas la production.
 

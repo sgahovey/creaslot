@@ -1,0 +1,99 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes notifications{% endblock %}
+
+{% block body %}
+<div class="container py-4" style="max-width: 760px;">
+
+    {# ── En-tête ─────────────────────────────────────────────────────── #}
+    <div class="mb-4">
+        <h1 class="h4 fw-bold mb-1" style="color: var(--cs-text-primary);">
+            <i class="bi bi-bell me-2" aria-hidden="true"></i>Mes notifications
+        </h1>
+        <p class="text-muted mb-0" style="font-size: .875rem;" aria-live="polite" aria-atomic="true">
+            {% if total == 0 %}
+                Aucune notification à afficher.
+            {% elseif total == 1 %}
+                1 notification.
+            {% else %}
+                {{ total }} notifications.
+            {% endif %}
+        </p>
+    </div>
+
+    {% if total == 0 %}
+
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-bell-slash fs-1 d-block mb-3" aria-hidden="true"></i>
+            <p class="mb-0 fw-semibold">Vous n'avez aucune notification pour le moment.</p>
+            <p class="mb-0" style="font-size: .875rem;">
+                Vous retrouverez ici toutes les notifications liées à vos rendez-vous.
+            </p>
+        </div>
+
+    {% else %}
+
+        <div class="list-group shadow-sm" style="border-radius: var(--cs-radius-lg); overflow: hidden;">
+            {% for notification in notifications %}
+                <div class="list-group-item d-flex gap-3 py-3 px-4" aria-label="Notification">
+                    <div class="pt-1">
+                        <i class="bi {{ notification.type.icone }} fs-4"
+                           style="color: var(--cs-blue-primary);"
+                           aria-hidden="true"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start gap-3 mb-1">
+                            <h2 class="h6 fw-semibold mb-0" style="color: var(--cs-text-primary);">
+                                {{ notification.titre }}
+                            </h2>
+                            <small class="text-muted flex-shrink-0">
+                                {{ notification.dateCreation|date('d/m/Y à H\\hi') }}
+                            </small>
+                        </div>
+                        <p class="mb-0" style="font-size: .9rem;">{{ notification.message }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        {# ── Pagination ───────────────────────────────────────────────── #}
+        {% if nbPages > 1 %}
+            <nav class="mt-4" aria-label="Pagination des notifications">
+                <ul class="pagination justify-content-center">
+
+                    <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                        <a class="page-link"
+                           href="{{ path('app_mes_notifications', { page: page - 1 }) }}"
+                           aria-label="Page précédente"
+                           {% if page == 1 %}aria-disabled="true" tabindex="-1"{% endif %}>
+                            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                        </a>
+                    </li>
+
+                    {% for p in 1..nbPages %}
+                        <li class="page-item {% if p == page %}active{% endif %}"
+                            {% if p == page %}aria-current="page"{% endif %}>
+                            <a class="page-link"
+                               href="{{ path('app_mes_notifications', { page: p }) }}">
+                                {{ p }}
+                            </a>
+                        </li>
+                    {% endfor %}
+
+                    <li class="page-item {% if page == nbPages %}disabled{% endif %}">
+                        <a class="page-link"
+                           href="{{ path('app_mes_notifications', { page: page + 1 }) }}"
+                           aria-label="Page suivante"
+                           {% if page == nbPages %}aria-disabled="true" tabindex="-1"{% endif %}>
+                            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                        </a>
+                    </li>
+
+                </ul>
+            </nav>
+        {% endif %}
+
+    {% endif %}
+
+</div>
+{% endblock %}

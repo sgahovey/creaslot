@@ -15,6 +15,7 @@ use App\Service\DateFormatterService;
 use App\Service\NotificationService;
 use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -44,6 +45,8 @@ final class NotificationServiceTest extends TestCase
 
     private LoggerInterface&MockObject $logger;
 
+    private EntityManagerInterface&MockObject $entityManager;
+
     private NotificationService $service;
 
     protected function setUp(): void
@@ -51,6 +54,7 @@ final class NotificationServiceTest extends TestCase
         $this->mailer       = $this->createMock(MailerInterface::class);
         $this->urlGenerator = $this->createMock(UrlGeneratorInterface::class);
         $this->logger       = $this->createMock(LoggerInterface::class);
+        $this->entityManager = $this->createMock(EntityManagerInterface::class);
 
         // URLs absolues retournées de façon déterministe pour les 3 routes utilisées.
         $this->urlGenerator->method('generate')
@@ -65,6 +69,7 @@ final class NotificationServiceTest extends TestCase
             urlGenerator:   $this->urlGenerator,
             logger:         $this->logger,
             dateFormatter:  new DateFormatterService(), // instance réelle, service stateless
+            entityManager:  $this->entityManager,
             expediteur:     'noreply@test.local',
             replyTo:        'contact@test.local',
             redirectionDev: null, // pas de redirection en tests : sujet et destinataire non modifiés
