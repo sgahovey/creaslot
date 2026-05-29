@@ -1,0 +1,55 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes préférences{% endblock %}
+
+{% block body %}
+<div class="container py-4" style="max-width: 720px;">
+
+    <h1 class="h4 fw-bold mb-4" style="color: var(--cs-text-primary);">
+        <i class="bi bi-sliders me-2" aria-hidden="true"></i>Mes préférences de notifications
+    </h1>
+
+    {# Bloc explicatif RGPD #}
+    <div class="alert alert-info d-flex gap-2">
+        <i class="bi bi-info-circle flex-shrink-0 mt-1" aria-hidden="true"></i>
+        <div>
+            <p class="mb-2">
+                Vous recevez par défaut les emails liés à vos rendez-vous. Vous pouvez
+                désactiver ci-dessous les emails de <strong>confort</strong> (modification
+                de commentaire et rappel de la veille).
+            </p>
+            <p class="mb-0">
+                Les notifications de <strong>confirmation</strong>, d'<strong>annulation</strong>
+                et de <strong>suppression</strong> restent toujours envoyées : elles sont
+                nécessaires au bon déroulement de votre rendez-vous. Dans tous les cas, vos
+                notifications restent consultables dans
+                <a href="{{ path('app_mes_notifications') }}">Mes notifications</a>.
+            </p>
+        </div>
+    </div>
+
+    {# Formulaire préférences #}
+    <div class="card border-0 shadow-sm" style="border-radius: var(--cs-radius-lg);">
+        <div class="card-body p-4">
+            {{ form_start(formulaire) }}
+
+                <div class="mb-3">
+                    {{ form_row(formulaire.emailModificationCommentaire) }}
+                </div>
+                <div class="mb-4">
+                    {{ form_row(formulaire.emailRappelJ1) }}
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn cs-btn-primary py-2 px-4 fw-semibold">
+                        <i class="bi bi-check2 me-1" aria-hidden="true"></i>
+                        Enregistrer mes préférences
+                    </button>
+                </div>
+
+            {{ form_end(formulaire) }}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

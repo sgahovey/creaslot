@@ -56,6 +56,23 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private bool $estActif = true;
 
+    /**
+     * Préférences notifications US-4.8 — canal EMAIL uniquement (B2).
+     *
+     * La notification in-app reste TOUJOURS persistée (audit trail) ; seul l'envoi
+     * email est conditionné par ces préférences. Seuls les types « confort » sont
+     * désactivables — les types critiques (CONFIRMATION / ANNULATION / SUPPRESSION)
+     * sont toujours envoyés car nécessaires à l'exécution du service.
+     *
+     * Défaut true (F1) : base légale RGPD art. 6.1.b (exécution du contrat), pas
+     * 6.1.a (consentement) — d'où l'opt-out plutôt que l'opt-in.
+     */
+    #[ORM\Column(name: 'email_modification_commentaire', options: ['default' => true])]
+    private bool $emailModificationCommentaire = true;
+
+    #[ORM\Column(name: 'email_rappel_j1', options: ['default' => true])]
+    private bool $emailRappelJ1 = true;
+
     #[ORM\ManyToOne(targetEntity: Service::class, inversedBy: 'utilisateurs')]
     #[ORM\JoinColumn(name: 'id_service', nullable: true)]
     private ?Service $service = null;
@@ -211,6 +228,30 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     public function setEstActif(bool $estActif): static
     {
         $this->estActif = $estActif;
+
+        return $this;
+    }
+
+    public function isEmailModificationCommentaire(): bool
+    {
+        return $this->emailModificationCommentaire;
+    }
+
+    public function setEmailModificationCommentaire(bool $emailModificationCommentaire): static
+    {
+        $this->emailModificationCommentaire = $emailModificationCommentaire;
+
+        return $this;
+    }
+
+    public function isEmailRappelJ1(): bool
+    {
+        return $this->emailRappelJ1;
+    }
+
+    public function setEmailRappelJ1(bool $emailRappelJ1): static
+    {
+        $this->emailRappelJ1 = $emailRappelJ1;
 
         return $this;
     }

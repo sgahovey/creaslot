@@ -140,6 +140,10 @@ class AppFixtures extends Fixture
             $auditeurs[] = $utilisateur;
         }
 
+        // US-4.8 : démo E2E — Julie a désactivé l'email de rappel J-1 (illustre
+        // le filtrage RGPD). Les autres Auditeurs gardent les défauts (true, F1).
+        $auditeurs[1]->setEmailRappelJ1(false);
+
         return $auditeurs;
     }
 
