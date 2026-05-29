@@ -11,10 +11,14 @@ use App\Enum\RoleUtilisateur;
 use App\Repository\CreneauRepository;
 use App\Service\SlotService;
 use DateTimeImmutable;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 
+// setUp à mocks partagés (repository, logger) utilisés comme stubs selon les tests :
+// opt-out PHPUnit 13 de la notice « no expectations configured » (clôture DT-3).
+#[AllowMockObjectsWithoutExpectations]
 final class SlotServiceTest extends TestCase
 {
     private CreneauRepository&MockObject $repository;

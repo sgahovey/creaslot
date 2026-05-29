@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Service;
 
 use App\Entity\Creneau;
+use App\Entity\Notification;
 use App\Entity\Reservation;
 use App\Entity\Service;
 use App\Entity\TypeRdv;
@@ -16,6 +17,7 @@ use App\Service\NotificationService;
 use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -36,7 +38,15 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
  * (US-4.1) n'est pas couverte unitairement. Validation actuelle uniquement
  * visuelle via app:email:test. À couvrir dans une US ultérieure dédiée à
  * la consolidation des tests US-4.1.
+ *
+ * #[AllowMockObjectsWithoutExpectations] (US-4.8) : le setUp crée des mocks
+ * partagés (mailer, urlGenerator, logger, entityManager) que chaque test
+ * configure différemment — certains comme mocks (->expects()), d'autres comme
+ * stubs (->method()/willReturnMap, ou no-op). Cet opt-out PHPUnit 13 supprime
+ * la notice « no expectations configured » sans dégrader la rigueur (les
+ * expects() restent vérifiés). Résout la dette DT-3.
  */
+#[AllowMockObjectsWithoutExpectations]
 final class NotificationServiceTest extends TestCase
 {
     private MailerInterface&MockObject $mailer;
@@ -711,6 +721,73 @@ final class NotificationServiceTest extends TestCase
         self::assertArrayHasKey('reservation_id', $errorCalls[1]['context']);
         self::assertArrayHasKey('auditeur_id', $errorCalls[1]['context']);
         self::assertArrayHasKey('exception', $errorCalls[1]['context']);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Tests US-4.8 — Préférences notifications (canal email, types confort)
+    //
+    // Invariant RGPD prouvé : préférence email OFF ⇒ aucun email envoyé MAIS la
+    // notification in-app reste persistée (audit trail B2). Préférence ON ⇒
+    // comportement antérieur (email + in-app). Base légale art. 6.1.b.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function test_notifierAuditeurCommentaireCreneau_pref_email_off_persiste_inapp_sans_email(): void
+    {
+        $reservation = $this->creerReservationComplete();
+        $creneau     = $reservation->getCreneau();
+        $reservation->getUtilisateur()->setEmailModificationCommentaire(false);
+
+        // Aucun email, mais la notification in-app est persistée (B2).
+        $this->mailer->expects(self::never())->method('send');
+        $this->entityManager->expects(self::once())
+            ->method('persist')
+            ->with(self::isInstanceOf(Notification::class));
+        $this->entityManager->expects(self::once())->method('flush');
+
+        $this->service->notifierAuditeurCommentaireCreneau($creneau, 'Ancien commentaire');
+    }
+
+    public function test_notifierAuditeurCommentaireCreneau_pref_email_on_envoie_email_et_persiste(): void
+    {
+        $reservation = $this->creerReservationComplete();
+        $creneau     = $reservation->getCreneau();
+        $reservation->getUtilisateur()->setEmailModificationCommentaire(true);
+
+        $this->mailer->expects(self::once())->method('send');
+        $this->entityManager->expects(self::once())
+            ->method('persist')
+            ->with(self::isInstanceOf(Notification::class));
+        $this->entityManager->expects(self::once())->method('flush');
+
+        $this->service->notifierAuditeurCommentaireCreneau($creneau, 'Ancien commentaire');
+    }
+
+    public function test_notifierAuditeurRappel_pref_email_off_persiste_inapp_sans_email(): void
+    {
+        $reservation = $this->creerReservationComplete();
+        $reservation->getUtilisateur()->setEmailRappelJ1(false);
+
+        $this->mailer->expects(self::never())->method('send');
+        $this->entityManager->expects(self::once())
+            ->method('persist')
+            ->with(self::isInstanceOf(Notification::class));
+        $this->entityManager->expects(self::once())->method('flush');
+
+        $this->service->notifierAuditeurRappel($reservation);
+    }
+
+    public function test_notifierAuditeurRappel_pref_email_on_envoie_email_et_persiste(): void
+    {
+        $reservation = $this->creerReservationComplete();
+        $reservation->getUtilisateur()->setEmailRappelJ1(true);
+
+        $this->mailer->expects(self::once())->method('send');
+        $this->entityManager->expects(self::once())
+            ->method('persist')
+            ->with(self::isInstanceOf(Notification::class));
+        $this->entityManager->expects(self::once())->method('flush');
+
+        $this->service->notifierAuditeurRappel($reservation);
     }
 
     // -------------------------------------------------------------------------

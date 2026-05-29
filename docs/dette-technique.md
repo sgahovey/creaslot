@@ -1,6 +1,6 @@
 # Dette technique CreaSlot — Suivi
 
-Date dernière mise à jour : 28 mai 2026.
+Date dernière mise à jour : 29 mai 2026.
 Convention : DT-N = Dette Technique numéro N.
 
 ---
@@ -109,22 +109,27 @@ Recommandation : appliquer les 3 niveaux (defense in depth, best practice Symfon
 
 ---
 
-## DT-3 — PHPUnit Notices willReturnCallback (🟢 BAS) — 🟡 PARTIELLEMENT RÉSOLU
+## DT-3 — PHPUnit Notices willReturnCallback (🟢 BAS) — ✅ RESOLVED 29/05/2026
 
-> **🟡 Résolution partielle le 28/05/2026 (US-4.7)** : le bon pattern a été identifié
-> et appliqué à TOUS les nouveaux tests US-4.7, sans introduire de nouvelle notice.
+> **✅ RESOLVED le 29/05/2026 (US-4.8)** : 30 notices → 0. La suite tourne désormais
+> sans aucune notice (`phpunit.dist.xml` a `failOnNotice="true"`, donc la suite reste
+> verte en intégrant ces tests).
 >
 > **Cause réelle précisée** : la notice PHPUnit 13 est *« No expectations were
 > configured for the mock object ... Consider refactoring your test code to use a
 > test stub instead »*. Elle apparaît dès qu'un `createMock()` est utilisé comme
 > simple doublure (juste `->method()->willReturn()`) sans `->expects()`.
 >
-> **Pattern correctif** : `createStub()` pour les doublures sans expectations,
-> `createMock()` réservé aux vrais mocks (avec `->expects()`). Appliqué dans
-> `tests/Twig/NotificationExtensionTest.php`.
+> **Solution retenue** : les helpers partagés (`repository`, `logger`) sont créés une
+> fois en `setUp()` mais utilisés tantôt comme mocks (`->expects()`), tantôt comme
+> stubs selon le test — le pattern `createStub()` par doublure n'était donc pas
+> applicable sans dupliquer le `setUp()`. On a opté pour l'opt-out explicite et
+> documenté `#[AllowMockObjectsWithoutExpectations]` au niveau classe, appliqué à
+> `NotificationServiceTest` (US-4.7, 12 notices) puis `SlotServiceTest` (US-4.8,
+> 18 notices restantes). Le pattern `createStub()` reste en vigueur pour les nouveaux
+> tests à doublure unique (cf. `tests/Twig/NotificationExtensionTest.php`).
 >
-> **Reste à faire** : migrer les ~30 notices existantes (helpers de
-> `NotificationServiceTest`) au pattern `createStub()`. Non bloquant, cosmétique.
+> **Validation** : suite complète verte, **0 notice** (90 tests).
 
 **Détecté** : 18/05/2026, baseline US-4.2 à US-4.6.
 

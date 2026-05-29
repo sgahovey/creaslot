@@ -458,6 +458,13 @@ readonly class NotificationService
             $creneau->getReservationActive(),
         );
 
+        // US-4.8 : envoi email conditionné par la préférence Auditeur (type confort).
+        // Base légale RGPD art. 6.1.b. La notification in-app est déjà persistée
+        // ci-dessus (audit trail B2) ; seul l'email est ici conditionné.
+        if (!$auditeur->isEmailModificationCommentaire()) {
+            return;
+        }
+
         try {
             $this->envoyer(
                 $auditeur->getEmail(),
@@ -617,6 +624,13 @@ readonly class NotificationService
             ),
             $reservation,
         );
+
+        // US-4.8 : envoi email conditionné par la préférence Auditeur (type confort).
+        // Base légale RGPD art. 6.1.b. La notification in-app est déjà persistée
+        // ci-dessus (audit trail B2) ; seul l'email est ici conditionné.
+        if (!$auditeur->isEmailRappelJ1()) {
+            return;
+        }
 
         try {
             $this->envoyer(
