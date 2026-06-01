@@ -8,6 +8,7 @@ use App\Entity\Creneau;
 use App\Entity\Utilisateur;
 use App\Form\CreneauType;
 use App\Repository\CreneauRepository;
+use App\Repository\TypeRdvRepository;
 use App\Enum\StatutReservation;
 use App\Security\CreneauVoter;
 use App\Service\NotificationService;
@@ -51,9 +52,11 @@ class CreneauController extends AbstractController
     }
 
     #[Route('/creneau/agenda', name: 'app_creneau_agenda', methods: ['GET'])]
-    public function agenda(): Response
+    public function agenda(TypeRdvRepository $typeRdvRepository): Response
     {
-        return $this->render('personnel/creneau/agenda.html.twig');
+        return $this->render('personnel/creneau/agenda.html.twig', [
+            'typesRdv' => $typeRdvRepository->findActifs(),
+        ]);
     }
 
     #[Route('/creneau/{id}/modifier', name: 'app_creneau_modifier', methods: ['GET', 'POST'])]

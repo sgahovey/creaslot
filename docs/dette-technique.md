@@ -1,6 +1,6 @@
 # Dette technique CreaSlot — Suivi
 
-Date dernière mise à jour : 29 mai 2026.
+Date dernière mise à jour : 1 juin 2026.
 Convention : DT-N = Dette Technique numéro N.
 
 ---
@@ -220,3 +220,52 @@ Sans ce setup, tout test d'intégration extending `KernelTestCase` échoue avec 
 **Recommandation** : Option B (Stimulus) — la stack embarque déjà StimulusBundle + AssetMapper, et c'est testable/réutilisable.
 
 **Priorité** : 🟢 basse, à faire si 3e template apparaît OU besoin de tests JS.
+
+---
+
+## DT-8 — Migration FullCalendar CDN vers self-hosted (AssetMapper) (🟡 MOYEN) — ✅ RESOLVED 01/06/2026
+
+> **✅ RESOLVED le 01/06/2026** (dette technique autonome) sur branche `feat/us-5.1-agenda-fullcalendar`.
+>
+> **Résumé fix** : L'agenda Personnel ne dépend plus d'un CDN tiers. FullCalendar
+> est self-hosté via AssetMapper (bundle global officiel **6.1.20**) et le JS inline
+> a été extrait dans un contrôleur Stimulus. La légende des types de RDV est désormais
+> rendue dynamiquement depuis les `TypeRdv` en BDD (couleurs `couleur_hex`) au lieu d'être
+> codée en dur côté front.
+>
+> **Validation** : agenda fonctionnel (rendu mois/semaine, locale FR), `WebTestCase`
+> couvrant le chargement de la page agenda + endpoints JSON.
+
+**Détecté** : 01/06/2026, lors d'une revue de l'agenda FullCalendar (amélioration de l'agenda livré en US-2.5).
+
+**Contexte** : L'agenda (US-2.5) chargeait FullCalendar **6.1.11** via le CDN jsDelivr,
+accompagné d'environ **400 lignes de JavaScript inline** dans le template.
+
+**Problème** :
+- Dépendance CDN non maîtrisée : aucun contrôle d'intégrité (pas de SRI), disponibilité
+  et version à la merci d'un tiers.
+- JavaScript inline incompatible avec une politique CSP stricte (`script-src` sans `unsafe-inline`).
+- Aucun suivi de version : la montée de version FullCalendar n'était ni tracée ni reproductible.
+
+**Solution retenue** :
+- **Self-hosting via AssetMapper** : vendorisation du bundle global officiel FullCalendar
+  **6.1.20** (`index.global.min.js` + locale `fr.global.min.js`) dans `assets/vendor/`.
+- **Extraction du JS** en contrôleur Stimulus (`assets/controllers/agenda_controller.js`),
+  piloté par attributs `data-*` — plus de JS inline dans le template.
+- **Légende dynamique** : les types de RDV et leurs couleurs sont lus depuis les `TypeRdv`
+  en BDD au lieu d'être codés en dur côté front.
+- Branchement `importmap('app')` dans `base.html.twig`.
+- `turbo-core` désactivé dans `controllers.json` (Turbo était déjà inerte car `importmap('app')` n'était pas branché ; désactivation explicite pour garder la migration additive).
+- Headers `no-store` (Cache-Control) sur les endpoints JSON de l'agenda pour éviter la
+  mise en cache de données dépendantes de l'utilisateur.
+
+**Décision technique (veille)** : l'option ESM jsDelivr (`@fullcalendar/*` + `preact`
+éclatés) a été **écartée** car elle dédouble le runtime core de FullCalendar et casse le
+rendu (`Class constructor component cannot be invoked without 'new'`). Confirmé par
+l'issue FullCalendar **#7474** et la documentation SymfonyCasts. Le **bundle global**
+(linking interne cohérent en un seul fichier) a été retenu, conformément à la consigne
+FullCalendar de `CLAUDE.md`.
+
+**Montée de version** : FullCalendar **6.1.11 → 6.1.20**.
+
+**Priorité** : 🟡 moyenne (sécurité supply-chain + compatibilité CSP), traitée en dette technique autonome.
