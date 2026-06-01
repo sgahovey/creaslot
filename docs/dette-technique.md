@@ -269,3 +269,73 @@ FullCalendar de `CLAUDE.md`.
 **Montée de version** : FullCalendar **6.1.11 → 6.1.20**.
 
 **Priorité** : 🟡 moyenne (sécurité supply-chain + compatibilité CSP), traitée en dette technique autonome.
+
+---
+
+## DT-9 — Layout email Twig partagé (🟡 MOYEN) — 🟠 OUVERTE
+
+**Détecté** : 01/06/2026, lors d'une revue qualité en lecture seule (Clean Code R.C. Martin + critères CDA).
+
+**Constat** : Les 8 templates d'email (`templates/emails/*.html.twig`) ne partagent aucune factorisation — aucun `{% extends %}` ni `{% include %}`. Chacun (~150 lignes) ré-écrit l'intégralité de la structure HTML : doctype, `<style>` inline, `<table>` de mise en page, en-tête et signature Cnam. Toute évolution de charte (couleur, logo, mention légale RGPD) impose 8 modifications identiques → coût de maintenance et risque de divergence élevés.
+
+**Fichiers concernés** : `templates/emails/*.html.twig` (8 fichiers : confirmation/annulation/modification/rappel auditeur, confirmation/annulation personnel, suppression créneau, test).
+
+**Action proposée** : créer `templates/emails/_layout.html.twig` portant la structure commune (head, styles, en-tête, signature), exposant un `{% block contenu %}` ; chaque email passe à `{% extends 'emails/_layout.html.twig' %}` et ne déclare plus que son contenu propre.
+
+**Priorité** : 🟡 moyenne, à traiter avant l'ajout d'un nouvel email OU avant un changement de charte email.
+
+---
+
+## DT-10 — CollegueService : requêtes en boucle (~3N+1) (🟡 MOYEN) — 🟠 OUVERTE
+
+**Détecté** : 01/06/2026, lors d'une revue qualité en lecture seule (éco-conception / performance).
+
+**Constat** : `CollegueService::getCollegues()` itère sur la liste des collègues et déclenche **trois requêtes par collègue** (`existeCreneauActifFuturOuEnCours`, puis dans `construireDTO` : `findCreneauEnCoursAvecRdv` et `findNextReservedCreneau`), soit ~3N+1 requêtes pour N collègues. Pattern « boucle PHP qui interroge la BDD par ligne » — tolérable pour une petite équipe Cnam, mais contraire à l'éco-conception (RGESN) et non scalable.
+
+**Fichiers concernés** : `src/Service/CollegueService.php` (`getCollegues`, `construireDTO`, `aAuMoinsUnCreneauActif`).
+
+**Action proposée** : remplacer les requêtes par ligne par **une seule requête agrégée** (JOIN + `GROUP BY` sur le Personnel) ramenant statut courant + prochain RDV en un aller-retour, hydratée vers les `CollegueDTO`.
+
+**Priorité** : 🟡 moyenne, à traiter quand la liste des collègues s'allonge OU dans une passe éco-conception (itération 6).
+
+---
+
+## DT-11 — Centraliser le formatage de date d'affichage dans DateFormatterService (🟡 MOYEN) — 🟠 OUVERTE
+
+**Détecté** : 01/06/2026, lors d'une revue qualité en lecture seule (DRY).
+
+**Constat** : `DateFormatterService` (créé pour éliminer la duplication post-US-4.5) n'expose qu'une seule méthode (`pourSujetEmail`). Le reste du formatage de date d'affichage est **dispersé en dur** dans plusieurs fichiers, et `AppEmailTestCommand` **ré-implémente à l'identique** le format de `pourSujetEmail`. Violation directe du « un mot par concept » et de la factorisation déjà amorcée.
+
+**Fichiers concernés** : `src/Service/SlotService.php` (`construireMessageChevauchement` : `d/m/Y`, `H:i`), `src/Service/CollegueService.php` (`H\hi`), `src/Command/EnvoyerRappelsJ1Command.php` (`d/m/Y`), `src/Command/AppEmailTestCommand.php` (ré-implémentation de `d/m/Y \à H\hi`).
+
+**Action proposée** : étendre `DateFormatterService` avec des méthodes centralisées (`pourAffichage` date, `pourHeure`, etc., timezone `Indian/Reunion` uniforme) et router **tout** le formatage d'affichage à travers le service ; supprimer les `->format(...)` en dur.
+
+**Priorité** : 🟡 moyenne, à traiter au prochain ajout d'un format de date OU dans une passe DRY.
+
+---
+
+## DT-12 — NotificationService : factoriser le squelette des 6 méthodes notifier*() (🟡 MOYEN) — 🟠 OUVERTE
+
+**Détecté** : 01/06/2026, lors d'une revue qualité en lecture seule (DRY).
+
+**Constat** : Les six méthodes publiques `notifier*()` partagent un squelette quasi identique répété : extraction `auditeur`/`creneau`/`personnel` (avec le même bloc de commentaire 3 lignes « Reservation::utilisateur = Auditeur… » dupliqué ~5×), puis un `try { envoyer(...) } catch (\Throwable $e) { logger->error(...) }` structurellement identique ×6 (seuls le `type` et les identifiants changent). 683 lignes au total dont une large part redondante.
+
+**Fichiers concernés** : `src/Service/NotificationService.php` (méthodes `notifierAuditeurReservation`, `notifierPersonnelReservation`, `notifierAuditeurAnnulationReservation`, `notifierPersonnelAnnulationReservation`, `notifierAuditeurCommentaireCreneau`, `notifierAuditeurSuppressionCreneau`, `notifierAuditeurRappel`).
+
+**Action proposée** : extraire un helper privé `envoyerOuLoguer(string $type, array $idsContexte, string $to, string $subject, string $template, array $context)` encapsulant le try/catch + log RGPD ; factoriser l'extraction des trois acteurs. Chaque `notifier*()` se réduit alors à : préparer le contexte → (persister notification in-app) → déléguer au helper.
+
+**Priorité** : 🟡 moyenne, à traiter lors de la prochaine évolution de NotificationService (nouveau type d'email).
+
+---
+
+## DT-13 — Self-host Bootstrap + Bootstrap Icons + Google Fonts (🟡 MOYEN) — 🟠 OUVERTE
+
+**Détecté** : 01/06/2026, lors d'une revue qualité en lecture seule (sécurité supply-chain / éco-conception / robustesse).
+
+**Constat** : `templates/base.html.twig` charge encore par **CDN tiers** Bootstrap 5.3.3 (CSS + JS), Bootstrap Icons 1.11.3 et Google Fonts (Inter). Mêmes risques que [[DT-8]] avant correction : aucun contrôle d'intégrité (pas de SRI), dépendance à la disponibilité d'un tiers, incompatibilité CSP stricte, pas de fonctionnement hors-ligne, et requêtes externes contraires à l'éco-conception (RGESN).
+
+**Fichiers concernés** : `templates/base.html.twig` (balises `<link>` / `<script>` lignes ~11-19 et ~56).
+
+**Action proposée** : vendoriser ces dépendances via AssetMapper (même approche que FullCalendar en [[DT-8]]) — self-host CSS/JS/police, versions tracées. **À batcher avec US-5.2** (qui introduira le self-host de Chart.js pour les graphiques du dashboard), pour traiter tout le front CDN en une passe cohérente.
+
+**Priorité** : 🟡 moyenne (supply-chain + CSP + RGESN), à planifier avec US-5.2.
