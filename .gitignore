@@ -47,7 +47,15 @@ compose.override.yml
 /.phpunit.cache/
 ###< phpunit/phpunit ###
 
+# Assets vendorisés : on ignore tout `assets/vendor/` SAUF `fullcalendar/`.
+# Les autres paquets (stimulus, turbo) sont déclarés dans importmap.php et
+# régénérés par `importmap:install` → reproductibles, donc ignorés. FullCalendar
+# v6 est vendorisé À LA MAIN (hors importmap, cf. importmap.php) : aucune commande
+# ne le régénère, il DOIT donc être versionné sous peine d'agenda cassé au déploiement.
+# NB : `/assets/vendor/*` (et non `/assets/vendor/`) est requis pour que la
+# négation fonctionne — Git ne ré-inclut pas sous un dossier parent exclu.
 ###> symfony/asset-mapper ###
 /public/assets/
-/assets/vendor/
+/assets/vendor/*
+!/assets/vendor/fullcalendar/
 ###< symfony/asset-mapper ###

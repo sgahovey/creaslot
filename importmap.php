@@ -25,4 +25,11 @@ return [
     '@hotwired/turbo' => [
         'version' => '8.0.23',
     ],
+    // NB : FullCalendar v6 n'est PAS dans l'importmap. Son bundle global officiel
+    // (assets/vendor/fullcalendar/) déclare `var FullCalendar` au niveau global d'un
+    // script classique : chargé en ESM ce `var` resterait local au module et
+    // window.FullCalendar serait indéfini. Il est donc inclus via des balises <script>
+    // classiques dans templates/personnel/creneau/agenda.html.twig (bloc javascripts).
+    // L'ESM jsDelivr (@fullcalendar/* + preact éclatés) est volontairement banni : il
+    // dédouble le runtime core et casse le rendu (« Class constructor … 'new' »).
 ];

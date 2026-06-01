@@ -31,13 +31,9 @@ final class CreneauApiController extends AbstractController
 
         $creneau = $this->creneauRepository->findNextReservedCreneau($utilisateur);
 
-        return new JsonResponse(
-            [
-                'date' => $creneau === null ? null : $creneau->getDateDebut()->format(\DateTimeInterface::ATOM),
-            ],
-            Response::HTTP_OK,
-            ['Cache-Control' => 'private, max-age=30'],
-        );
+        return $this->jsonSansCache([
+            'date' => $creneau === null ? null : $creneau->getDateDebut()->format(\DateTimeInterface::ATOM),
+        ]);
     }
 
     #[Route('/creneaux', name: 'api_creneaux_personnel', methods: ['GET'])]
@@ -50,14 +46,14 @@ final class CreneauApiController extends AbstractController
         $finRaw   = $request->query->getString('end');
 
         if ($debutRaw === '' || $finRaw === '') {
-            return new JsonResponse([], Response::HTTP_OK, ['Cache-Control' => 'private, max-age=60']);
+            return $this->jsonSansCache([]);
         }
 
         try {
             $debutPlage = new \DateTimeImmutable($debutRaw);
             $finPlage   = new \DateTimeImmutable($finRaw);
         } catch (\Throwable) {
-            return new JsonResponse([], Response::HTTP_BAD_REQUEST);
+            return $this->jsonSansCache([], Response::HTTP_BAD_REQUEST);
         }
 
         $reserveOnly = $request->query->getBoolean('reserve_only');
@@ -69,10 +65,23 @@ final class CreneauApiController extends AbstractController
             $reserveOnly,
         );
 
-        return new JsonResponse(
-            $this->serializer->toCalendarEvents($creneaux),
-            Response::HTTP_OK,
-            ['Cache-Control' => 'private, max-age=60'],
-        );
+        return $this->jsonSansCache($this->serializer->toCalendarEvents($creneaux));
+    }
+
+    /**
+     * Réponse JSON non mise en cache : un agenda d'administration doit refléter
+     * l'état courant immédiatement après une édition. Un `max-age` positif faisait
+     * resservir par le navigateur une copie périmée (ancien type/couleur) après
+     * modification d'un créneau.
+     *
+     * @param array<int|string, mixed> $donnees
+     */
+    private function jsonSansCache(array $donnees, int $statut = Response::HTTP_OK): JsonResponse
+    {
+        $reponse = new JsonResponse($donnees, $statut);
+        $reponse->setPrivate();
+        $reponse->headers->addCacheControlDirective('no-store');
+
+        return $reponse;
     }
 }

@@ -22,6 +22,9 @@
     <link rel="stylesheet" href="/css/creaslot.css">
 
     {% block stylesheets %}{% endblock %}
+
+    {# AssetMapper — boote l'application Stimulus (entrypoint app.js) #}
+    {{ importmap('app') }}
 </head>
 <body class="cs-body {% if pre_production is defined and pre_production %}cs-env-preprod{% else %}cs-env-prod{% endif %}">
 
