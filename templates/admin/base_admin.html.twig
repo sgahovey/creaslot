@@ -1,0 +1,26 @@
+{#
+ # Layout dédié de l'espace Super-admin (US-5.1).
+ #
+ # Étend le layout global (head, header, footer, assets, bandeau environnement)
+ # et fournit le chrome commun aux écrans d'administration : un titre de section
+ # « Administration » (h1) suivi d'un bloc `admin_contenu` que chaque écran admin
+ # remplit. Les futurs écrans (gestion de comptes US-5.x) étendront ce template.
+ #}
+{% extends 'base.html.twig' %}
+
+{% block body %}
+    <section class="container py-4 py-md-5" aria-labelledby="cs-admin-titre">
+
+        <header class="mb-4">
+            <h1 id="cs-admin-titre"
+                class="h3 d-flex align-items-center gap-2"
+                style="color: var(--cs-text-primary); font-weight: var(--cs-fw-bold);">
+                <i class="bi bi-speedometer2" aria-hidden="true"></i>
+                Administration
+            </h1>
+        </header>
+
+        {% block admin_contenu %}{% endblock %}
+
+    </section>
+{% endblock %}

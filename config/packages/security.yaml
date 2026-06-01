@@ -40,8 +40,8 @@ security:
         - { path: ^/connexion, roles: PUBLIC_ACCESS }
         - { path: ^/inscription, roles: PUBLIC_ACCESS }
         - { path: ^/deconnexion, roles: PUBLIC_ACCESS }
+        - { path: ^/admin, roles: ROLE_SUPER_ADMIN }
         - { path: ^/, roles: IS_AUTHENTICATED_FULLY }
-        # - { path: ^/admin, roles: ROLE_SUPER_ADMIN }
         # - { path: ^/personnel, roles: ROLE_PERSONNEL }
 
 when@test:

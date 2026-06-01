@@ -1,0 +1,59 @@
+{#
+ # Tableau de bord Super-admin — KPIs chiffrés (US-5.1).
+ #
+ # Données strictement agrégées (compteurs + ratio) : aucune information
+ # nominative. Variable attendue : `kpis` (App\DTO\TableauBordKpis).
+ #}
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Tableau de bord{% endblock %}
+
+{% block admin_contenu %}
+    <div class="row g-3 g-md-4">
+
+        {# ── Carte A : Réservations à venir ──────────────────────────────── #}
+        <div class="col-12 col-md-6">
+            <article class="card border-0 shadow-sm h-100" style="border-radius: var(--cs-radius-lg);">
+                <div class="card-body p-4">
+                    <h2 class="text-uppercase mb-3 d-flex align-items-center gap-2"
+                        style="color: var(--cs-text-secondary); font-size: var(--cs-fs-small); letter-spacing: .03em;">
+                        <i class="bi bi-calendar-check" aria-hidden="true"></i>
+                        Réservations à venir
+                    </h2>
+                    <p class="display-4 mb-1"
+                       style="color: var(--cs-blue-primary); font-weight: var(--cs-fw-bold);">
+                        {{ kpis.reservationsActives }}
+                    </p>
+                    <p class="mb-0" style="color: var(--cs-text-secondary); font-size: var(--cs-fs-small);">
+                        rendez-vous actifs encore à honorer
+                    </p>
+                </div>
+            </article>
+        </div>
+
+        {# ── Carte B : Taux d'occupation ─────────────────────────────────── #}
+        <div class="col-12 col-md-6">
+            <article class="card border-0 shadow-sm h-100" style="border-radius: var(--cs-radius-lg);">
+                <div class="card-body p-4">
+                    <h2 class="text-uppercase mb-3 d-flex align-items-center gap-2"
+                        style="color: var(--cs-text-secondary); font-size: var(--cs-fs-small); letter-spacing: .03em;">
+                        <i class="bi bi-pie-chart" aria-hidden="true"></i>
+                        Taux d'occupation
+                    </h2>
+                    <p class="display-4 mb-1"
+                       style="color: var(--cs-success); font-weight: var(--cs-fw-bold);">
+                        {{ kpis.tauxOccupation }} %
+                    </p>
+                    <p class="mb-1" style="color: var(--cs-text-secondary); font-size: var(--cs-fs-small);">
+                        {{ kpis.creneauxReserves }} / {{ kpis.creneauxOffre }} créneaux réservés
+                    </p>
+                    <p class="mb-0" style="color: var(--cs-text-secondary); font-size: var(--cs-fs-tiny);">
+                        du {{ kpis.fenetreDebut|date('d/m/Y', 'Indian/Reunion') }}
+                        au {{ kpis.fenetreFin|date('d/m/Y', 'Indian/Reunion') }}
+                    </p>
+                </div>
+            </article>
+        </div>
+
+    </div>
+{% endblock %}
