@@ -67,6 +67,29 @@ class ReservationRepository extends ServiceEntityRepository
     }
 
     /**
+     * Compte les réservations ACTIVE dont le créneau n'est pas encore terminé
+     * (RDV à venir). KPI « Réservations actives » du tableau de bord Super-admin
+     * (US-5.1).
+     *
+     * Agrégat scalaire (COUNT) : aucune entité hydratée. Le filtre `c.estActif`
+     * est un garde-fou défensif — une réservation ACTIVE devrait toujours porter
+     * sur un créneau actif (la suppression d'un créneau annule sa réservation).
+     */
+    public function countActivesAVenir(\DateTimeImmutable $maintenant): int
+    {
+        return (int) $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->innerJoin('r.creneau', 'c')
+            ->andWhere('r.statut = :statutActif')
+            ->andWhere('c.estActif = true')
+            ->andWhere('c.dateFin > :maintenant')
+            ->setParameter('statutActif', StatutReservation::ACTIVE)
+            ->setParameter('maintenant', $maintenant)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
      * Retourne les réservations ACTIVE dont le créneau a lieu dans la plage donnée
      * et qui n'ont pas encore reçu de rappel email.
      *

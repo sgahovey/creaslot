@@ -271,4 +271,53 @@ class CreneauRepository extends ServiceEntityRepository
 
         return $count > 0;
     }
+
+    /**
+     * Compte les créneaux actifs dont le début tombe dans la fenêtre [debut, fin].
+     * Dénominateur du taux d'occupation du tableau de bord Super-admin (US-5.1) :
+     * l'offre totale de créneaux sur la période.
+     *
+     * Agrégat scalaire (COUNT) : aucune entité hydratée.
+     */
+    public function countActifsDansFenetre(\DateTimeImmutable $debut, \DateTimeImmutable $fin): int
+    {
+        return (int) $this->createQueryBuilder('c')
+            ->select('COUNT(c.id)')
+            ->andWhere('c.estActif = true')
+            ->andWhere('c.dateDebut BETWEEN :debut AND :fin')
+            ->setParameter('debut', $debut)
+            ->setParameter('fin', $fin)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Compte les créneaux actifs de la fenêtre [debut, fin] ayant au moins une
+     * réservation ACTIVE. Numérateur du taux d'occupation (US-5.1).
+     *
+     * `EXISTS` (et non un JOIN) pour éviter le fan-out OneToMany [[DT-1]] : un
+     * créneau ayant plusieurs réservations (ex. une ACTIVE + une ANNULEE après
+     * re-réservation) n'est compté qu'une seule fois. Même fenêtre `:debut`/`:fin`
+     * que `countActifsDansFenetre` pour garantir la cohérence numérateur/dénominateur.
+     */
+    public function countReservesActifsDansFenetre(\DateTimeImmutable $debut, \DateTimeImmutable $fin): int
+    {
+        return (int) $this->createQueryBuilder('c')
+            ->select('COUNT(c.id)')
+            ->andWhere('c.estActif = true')
+            ->andWhere('c.dateDebut BETWEEN :debut AND :fin')
+            ->andWhere(
+                'EXISTS (
+                    SELECT 1
+                    FROM App\Entity\Reservation r_active
+                    WHERE r_active.creneau = c
+                        AND r_active.statut = :statutActif
+                )'
+            )
+            ->setParameter('debut', $debut)
+            ->setParameter('fin', $fin)
+            ->setParameter('statutActif', StatutReservation::ACTIVE)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }
