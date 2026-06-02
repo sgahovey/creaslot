@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Service;
 
+use App\DTO\OccupationJournaliere;
 use App\Repository\CreneauRepository;
 use App\Repository\ReservationRepository;
 use App\Service\DashboardService;
@@ -58,6 +59,46 @@ final class DashboardServiceTest extends TestCase
         self::assertSame(30, $kpis->fenetreDebut->diff($kpis->fenetreFin)->days);
     }
 
+    public function test_getOccupationParJour_comble_les_jours_manquants_et_reste_chronologique(): void
+    {
+        $aujourdhui = new \DateTimeImmutable();
+        $jourRecent = $aujourdhui->format('Y-m-d');
+        $jourMilieu = $aujourdhui->modify('-5 days')->format('Y-m-d');
+
+        // Map creuse : seulement 2 jours sur 30 renseignés.
+        $service = $this->creerServiceAvecOccupation([
+            $jourMilieu => ['offre' => 8, 'reserves' => 3],
+            $jourRecent => ['offre' => 5, 'reserves' => 5],
+        ]);
+
+        $serie = $service->getOccupationParJour();
+
+        self::assertCount(30, $serie);
+        self::assertContainsOnlyInstancesOf(OccupationJournaliere::class, $serie);
+
+        // Ordre chronologique croissant.
+        $jours = array_map(static fn (OccupationJournaliere $o) => $o->jour, $serie);
+        $joursTries = $jours;
+        sort($joursTries);
+        self::assertSame($joursTries, $jours);
+
+        // Bornes : premier jour = aujourd'hui − 29 j, dernier = aujourd'hui.
+        self::assertSame($aujourdhui->modify('-29 days')->format('Y-m-d'), $serie[0]->jour);
+        self::assertSame($jourRecent, $serie[29]->jour);
+
+        // Les 2 jours présents portent les bonnes valeurs.
+        self::assertSame(5, $serie[29]->offre);
+        self::assertSame(5, $serie[29]->reserves);
+        $milieu = $this->trouverJour($serie, $jourMilieu);
+        self::assertSame(8, $milieu->offre);
+        self::assertSame(3, $milieu->reserves);
+
+        // Un jour absent de la map est comblé à 0.
+        $vide = $this->trouverJour($serie, $aujourdhui->modify('-10 days')->format('Y-m-d'));
+        self::assertSame(0, $vide->offre);
+        self::assertSame(0, $vide->reserves);
+    }
+
     private function creerServiceAvecCompteurs(int $activesAVenir, int $offre, int $reserves): DashboardService
     {
         $reservationRepository = $this->createStub(ReservationRepository::class);
@@ -68,5 +109,30 @@ final class DashboardServiceTest extends TestCase
         $creneauRepository->method('countReservesActifsDansFenetre')->willReturn($reserves);
 
         return new DashboardService($reservationRepository, $creneauRepository);
+    }
+
+    /**
+     * @param array<string, array{offre: int, reserves: int}> $occupationParJour
+     */
+    private function creerServiceAvecOccupation(array $occupationParJour): DashboardService
+    {
+        $creneauRepository = $this->createStub(CreneauRepository::class);
+        $creneauRepository->method('statistiquesOccupationParJour')->willReturn($occupationParJour);
+
+        return new DashboardService($this->createStub(ReservationRepository::class), $creneauRepository);
+    }
+
+    /**
+     * @param list<OccupationJournaliere> $serie
+     */
+    private function trouverJour(array $serie, string $jour): OccupationJournaliere
+    {
+        foreach ($serie as $occupation) {
+            if ($occupation->jour === $jour) {
+                return $occupation;
+            }
+        }
+
+        self::fail("Jour absent de la série : {$jour}");
     }
 }

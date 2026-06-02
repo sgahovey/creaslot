@@ -27,7 +27,8 @@ final class DashboardController extends AbstractController
     public function index(): Response
     {
         return $this->render('admin/dashboard/index.html.twig', [
-            'kpis' => $this->dashboardService->calculerKpis(),
+            'kpis'       => $this->dashboardService->calculerKpis(),
+            'occupation' => $this->dashboardService->getOccupationParJour(),
         ]);
     }
 }
