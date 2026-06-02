@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\DTO\OccupationJournaliere;
 use App\DTO\TableauBordKpis;
 use App\Repository\CreneauRepository;
 use App\Repository\ReservationRepository;
@@ -46,6 +47,37 @@ final readonly class DashboardService
             $debutFenetre,
             $maintenant,
         );
+    }
+
+    /**
+     * Série d'occupation jour par jour pour le graphique (US-5.2), sur les
+     * JOURS_FENETRE_OCCUPATION jours calendaires récents finissant aujourd'hui.
+     * Les jours sans créneau sont comblés à 0 ; la liste est chronologique.
+     *
+     * Nuance assumée vs le KPI : le taux d'occupation borne une fenêtre glissante
+     * de 30×24 h, tandis que ce graphe décompose les 30 jours calendaires récents.
+     *
+     * @return list<OccupationJournaliere>
+     */
+    public function getOccupationParJour(): array
+    {
+        $maintenant  = new \DateTimeImmutable();
+        $premierJour = $maintenant->modify('-' . (self::JOURS_FENETRE_OCCUPATION - 1) . ' days');
+
+        $statistiques = $this->creneauRepository->statistiquesOccupationParJour(
+            $premierJour->setTime(0, 0),
+            $maintenant,
+        );
+
+        $serie = [];
+        for ($decalage = 0; $decalage < self::JOURS_FENETRE_OCCUPATION; $decalage++) {
+            $jour      = $premierJour->modify('+' . $decalage . ' days')->format('Y-m-d');
+            $compteurs = $statistiques[$jour] ?? ['offre' => 0, 'reserves' => 0];
+
+            $serie[] = new OccupationJournaliere($jour, $compteurs['offre'], $compteurs['reserves']);
+        }
+
+        return $serie;
     }
 
     /**

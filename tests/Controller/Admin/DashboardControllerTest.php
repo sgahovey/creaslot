@@ -42,6 +42,9 @@ final class DashboardControllerTest extends WebTestCase
         $contenu = (string) $this->client->getResponse()->getContent();
         self::assertStringContainsString('Réservations à venir', $contenu);
         self::assertStringContainsString('Taux d\'occupation', $contenu);
+        // US-5.2 : le graphique d'occupation (contrôleur Stimulus + alternative RGAA).
+        self::assertStringContainsString('data-controller="graphique-occupation"', $contenu);
+        self::assertStringContainsString('Voir les données du graphique', $contenu);
     }
 
     public function test_dashboard_refuse_au_personnel(): void

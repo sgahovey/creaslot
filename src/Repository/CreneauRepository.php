@@ -320,4 +320,81 @@ class CreneauRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
     }
+
+    /**
+     * Statistiques d'occupation agrégées par jour calendaire sur [debut, fin],
+     * pour le graphique du tableau de bord Super-admin (US-5.2).
+     *
+     * @return array<string, array{offre: int, reserves: int}> indexé par jour
+     *         'YYYY-MM-DD' (ex. ['2026-05-30' => ['offre' => 4, 'reserves' => 2]]).
+     *         Seuls les jours ayant au moins un créneau actif sont présents ; les
+     *         jours vides sont comblés à 0 par le DashboardService (pas ici).
+     *
+     * Deux requêtes plutôt qu'une : le comptage conditionnel en une passe
+     * (`COUNT(DISTINCT CASE WHEN ... THEN c.id ELSE NULL END)`) est rejeté par la
+     * grammaire DQL (le `ELSE` est obligatoire et `ELSE NULL` lève une Syntax
+     * Error). On agrège donc l'offre et les réservés séparément, puis on fusionne
+     * par clé-jour (≤ N lignes pré-agrégées, aucune itération du dataset).
+     *
+     * Regroupement par `SUBSTRING(c.dateDebut, 1, 10)` : `date_debut` est stocké en
+     * heure-mur Réunion (timezone applicative Indian/Reunion, UTC+4 sans DST, aucune
+     * conversion Doctrine), donc l'extraction des 10 premiers caractères donne le
+     * jour calendaire Réunion exact, sans décalage de minuit.
+     */
+    public function statistiquesOccupationParJour(\DateTimeImmutable $debut, \DateTimeImmutable $fin): array
+    {
+        $offreParJour = $this->createQueryBuilder('c')
+            ->select('SUBSTRING(c.dateDebut, 1, 10) AS jour', 'COUNT(c.id) AS offre')
+            ->andWhere('c.estActif = true')
+            ->andWhere('c.dateDebut BETWEEN :debut AND :fin')
+            ->setParameter('debut', $debut)
+            ->setParameter('fin', $fin)
+            ->groupBy('jour')
+            ->getQuery()
+            ->getResult();
+
+        $reservesParJour = $this->createQueryBuilder('c')
+            ->select('SUBSTRING(c.dateDebut, 1, 10) AS jour', 'COUNT(DISTINCT c.id) AS reserves')
+            ->innerJoin('c.reservations', 'r')
+            ->andWhere('c.estActif = true')
+            ->andWhere('c.dateDebut BETWEEN :debut AND :fin')
+            ->andWhere('r.statut = :statutActif')
+            ->setParameter('debut', $debut)
+            ->setParameter('fin', $fin)
+            ->setParameter('statutActif', StatutReservation::ACTIVE)
+            ->groupBy('jour')
+            ->getQuery()
+            ->getResult();
+
+        return $this->fusionnerOccupationParJour($offreParJour, $reservesParJour);
+    }
+
+    /**
+     * Fusionne les agrégats offre/réservés par clé-jour. Un créneau réservé étant
+     * toujours actif, chaque jour de $reservesParJour figure aussi dans
+     * $offreParJour : on indexe donc la série sur l'offre et on y greffe les
+     * réservés (0 si le jour n'a aucune réservation ACTIVE).
+     *
+     * @param list<array{jour: string, offre: int|string}>    $offreParJour
+     * @param list<array{jour: string, reserves: int|string}> $reservesParJour
+     * @return array<string, array{offre: int, reserves: int}>
+     */
+    private function fusionnerOccupationParJour(array $offreParJour, array $reservesParJour): array
+    {
+        $reservesIndexees = [];
+        foreach ($reservesParJour as $ligne) {
+            $reservesIndexees[$ligne['jour']] = (int) $ligne['reserves'];
+        }
+
+        $statistiques = [];
+        foreach ($offreParJour as $ligne) {
+            $jour = $ligne['jour'];
+            $statistiques[$jour] = [
+                'offre'    => (int) $ligne['offre'],
+                'reserves' => $reservesIndexees[$jour] ?? 0,
+            ];
+        }
+
+        return $statistiques;
+    }
 }
