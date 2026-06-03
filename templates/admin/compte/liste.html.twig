@@ -1,0 +1,126 @@
+{#
+ # Gestion des comptes — liste (US-5.3, morceau 2 : lecture seule).
+ #
+ # Données nominatives, strict nécessaire : aucun hash de mot de passe.
+ # Variables : comptes (Paginator<Utilisateur>), page, nbPages, total.
+ #
+ # Le lien Modifier (par ligne) sera câblé au morceau 4, quand sa route existera
+ # (sinon path() casserait le rendu).
+ #}
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Gestion des comptes{% endblock %}
+
+{% block admin_contenu %}
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <h2 class="h5 d-flex align-items-center gap-2 mb-0"
+            style="color: var(--cs-text-primary); font-weight: var(--cs-fw-semibold);">
+            <i class="bi bi-people" aria-hidden="true"></i>
+            Comptes
+        </h2>
+        <div class="d-flex align-items-center gap-3">
+            <span class="text-secondary" style="font-size: var(--cs-fs-small);">
+                {{ total }} compte{{ total > 1 ? 's' : '' }}
+            </span>
+            <a href="{{ path('app_admin_compte_nouveau') }}" class="btn btn-primary btn-sm d-flex align-items-center gap-1">
+                <i class="bi bi-person-plus" aria-hidden="true"></i>
+                Nouveau compte
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm" style="border-radius: var(--cs-radius-lg);">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <caption class="visually-hidden">Liste des comptes utilisateurs, triée par nom</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Nom complet</th>
+                            <th scope="col">Email</th>
+                            <th scope="col">Rôle</th>
+                            <th scope="col">Actif</th>
+                            <th scope="col">Créé le</th>
+                            <th scope="col">Dernière connexion</th>
+                            <th scope="col"><span class="visually-hidden">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for compte in comptes %}
+                            <tr>
+                                <th scope="row" class="fw-semibold">{{ compte.nomComplet }}</th>
+                                <td>{{ compte.email }}</td>
+                                <td>
+                                    <span class="badge text-bg-light">{{ compte.role.libelle }}</span>
+                                </td>
+                                <td>
+                                    {% if compte.estActif %}
+                                        <span class="badge text-bg-success">Oui</span>
+                                    {% else %}
+                                        <span class="badge text-bg-secondary">Non</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ compte.dateCreation|date('d/m/Y', 'Indian/Reunion') }}</td>
+                                <td>
+                                    {% if compte.derniereConnexion %}
+                                        {{ compte.derniereConnexion|date('d/m/Y', 'Indian/Reunion') }}
+                                    {% else %}
+                                        <span class="text-secondary">Jamais</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{{ path('app_admin_compte_modifier', { id: compte.id }) }}"
+                                       class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                                       aria-label="Modifier le compte de {{ compte.nomComplet }}">
+                                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                                        Modifier
+                                    </a>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center text-secondary py-4">Aucun compte.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {# ── Pagination ──────────────────────────────────────────────────────── #}
+    {% if nbPages > 1 %}
+        <nav aria-label="Pagination des comptes" class="mt-4">
+            <ul class="pagination justify-content-center">
+
+                <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                    <a class="page-link"
+                       href="{{ path('app_admin_comptes', { page: page - 1 }) }}"
+                       aria-label="Page précédente"
+                       {% if page == 1 %}aria-disabled="true" tabindex="-1"{% endif %}>
+                        <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                    </a>
+                </li>
+
+                {% for p in 1..nbPages %}
+                    <li class="page-item {% if p == page %}active{% endif %}"
+                        {% if p == page %}aria-current="page"{% endif %}>
+                        <a class="page-link" href="{{ path('app_admin_comptes', { page: p }) }}">{{ p }}</a>
+                    </li>
+                {% endfor %}
+
+                <li class="page-item {% if page == nbPages %}disabled{% endif %}">
+                    <a class="page-link"
+                       href="{{ path('app_admin_comptes', { page: page + 1 }) }}"
+                       aria-label="Page suivante"
+                       {% if page == nbPages %}aria-disabled="true" tabindex="-1"{% endif %}>
+                        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                    </a>
+                </li>
+
+            </ul>
+        </nav>
+    {% endif %}
+
+{% endblock %}

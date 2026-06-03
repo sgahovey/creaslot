@@ -7,6 +7,7 @@ namespace App\Repository;
 use App\Entity\Utilisateur;
 use App\Enum\RoleUtilisateur;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -57,5 +58,44 @@ class UtilisateurRepository extends ServiceEntityRepository
 
         /** @var Utilisateur[] */
         return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * Liste paginée de TOUS les comptes (tous rôles, actifs et inactifs), pour
+     * l'écran de gestion des comptes Super-admin (US-5.3), triée par nom puis prénom.
+     *
+     * `leftJoin('u.service')->addSelect('s')` charge le service en une requête
+     * (anti-N+1, cf. [[DT-10]]). `fetchJoinCollection: false` : le service est un
+     * ManyToOne (pas de fan-out), inutile de dédupliquer les lignes.
+     *
+     * @return Paginator<Utilisateur>
+     */
+    public function findAllPourAdmin(int $page, int $limit = 20): Paginator
+    {
+        $qb = $this->createQueryBuilder('u')
+            ->leftJoin('u.service', 's')->addSelect('s')
+            ->orderBy('u.nom', 'ASC')
+            ->addOrderBy('u.prenom', 'ASC')
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);
+
+        return new Paginator($qb->getQuery(), false);
+    }
+
+    /**
+     * Nombre de comptes ayant le rôle SUPER_ADMIN. Sert à empêcher de retirer le
+     * dernier super-administrateur (garde anti lock-out, vérifiée côté contrôleur).
+     *
+     * Compte par rôle, sans filtre `estActif` : l'activation des comptes (US-5.4)
+     * affinera ce comptage si besoin (super-admins actifs uniquement).
+     */
+    public function countSuperAdmins(): int
+    {
+        return (int) $this->createQueryBuilder('u')
+            ->select('COUNT(u.id)')
+            ->andWhere('u.role = :role')
+            ->setParameter('role', RoleUtilisateur::SUPER_ADMIN)
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 }
