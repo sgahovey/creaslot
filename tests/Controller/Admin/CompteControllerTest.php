@@ -100,6 +100,30 @@ final class CompteControllerTest extends WebTestCase
         self::assertResponseRedirects();
     }
 
+    public function test_recherche_affiche_les_bons_comptes(): void
+    {
+        $this->client->loginUser($this->recupererUtilisateur(self::EMAIL_SUPER_ADMIN));
+        $this->client->request('GET', '/admin/comptes?recherche=Dupont');
+
+        self::assertResponseIsSuccessful();
+        $contenu = (string) $this->client->getResponse()->getContent();
+        // Marie Dupont correspond ; Xavier Dijoux ne correspond pas.
+        self::assertStringContainsString(self::EMAIL_PERSONNEL, $contenu);
+        self::assertStringNotContainsString(self::EMAIL_AUDITEUR, $contenu);
+    }
+
+    public function test_badge_role_affiche_le_libelle_et_sa_couleur(): void
+    {
+        $this->client->loginUser($this->recupererUtilisateur(self::EMAIL_SUPER_ADMIN));
+        // Recherche sur le compte super-admin (nom « Admin »).
+        $this->client->request('GET', '/admin/comptes?recherche=Admin');
+
+        self::assertResponseIsSuccessful();
+        $contenu = (string) $this->client->getResponse()->getContent();
+        self::assertStringContainsString('Super-administrateur', $contenu);
+        self::assertStringContainsString('text-bg-danger', $contenu);
+    }
+
     public function test_super_admin_cree_un_compte(): void
     {
         $this->client->loginUser($this->recupererUtilisateur(self::EMAIL_SUPER_ADMIN));

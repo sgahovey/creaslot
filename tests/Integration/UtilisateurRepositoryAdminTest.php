@@ -91,6 +91,53 @@ final class UtilisateurRepositoryAdminTest extends KernelTestCase
         self::assertSame($baseline + 1, $this->utilisateurRepository->countSuperAdminsActifs());
     }
 
+    public function test_recherche_par_nom_prenom_ou_email(): void
+    {
+        $parNom    = $this->creerUtilisateur('ZzRechercheNom', 'Alice', RoleUtilisateur::AUDITEUR, true);
+        $parPrenom = $this->creerUtilisateur('Martin', 'ZzRecherchePrenom', RoleUtilisateur::AUDITEUR, true);
+        $parEmail  = $this->creerUtilisateurAvecEmail('Durand', 'Bob', 'zzrecherche-email@test.local');
+        $this->entityManager->flush();
+
+        self::assertSame([$parNom->getEmail()], $this->emails($this->rechercher('ZzRechercheNom')));
+        self::assertSame([$parPrenom->getEmail()], $this->emails($this->rechercher('ZzRecherchePrenom')));
+        self::assertSame([$parEmail->getEmail()], $this->emails($this->rechercher('zzrecherche-email')));
+    }
+
+    public function test_recherche_echappe_le_joker_underscore(): void
+    {
+        $avecUnderscore = $this->creerUtilisateurAvecEmail('Aaa', 'Bbb', 'zz_recherche@test.local');
+        $sansUnderscore = $this->creerUtilisateurAvecEmail('Ccc', 'Ddd', 'zzXrecherche@test.local');
+        $this->entityManager->flush();
+
+        // « zz_recherche » doit matcher le « _ » LITTÉRAL, pas n'importe quel caractère.
+        $emails = $this->emails($this->rechercher('zz_recherche'));
+
+        self::assertContains($avecUnderscore->getEmail(), $emails);
+        self::assertNotContains($sansUnderscore->getEmail(), $emails);
+    }
+
+    public function test_recherche_sans_correspondance_renvoie_vide(): void
+    {
+        self::assertSame(0, count($this->rechercher('zzz-introuvable-' . uniqid())));
+    }
+
+    /**
+     * @return \Doctrine\ORM\Tools\Pagination\Paginator<Utilisateur>
+     */
+    private function rechercher(string $terme): \Doctrine\ORM\Tools\Pagination\Paginator
+    {
+        return $this->utilisateurRepository->findAllPourAdmin(1, 50, $terme);
+    }
+
+    /**
+     * @param iterable<Utilisateur> $paginator
+     * @return list<string>
+     */
+    private function emails(iterable $paginator): array
+    {
+        return array_map(static fn (Utilisateur $u): string => $u->getEmail(), iterator_to_array($paginator));
+    }
+
     private function creerUtilisateur(string $nom, string $prenom, RoleUtilisateur $role, bool $estActif): Utilisateur
     {
         $utilisateur = (new Utilisateur())
@@ -99,6 +146,21 @@ final class UtilisateurRepositoryAdminTest extends KernelTestCase
             ->setPrenom($prenom)
             ->setRole($role)
             ->setEstActif($estActif)
+            ->setMotDePasseHash('placeholder-not-real');
+
+        $this->entityManager->persist($utilisateur);
+
+        return $utilisateur;
+    }
+
+    private function creerUtilisateurAvecEmail(string $nom, string $prenom, string $email): Utilisateur
+    {
+        $utilisateur = (new Utilisateur())
+            ->setEmail($email)
+            ->setNom($nom)
+            ->setPrenom($prenom)
+            ->setRole(RoleUtilisateur::AUDITEUR)
+            ->setEstActif(true)
             ->setMotDePasseHash('placeholder-not-real');
 
         $this->entityManager->persist($utilisateur);

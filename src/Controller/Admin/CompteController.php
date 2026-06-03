@@ -44,15 +44,21 @@ final class CompteController extends AbstractController
     #[Route('/admin/comptes', name: 'app_admin_comptes', methods: ['GET'])]
     public function liste(Request $request): Response
     {
-        $page     = max(1, $request->query->getInt('page', 1));
-        $comptes  = $this->utilisateurRepository->findAllPourAdmin($page, self::COMPTES_PAR_PAGE);
-        $total    = count($comptes);
+        $page      = max(1, $request->query->getInt('page', 1));
+        $recherche = trim($request->query->getString('recherche'));
+        $comptes   = $this->utilisateurRepository->findAllPourAdmin(
+            $page,
+            self::COMPTES_PAR_PAGE,
+            $recherche !== '' ? $recherche : null,
+        );
+        $total     = count($comptes);
 
         return $this->render('admin/compte/liste.html.twig', [
-            'comptes' => $comptes,
-            'page'    => $page,
-            'nbPages' => max(1, (int) ceil($total / self::COMPTES_PAR_PAGE)),
-            'total'   => $total,
+            'comptes'   => $comptes,
+            'page'      => $page,
+            'nbPages'   => max(1, (int) ceil($total / self::COMPTES_PAR_PAGE)),
+            'total'     => $total,
+            'recherche' => $recherche,
         ]);
     }
 
