@@ -1,0 +1,150 @@
+{#
+ # Vue globale occupé/libre du Super-admin (US-5.7), lecture seule.
+ #
+ # Variables : creneaux (Creneau[] de la semaine de référence), idsOccupes (list<int>),
+ # typesRdv, services, serviceActif, typeActif, debutSemaine, finSemaine.
+ #
+ # Le calendrier (FullCalendar) est alimenté par l'endpoint JSON anonyme ; la table
+ # ci-dessous est l'alternative textuelle RGAA, rendue serveur (fonctionne sans JS).
+ #}
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Occupation globale{% endblock %}
+
+{% block admin_contenu %}
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <h2 class="h5 d-flex align-items-center gap-2 mb-0"
+            style="color: var(--cs-text-primary); font-weight: var(--cs-fw-semibold);">
+            <i class="bi bi-calendar3" aria-hidden="true"></i>
+            Occupation globale
+        </h2>
+        <span class="text-secondary" style="font-size: var(--cs-fs-small);">
+            Semaine du {{ debutSemaine|date('d/m/Y', 'Indian/Reunion') }}
+            au {{ finSemaine|date('d/m/Y', 'Indian/Reunion') }}
+        </span>
+    </div>
+
+    {# ── Filtres service + type (GET, rechargement serveur) ──────────────── #}
+    <form method="get" role="search" class="row g-2 align-items-end mb-3">
+        <div class="col-12 col-sm-auto">
+            <label for="filtre-service" class="form-label mb-1" style="font-size: var(--cs-fs-small);">Service</label>
+            <select id="filtre-service" name="service" class="form-select form-select-sm">
+                <option value="">Tous les services</option>
+                {% for service in services %}
+                    <option value="{{ service.id }}" {{ serviceActif == service.id ? 'selected' : '' }}>
+                        {{ service.nom }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12 col-sm-auto">
+            <label for="filtre-type" class="form-label mb-1" style="font-size: var(--cs-fs-small);">Type de rendez-vous</label>
+            <select id="filtre-type" name="type" class="form-select form-select-sm">
+                <option value="">Tous les types</option>
+                {% for type in typesRdv %}
+                    <option value="{{ type.id }}" {{ typeActif == type.id ? 'selected' : '' }}>
+                        {{ type.libelle }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12 col-sm-auto">
+            <button type="submit" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1">
+                <i class="bi bi-funnel" aria-hidden="true"></i>
+                Filtrer
+            </button>
+            {% if serviceActif or typeActif %}
+                <a href="{{ path('app_admin_occupation') }}" class="btn btn-sm btn-link text-decoration-none">Réinitialiser</a>
+            {% endif %}
+        </div>
+    </form>
+
+    {# ── Calendrier (FullCalendar, navigation libre) ─────────────────────── #}
+    <div class="card border-0 shadow-sm p-2 p-md-3 mb-3 cs-occupation-page"
+         style="border-radius: var(--cs-radius-lg);"
+         data-controller="occupation"
+         data-occupation-url-api-value="{{ path('app_admin_occupation_evenements') }}"
+         data-occupation-filtre-service-value="{{ serviceActif }}"
+         data-occupation-filtre-type-value="{{ typeActif }}">
+        <div data-occupation-target="calendar"
+             role="region"
+             aria-label="Calendrier d'occupation globale"></div>
+    </div>
+
+    {# ── Légende texte (jamais la couleur seule) ────────────────────────── #}
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-4" style="font-size: var(--cs-fs-small); color: var(--cs-text-secondary);">
+        <span class="fw-semibold">Légende :</span>
+        {% for type in typesRdv %}
+            <span><span class="d-inline-block rounded-circle me-1" style="width: 10px; height: 10px; background: {{ type.couleurHex }};" aria-hidden="true"></span>{{ type.libelle }}</span>
+        {% endfor %}
+        <span class="text-muted d-none d-md-inline">|</span>
+        <span><strong>Plein</strong> = occupé</span>
+        <span><strong>Clair</strong> = libre</span>
+    </div>
+
+    {# ── Alternative textuelle RGAA : table de la semaine de référence ───── #}
+    <div class="card border-0 shadow-sm" style="border-radius: var(--cs-radius-lg);">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <caption class="visually-hidden">
+                        Occupation des créneaux de la semaine du
+                        {{ debutSemaine|date('d/m/Y', 'Indian/Reunion') }} au
+                        {{ finSemaine|date('d/m/Y', 'Indian/Reunion') }}, alternative textuelle au calendrier
+                    </caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Jour</th>
+                            <th scope="col">Créneau</th>
+                            <th scope="col">Personnel</th>
+                            <th scope="col">Type</th>
+                            <th scope="col">État</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for creneau in creneaux %}
+                            {% set occupe = creneau.id in idsOccupes %}
+                            <tr>
+                                <th scope="row" class="fw-semibold text-capitalize">
+                                    {{ creneau.dateDebut|format_date(locale='fr_FR', pattern='EEEE dd/MM', timezone='Indian/Reunion') }}
+                                </th>
+                                <td>
+                                    {{ creneau.dateDebut|date('H:i', 'Indian/Reunion') }}
+                                    – {{ creneau.dateFin|date('H:i', 'Indian/Reunion') }}
+                                </td>
+                                <td>{{ creneau.utilisateur.nomComplet }}</td>
+                                <td>
+                                    <span class="d-inline-block rounded-circle me-1" style="width: 10px; height: 10px; background: {{ creneau.typeRdv.couleurHex }};" aria-hidden="true"></span>
+                                    {{ creneau.typeRdv.libelle }}
+                                </td>
+                                <td>
+                                    {% if occupe %}
+                                        <span class="badge text-bg-primary">Occupé</span>
+                                    {% else %}
+                                        <span class="badge text-bg-success">Libre</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-secondary py-4">
+                                    Aucun créneau sur la semaine de référence.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    {# FullCalendar v6 — bundle global officiel (cf. agenda.html.twig) : scripts CLASSIQUES
+       (pas l'importmap), exécutés avant le module Stimulus différé. Bundle d'abord, locale ensuite. #}
+    <script src="{{ asset('vendor/fullcalendar/index.global.min.js') }}"></script>
+    <script src="{{ asset('vendor/fullcalendar/locales/fr.global.min.js') }}"></script>
+{% endblock %}

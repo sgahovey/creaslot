@@ -371,3 +371,23 @@ FullCalendar de `CLAUDE.md`.
 **Action proposée** : **commande console** (ex. `app:purger-journal`) supprimant en DQL paramétré les entrées `date_action < now - 12 mois`, **planifiée par cron** (comme le rappel J-1). Avec **test** : insertion d'entrées anciennes + récentes → seules les anciennes sont purgées. Durée de conservation portée par une **constante nommée** (source unique).
 
 **Priorité** : 🟡 moyenne (conformité RGPD ; croissance lente au volume Cnam), à planifier en tâche dédiée.
+
+---
+
+## DT-16 — Mutualisation des helpers FullCalendar et du JSON no-store (🟡 MOYEN) — 🟠 OUVERTE
+
+**Détecté** : 03/06/2026, lors de l'implémentation d'US-5.7 (vue globale occupé/libre).
+
+**Constat** : trois duplications assumées sont introduites par la vue d'occupation, pour garder l'US auto-contenue et **ne pas modifier de code déjà livré** (agenda Personnel, API créneaux) :
+- **Helpers JS** : `escapeHtml`, `hexVersRgb`, `melangerBlanc`, `heureSlot` existent à l'identique dans `assets/controllers/agenda_controller.js` et `assets/controllers/occupation_controller.js`.
+- **Rendu d'event FullCalendar** : la structure d'`eventContent` (wrapper `fc-event-main-frame cs-fc-lines` + lignes `cs-fc-line-*`) et son habillage CSS sont communs aux deux calendriers. Le CSS de pastille est volontairement dupliqué entre le bloc `.cs-agenda-page` et le bloc `.cs-occupation-page` de `public/css/creaslot.css` (même typo, même troncature ; seule la ligne `cs-fc-line-personnel` et l'état Occupé/Libre diffèrent côté occupation).
+- **Habillage de la toolbar FullCalendar** : les règles `.fc-toolbar`/`.fc-toolbar-chunk`/`.fc-toolbar-title`/`.fc-button` (prev | titre | next sur une ligne, boutons stylés charte) sont dupliquées : inline dans le `<style>` de `templates/personnel/creneau/agenda.html.twig` (scope `.cs-agenda-page`) **et** dans le bloc `.cs-occupation-page` de `public/css/creaslot.css`. Source unique souhaitable.
+- **Réponse JSON no-store** : la méthode privée `repondreSansCache()` d'`OccupationController` duplique `jsonSansCache()` de `CreneauApiController` (corps identique).
+
+**Impact** : faible (fonctions pures, peu volatiles), mais toute évolution (ex. ajustement du contraste, de la typo de pastille, en-tête de cache) doit être répercutée à deux endroits → risque de divergence silencieuse. Contraire au principe DRY.
+
+**Fichiers concernés** : `assets/controllers/agenda_controller.js`, `assets/controllers/occupation_controller.js`, `public/css/creaslot.css`, `src/Controller/Api/CreneauApiController.php`, `src/Controller/Admin/OccupationController.php`.
+
+**Action proposée** : extraire un module `assets/fullcalendar_helpers.js` (helpers purs partagés), **mutualiser le rendu d'event ET l'habillage de toolbar** (fonction `eventContent` paramétrable + bloc CSS commun pastille **et toolbar**, p. ex. classe partagée `.cs-fc-calendar` au lieu des scopes `.cs-agenda-page`/`.cs-occupation-page` et du `<style>` inline de l'agenda) et un **trait/utilitaire JSON no-store** partagé (ex. `RepondAvecJsonSansCacheTrait`). Refacto pur, sans changement de comportement, à valider par les suites existantes (agenda + occupation). À planifier en **passe DRY de l'itération 6** (extraction d'autant plus justifiée que le rendu d'event est désormais lui aussi dupliqué).
+
+**Priorité** : 🟡 moyenne (qualité de code ; aucun impact fonctionnel), à regrouper avec les autres axes DRY.
