@@ -144,6 +144,42 @@ final class UtilisateurVoterTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // CHANGE_ROLE
+    // -------------------------------------------------------------------------
+
+    public function test_super_admin_peut_changer_le_role_dun_autre(): void
+    {
+        $superAdmin = $this->creerUtilisateur(99, RoleUtilisateur::SUPER_ADMIN);
+        $auditeur   = $this->creerUtilisateur(1, RoleUtilisateur::AUDITEUR);
+
+        $this->assertSame(
+            VoterInterface::ACCESS_GRANTED,
+            $this->voter->vote($this->creerToken($superAdmin), $auditeur, [UtilisateurVoter::CHANGE_ROLE]),
+        );
+    }
+
+    public function test_super_admin_ne_peut_pas_changer_son_propre_role(): void
+    {
+        $superAdmin = $this->creerUtilisateur(99, RoleUtilisateur::SUPER_ADMIN);
+
+        $this->assertSame(
+            VoterInterface::ACCESS_DENIED,
+            $this->voter->vote($this->creerToken($superAdmin), $superAdmin, [UtilisateurVoter::CHANGE_ROLE]),
+        );
+    }
+
+    public function test_non_super_admin_ne_peut_pas_changer_de_role(): void
+    {
+        $personnel = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
+        $auditeur  = $this->creerUtilisateur(2, RoleUtilisateur::AUDITEUR);
+
+        $this->assertSame(
+            VoterInterface::ACCESS_DENIED,
+            $this->voter->vote($this->creerToken($personnel), $auditeur, [UtilisateurVoter::CHANGE_ROLE]),
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 

@@ -32,7 +32,16 @@ final class UtilisateurVoter extends Voter
      */
     public const string DEACTIVATE = 'UTILISATEUR_DEACTIVATE';
 
-    private const array ATTRIBUTS = [self::VIEW, self::EDIT, self::DELETE, self::DEACTIVATE];
+    /**
+     * Seul le SUPER_ADMIN peut changer le rôle d'un compte.
+     * Un SUPER_ADMIN ne peut pas changer son propre rôle (anti auto-rétrogradation,
+     * évite le lock-out). L'invariant « ne pas retirer le dernier super-admin » est
+     * vérifié côté contrôleur (état global), pas ici (le Voter reste pur et sans
+     * dépendance).
+     */
+    public const string CHANGE_ROLE = 'UTILISATEUR_CHANGE_ROLE';
+
+    private const array ATTRIBUTS = [self::VIEW, self::EDIT, self::DELETE, self::DEACTIVATE, self::CHANGE_ROLE];
 
     protected function supports(string $attribute, mixed $subject): bool
     {
@@ -52,9 +61,10 @@ final class UtilisateurVoter extends Voter
         return match ($attribute) {
             self::VIEW       => $this->peutVoir($subject, $utilisateur),
             self::EDIT       => $this->peutModifier($subject, $utilisateur),
-            self::DELETE     => $utilisateur->getRole() === RoleUtilisateur::SUPER_ADMIN,
-            self::DEACTIVATE => $this->peutDesactiver($subject, $utilisateur),
-            default          => false,
+            self::DELETE      => $utilisateur->getRole() === RoleUtilisateur::SUPER_ADMIN,
+            self::DEACTIVATE  => $this->peutDesactiver($subject, $utilisateur),
+            self::CHANGE_ROLE => $this->peutChangerRole($subject, $utilisateur),
+            default           => false,
         };
     }
 
@@ -77,6 +87,16 @@ final class UtilisateurVoter extends Voter
         }
 
         // Un SUPER_ADMIN ne peut pas se désactiver lui-même — évite le lock-out
+        return $cible->getId() !== $utilisateur->getId();
+    }
+
+    private function peutChangerRole(Utilisateur $cible, Utilisateur $utilisateur): bool
+    {
+        if ($utilisateur->getRole() !== RoleUtilisateur::SUPER_ADMIN) {
+            return false;
+        }
+
+        // Un SUPER_ADMIN ne peut pas changer son propre rôle — évite l'auto-rétrogradation
         return $cible->getId() !== $utilisateur->getId();
     }
 }
