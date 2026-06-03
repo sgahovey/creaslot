@@ -154,6 +154,29 @@ class ReservationRepository extends ServiceEntityRepository
     }
 
     /**
+     * Toutes les réservations d'un Auditeur (tous statuts), pour l'export RGPD
+     * (US-5.6). Jointures eager (créneau, type, Personnel) pour éviter le N+1.
+     *
+     * `leftJoin` plutôt qu'`innerJoin` : ces relations sont non-nullables, donc
+     * équivalent en pratique, mais on garantit qu'aucune ligne ne disparaît de
+     * l'export (complétude) même en cas d'anomalie de données.
+     *
+     * @return Reservation[]
+     */
+    public function findAllPourExport(Utilisateur $auditeur): array
+    {
+        return $this->createQueryBuilder('r')
+            ->leftJoin('r.creneau', 'c')->addSelect('c')
+            ->leftJoin('c.typeRdv', 't')->addSelect('t')
+            ->leftJoin('c.utilisateur', 'p')->addSelect('p')
+            ->andWhere('r.utilisateur = :auditeur')
+            ->setParameter('auditeur', $auditeur)
+            ->orderBy('c.dateDebut', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Applique les conditions de filtre sur le QueryBuilder.
      * 4 filtres : toutes (défaut, aucune condition), a_venir, passees, annulees.
      */

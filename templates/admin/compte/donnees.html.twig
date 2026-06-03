@@ -1,0 +1,41 @@
+{#
+ # Données personnelles d'un compte — vue lisible admin (US-5.6).
+ #
+ # Réservée au Super-admin (consultation d'une demande d'accès). Réutilise le partial
+ # partagé `export/_donnees.html.twig`. Variables : `donnees`, `compte`.
+ #}
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Données personnelles — {{ compte.prenom }} {{ compte.nom }}{% endblock %}
+
+{% block admin_contenu %}
+
+    <div class="mb-3">
+        <a href="{{ path('app_admin_comptes') }}" class="btn btn-sm btn-link text-decoration-none px-0">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            Retour à la liste
+        </a>
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+        <h2 class="h5 d-flex align-items-center gap-2 mb-0"
+            style="color: var(--cs-text-primary); font-weight: var(--cs-fw-semibold);">
+            <i class="bi bi-person-vcard" aria-hidden="true"></i>
+            Données personnelles — {{ compte.prenom }} {{ compte.nom }}
+        </h2>
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-2" onclick="window.print()">
+                <i class="bi bi-printer" aria-hidden="true"></i>
+                Imprimer
+            </button>
+            <a href="{{ path('app_admin_compte_export', { id: compte.id }) }}"
+               class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-2">
+                <i class="bi bi-download" aria-hidden="true"></i>
+                Télécharger au format JSON
+            </a>
+        </div>
+    </div>
+
+    {% include 'export/_donnees.html.twig' with { donnees: donnees } %}
+
+{% endblock %}

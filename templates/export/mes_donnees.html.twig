@@ -1,0 +1,34 @@
+{#
+ # Mes données personnelles — vue lisible self-service (US-5.6).
+ #
+ # Affiche le MÊME tableau minimisé que l'export JSON (source unique). Les sections
+ # sont rendues par le partial partagé `export/_donnees.html.twig`.
+ # Variable : `donnees`.
+ #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes données personnelles{% endblock %}
+
+{% block body %}
+<div class="container py-4" style="max-width: 860px;">
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+        <h1 class="h4 fw-bold mb-0" style="color: var(--cs-text-primary);">
+            <i class="bi bi-person-vcard me-2" aria-hidden="true"></i>Mes données personnelles
+        </h1>
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2" onclick="window.print()">
+                <i class="bi bi-printer" aria-hidden="true"></i>
+                Imprimer
+            </button>
+            <a href="{{ path('app_mes_donnees_export') }}" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
+                <i class="bi bi-download" aria-hidden="true"></i>
+                Télécharger au format JSON (portabilité)
+            </a>
+        </div>
+    </div>
+
+    {% include 'export/_donnees.html.twig' with { donnees: donnees } %}
+
+</div>
+{% endblock %}

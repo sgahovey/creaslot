@@ -78,6 +78,13 @@
                                             Modifier
                                         </a>
 
+                                        <a href="{{ path('app_admin_compte_donnees', { id: compte.id }) }}"
+                                           class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                                           aria-label="Voir les données de {{ compte.nomComplet }}">
+                                            <i class="bi bi-person-vcard" aria-hidden="true"></i>
+                                            Voir les données
+                                        </a>
+
                                         {# Bascule d'activation — jamais sur sa propre ligne (auto-désactivation) #}
                                         {% if compte.id != app.user.id %}
                                             {% if compte.estActif %}
