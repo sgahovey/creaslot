@@ -1,0 +1,72 @@
+{#
+ # Composant : modale de confirmation de désactivation d'un compte (US-5.4).
+ # Paramètre attendu :
+ #   compte  Utilisateur  — le compte à désactiver
+ #
+ # Réservée à la DÉSACTIVATION (action conséquente : bloque le login).
+ # La réactivation se fait sans modale (formulaire direct dans la liste).
+ #}
+
+{% set modalId = 'modal-activation-' ~ compte.id %}
+
+<div class="modal fade"
+     id="{{ modalId }}"
+     tabindex="-1"
+     aria-labelledby="{{ modalId }}-titre"
+     aria-modal="true"
+     role="dialog">
+
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow"
+             style="border-radius: var(--cs-radius-lg);">
+
+            {# ── En-tête ──────────────────────────────────────── #}
+            <div class="modal-header border-0 pb-0">
+                <h2 class="modal-title h6 fw-bold d-flex align-items-center gap-2"
+                    id="{{ modalId }}-titre"
+                    style="color: var(--cs-text-primary);">
+                    <i class="bi bi-person-slash text-danger" aria-hidden="true"></i>
+                    Désactivation d'un compte
+                </h2>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Fermer"></button>
+            </div>
+
+            {# ── Corps ────────────────────────────────────────── #}
+            <div class="modal-body pt-2">
+                <p class="mb-3" style="color: var(--cs-text-primary);">
+                    Voulez-vous vraiment désactiver le compte de
+                    <strong>{{ compte.nomComplet }}</strong>&nbsp;?
+                </p>
+                <div class="alert alert-warning d-flex align-items-start gap-2 mb-0" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1" aria-hidden="true"></i>
+                    <span>L'utilisateur ne pourra plus se connecter tant que son compte est désactivé.</span>
+                </div>
+            </div>
+
+            {# ── Pied de page ─────────────────────────────────── #}
+            <div class="modal-footer border-0 pt-0 gap-2">
+
+                <button type="button"
+                        class="btn btn-outline-secondary"
+                        data-bs-dismiss="modal">
+                    Annuler
+                </button>
+
+                <form action="{{ path('app_admin_compte_activation', { id: compte.id }) }}" method="post">
+                    <input type="hidden" name="_token" value="{{ csrf_token('activation-' ~ compte.id) }}">
+                    <button type="submit"
+                            class="btn btn-danger d-flex align-items-center gap-1"
+                            aria-label="Confirmer la désactivation du compte de {{ compte.nomComplet }}">
+                        <i class="bi bi-person-slash" aria-hidden="true"></i>
+                        Désactiver
+                    </button>
+                </form>
+
+            </div>
+
+        </div>
+    </div>
+</div>

@@ -134,14 +134,63 @@ final class CompteController extends AbstractController
         ]);
     }
 
+    #[Route('/admin/comptes/{id}/activation', name: 'app_admin_compte_activation', methods: ['POST'])]
+    public function basculerActivation(Utilisateur $compte, Request $request): Response
+    {
+        if (!$this->isCsrfTokenValid('activation-' . $compte->getId(), $request->request->getString('_token'))) {
+            $this->addFlash('error', 'Token de sécurité invalide. Veuillez réessayer.');
+
+            return $this->redirectToRoute('app_admin_comptes');
+        }
+
+        $desactivation = $compte->isEstActif();
+
+        // Garde anti lock-out AVANT l'autorisation : l'invariant « jamais 0
+        // super-admin actif » porte le message métier le plus clair ; le Voter
+        // DEACTIVATE (anti-soi) couvre ensuite les autres auto-désactivations.
+        if ($desactivation && $this->estLeDernierSuperAdminActif($compte)) {
+            $this->addFlash('error', 'Vous ne pouvez pas désactiver le dernier super-administrateur actif.');
+
+            return $this->redirectToRoute('app_admin_comptes');
+        }
+
+        $this->denyAccessUnlessGranted(
+            $desactivation ? UtilisateurVoter::DEACTIVATE : UtilisateurVoter::ACTIVATE,
+            $compte,
+        );
+
+        $compte->setEstActif(!$desactivation);
+        $this->entityManager->flush();
+
+        /** @var Utilisateur $administrateur */
+        $administrateur = $this->getUser();
+        $this->logger->info('Compte activation basculée', [
+            'admin_id'  => $administrateur->getId(),
+            'cible_id'  => $compte->getId(),
+            'est_actif' => $compte->isEstActif(),
+        ]);
+
+        $this->addFlash('success', $desactivation ? 'Le compte a été désactivé.' : 'Le compte a été réactivé.');
+
+        return $this->redirectToRoute('app_admin_comptes');
+    }
+
+    private function estLeDernierSuperAdminActif(Utilisateur $compte): bool
+    {
+        return $compte->getRole() === RoleUtilisateur::SUPER_ADMIN
+            && $this->utilisateurRepository->countSuperAdminsActifs() <= 1;
+    }
+
     /**
      * Vrai si le changement de rôle rétrograde le dernier super-administrateur
-     * restant (passage de SUPER_ADMIN à autre chose alors qu'il n'en reste qu'un).
+     * actif restant (passage de SUPER_ADMIN à autre chose alors qu'il n'en reste
+     * qu'un de réellement utilisable). On compte les super-admins ACTIFS (US-5.4) :
+     * un super-admin désactivé ne peut plus se connecter, il ne sert pas de repli.
      */
     private function retireLeDernierSuperAdmin(RoleUtilisateur $roleAvant, RoleUtilisateur $roleApres): bool
     {
         return $roleAvant === RoleUtilisateur::SUPER_ADMIN
             && $roleApres !== RoleUtilisateur::SUPER_ADMIN
-            && $this->utilisateurRepository->countSuperAdmins() <= 1;
+            && $this->utilisateurRepository->countSuperAdminsActifs() <= 1;
     }
 }

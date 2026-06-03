@@ -180,6 +180,43 @@ final class UtilisateurVoterTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // ACTIVATE
+    // -------------------------------------------------------------------------
+
+    public function test_super_admin_peut_activer_un_compte(): void
+    {
+        $superAdmin = $this->creerUtilisateur(99, RoleUtilisateur::SUPER_ADMIN);
+        $cible      = $this->creerUtilisateur(1, RoleUtilisateur::AUDITEUR);
+
+        $this->assertSame(
+            VoterInterface::ACCESS_GRANTED,
+            $this->voter->vote($this->creerToken($superAdmin), $cible, [UtilisateurVoter::ACTIVATE]),
+        );
+    }
+
+    public function test_personnel_ne_peut_pas_activer(): void
+    {
+        $personnel = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
+        $cible     = $this->creerUtilisateur(2, RoleUtilisateur::AUDITEUR);
+
+        $this->assertSame(
+            VoterInterface::ACCESS_DENIED,
+            $this->voter->vote($this->creerToken($personnel), $cible, [UtilisateurVoter::ACTIVATE]),
+        );
+    }
+
+    public function test_auditeur_ne_peut_pas_activer(): void
+    {
+        $auditeur = $this->creerUtilisateur(1, RoleUtilisateur::AUDITEUR);
+        $cible    = $this->creerUtilisateur(2, RoleUtilisateur::AUDITEUR);
+
+        $this->assertSame(
+            VoterInterface::ACCESS_DENIED,
+            $this->voter->vote($this->creerToken($auditeur), $cible, [UtilisateurVoter::ACTIVATE]),
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 

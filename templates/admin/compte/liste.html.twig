@@ -70,12 +70,43 @@
                                     {% endif %}
                                 </td>
                                 <td class="text-end">
-                                    <a href="{{ path('app_admin_compte_modifier', { id: compte.id }) }}"
-                                       class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
-                                       aria-label="Modifier le compte de {{ compte.nomComplet }}">
-                                        <i class="bi bi-pencil" aria-hidden="true"></i>
-                                        Modifier
-                                    </a>
+                                    <div class="d-inline-flex align-items-center gap-2">
+                                        <a href="{{ path('app_admin_compte_modifier', { id: compte.id }) }}"
+                                           class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                                           aria-label="Modifier le compte de {{ compte.nomComplet }}">
+                                            <i class="bi bi-pencil" aria-hidden="true"></i>
+                                            Modifier
+                                        </a>
+
+                                        {# Bascule d'activation — jamais sur sa propre ligne (auto-désactivation) #}
+                                        {% if compte.id != app.user.id %}
+                                            {% if compte.estActif %}
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#modal-activation-{{ compte.id }}">
+                                                    <i class="bi bi-person-slash" aria-hidden="true"></i>
+                                                    Désactiver
+                                                </button>
+                                            {% else %}
+                                                <form method="post"
+                                                      action="{{ path('app_admin_compte_activation', { id: compte.id }) }}"
+                                                      class="d-inline">
+                                                    <input type="hidden" name="_token" value="{{ csrf_token('activation-' ~ compte.id) }}">
+                                                    <button type="submit"
+                                                            class="btn btn-sm btn-outline-success d-inline-flex align-items-center gap-1"
+                                                            aria-label="Réactiver le compte de {{ compte.nomComplet }}">
+                                                        <i class="bi bi-person-check" aria-hidden="true"></i>
+                                                        Réactiver
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+
+                                    {% if compte.id != app.user.id and compte.estActif %}
+                                        {% include 'components/modal_activation_compte.html.twig' with { compte: compte } %}
+                                    {% endif %}
                                 </td>
                             </tr>
                         {% else %}

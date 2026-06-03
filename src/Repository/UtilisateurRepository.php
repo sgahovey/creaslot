@@ -98,4 +98,21 @@ class UtilisateurRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
     }
+
+    /**
+     * Nombre de comptes SUPER_ADMIN encore actifs. Sert aux gardes anti lock-out :
+     * un super-admin inactif ne peut plus se connecter, il ne compte donc pas comme
+     * repli. Utilisé pour empêcher de retirer/désactiver le dernier super-admin
+     * réellement utilisable (US-5.4, et raffinement de la garde de rôle US-5.3).
+     */
+    public function countSuperAdminsActifs(): int
+    {
+        return (int) $this->createQueryBuilder('u')
+            ->select('COUNT(u.id)')
+            ->andWhere('u.role = :role')
+            ->andWhere('u.estActif = true')
+            ->setParameter('role', RoleUtilisateur::SUPER_ADMIN)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }
