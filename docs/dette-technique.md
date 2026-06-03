@@ -355,3 +355,19 @@ FullCalendar de `CLAUDE.md`.
 **Action proposée** : re-vérifier `estActif` à **chaque requête** — soit (a) en faisant **échouer `refreshUser`** quand le compte est inactif (provider décorant `app_user_provider`, ou `Utilisateur` implémentant `EquatableInterface`/contrôle au refresh), soit (b) via un **listener `kernel.request`** qui invalide la session d'un utilisateur devenu inactif. Tâche **dédiée**, avec test fonctionnel : **session active → désactivation du compte → 302 vers login à la requête suivante**.
 
 **Priorité** : 🟡 moyenne (sécurité ; risque faible au volume Cnam), à planifier en tâche dédiée.
+
+---
+
+## DT-15 — Purge automatisée du journal RGPD au-delà de la durée de conservation (🟡 MOYEN) — 🟠 OUVERTE
+
+**Détecté** : 03/06/2026, lors de l'implémentation d'US-5.5 (journal RGPD).
+
+**Constat** : Le journal d'administration (`journal_admin`, US-5.5) **grandit indéfiniment** : chaque action sensible sur un compte y ajoute une entrée, sans suppression. La **durée de conservation de 12 mois** est documentée (finalité accountability, registre des traitements) mais **n'est pas appliquée** techniquement — aucune purge des entrées expirées.
+
+**Impact** : conservation de données nominatives **au-delà** de la durée annoncée (non-conformité RGPD au principe de **limitation de la conservation**, art. 5.1.e) ; croissance non bornée de la table. Risque faible à court terme (volume Cnam, peu d'actions admin), réel sur la durée.
+
+**Fichiers concernés** : nouvelle commande console (`src/Command/`), `JournalAdminRepository` (méthode de suppression bornée), planification cron (`docs/cron-*` / infra).
+
+**Action proposée** : **commande console** (ex. `app:purger-journal`) supprimant en DQL paramétré les entrées `date_action < now - 12 mois`, **planifiée par cron** (comme le rappel J-1). Avec **test** : insertion d'entrées anciennes + récentes → seules les anciennes sont purgées. Durée de conservation portée par une **constante nommée** (source unique).
+
+**Priorité** : 🟡 moyenne (conformité RGPD ; croissance lente au volume Cnam), à planifier en tâche dédiée.
