@@ -42,6 +42,23 @@ class NotificationRepository extends ServiceEntityRepository
     }
 
     /**
+     * Toutes les notifications d'un destinataire (tous statuts), pour l'export RGPD
+     * (US-5.6), de la plus récente à la plus ancienne. Aucune jointure : seules les
+     * colonnes (type, titre, message, lu, date) sont exportées.
+     *
+     * @return Notification[]
+     */
+    public function findAllPourExport(Utilisateur $destinataire): array
+    {
+        return $this->createQueryBuilder('n')
+            ->andWhere('n.destinataire = :destinataire')
+            ->setParameter('destinataire', $destinataire)
+            ->orderBy('n.dateCreation', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Nombre de notifications NON LUES d'un destinataire (badge du menu).
      * L'index composite (id_destinataire, lu) garantit un COUNT performant.
      */

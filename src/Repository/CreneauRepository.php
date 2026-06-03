@@ -397,4 +397,23 @@ class CreneauRepository extends ServiceEntityRepository
 
         return $statistiques;
     }
+
+    /**
+     * Tous les créneaux proposés par un Personnel (tous statuts), pour l'export
+     * RGPD (US-5.6). Jointure `typeRdv` uniquement, de la plus récente à la plus
+     * ancienne. **Aucune jointure sur `reservations`** : l'export d'un Personnel ne
+     * doit jamais exposer l'identité des auditeurs ayant réservé ses créneaux.
+     *
+     * @return Creneau[]
+     */
+    public function findAllParProprietairePourExport(Utilisateur $personnel): array
+    {
+        return $this->createQueryBuilder('c')
+            ->leftJoin('c.typeRdv', 't')->addSelect('t')
+            ->andWhere('c.utilisateur = :personnel')
+            ->setParameter('personnel', $personnel)
+            ->orderBy('c.dateDebut', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }

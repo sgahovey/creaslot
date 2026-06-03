@@ -51,5 +51,31 @@
         </div>
     </div>
 
+    {# Export RGPD — droit d'accès et de portabilité (US-5.6) #}
+    <div class="card border-0 shadow-sm mt-4" style="border-radius: var(--cs-radius-lg);">
+        <div class="card-body p-4">
+            <h2 class="h6 fw-bold d-flex align-items-center gap-2 mb-2" style="color: var(--cs-text-primary);">
+                <i class="bi bi-download" aria-hidden="true"></i>
+                Mes données personnelles
+            </h2>
+            <p class="mb-3" style="color: var(--cs-text-secondary); font-size: var(--cs-fs-small);">
+                Conformément au RGPD, vous pouvez télécharger une copie de vos données
+                personnelles au format JSON (droit d'accès et de portabilité).
+            </p>
+            <div class="d-flex flex-wrap align-items-center gap-3">
+                <a href="{{ path('app_mes_donnees') }}" class="btn cs-btn-primary d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-eye" aria-hidden="true"></i>
+                    Voir / imprimer mes données
+                </a>
+                <a href="{{ path('app_mes_donnees_export') }}"
+                   class="text-decoration-none d-inline-flex align-items-center gap-1"
+                   style="font-size: var(--cs-fs-small); color: var(--cs-text-secondary);">
+                    <i class="bi bi-download" aria-hidden="true"></i>
+                    Télécharger au format JSON (portabilité)
+                </a>
+            </div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}

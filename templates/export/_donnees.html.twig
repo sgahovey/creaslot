@@ -1,0 +1,134 @@
+{#
+ # Partial partagé : rendu lisible des données personnelles (US-5.6).
+ # Utilisé par la vue self-service (export/mes_donnees) ET la vue admin
+ # (admin/compte/donnees). Affiche le tableau minimisé de l'export — aucune donnée
+ # sensible. Les dates du tableau sont en ISO 8601 → reformatées humain ici (heure
+ # Réunion), sans toucher au Service.
+ #
+ # Variable attendue : `donnees` (tableau renvoyé par ExportDonneesPersonnellesService).
+ #}
+{% macro dateHumaine(valeur) %}{{ valeur ? valeur|date('d/m/Y H\\hi', 'Indian/Reunion') : '—' }}{% endmacro %}
+{% import _self as fmt %}
+
+{# ── Profil ──────────────────────────────────────────────────────────── #}
+<section class="card border-0 shadow-sm mb-4" style="border-radius: var(--cs-radius-lg);" aria-labelledby="titre-profil">
+    <div class="card-body p-4">
+        <h2 id="titre-profil" class="h6 fw-bold mb-3" style="color: var(--cs-text-primary);">Profil</h2>
+        <dl class="row mb-0">
+            <dt class="col-sm-4">Adresse email</dt><dd class="col-sm-8">{{ donnees.profil.email }}</dd>
+            <dt class="col-sm-4">Nom</dt><dd class="col-sm-8">{{ donnees.profil.nom }}</dd>
+            <dt class="col-sm-4">Prénom</dt><dd class="col-sm-8">{{ donnees.profil.prenom }}</dd>
+            <dt class="col-sm-4">Rôle</dt><dd class="col-sm-8">{{ donnees.profil.role }}</dd>
+            <dt class="col-sm-4">Service</dt><dd class="col-sm-8">{{ donnees.profil.service ?? '—' }}</dd>
+            <dt class="col-sm-4">Compte actif</dt><dd class="col-sm-8">{{ donnees.profil.compte_actif ? 'Oui' : 'Non' }}</dd>
+            <dt class="col-sm-4">Date de création</dt><dd class="col-sm-8">{{ fmt.dateHumaine(donnees.profil.date_creation) }}</dd>
+            <dt class="col-sm-4">Dernière connexion</dt><dd class="col-sm-8">{{ fmt.dateHumaine(donnees.profil.derniere_connexion) }}</dd>
+            <dt class="col-sm-4">Email — modification de commentaire</dt>
+            <dd class="col-sm-8">{{ donnees.profil.preferences_email.modification_commentaire ? 'Activé' : 'Désactivé' }}</dd>
+            <dt class="col-sm-4">Email — rappel de la veille</dt>
+            <dd class="col-sm-8">{{ donnees.profil.preferences_email.rappel_j1 ? 'Activé' : 'Désactivé' }}</dd>
+        </dl>
+    </div>
+</section>
+
+{# ── Rendez-vous ─────────────────────────────────────────────────────── #}
+<section class="card border-0 shadow-sm mb-4" style="border-radius: var(--cs-radius-lg);" aria-labelledby="titre-rdv">
+    <div class="card-body p-4">
+        <h2 id="titre-rdv" class="h6 fw-bold mb-3" style="color: var(--cs-text-primary);">Mes rendez-vous</h2>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <caption class="visually-hidden">Liste des réservations</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Début</th>
+                        <th scope="col">Fin</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Avec</th>
+                        <th scope="col">Statut</th>
+                        <th scope="col">Commentaire</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for resa in donnees.reservations %}
+                        <tr>
+                            <td>{{ fmt.dateHumaine(resa.rendez_vous.debut) }}</td>
+                            <td>{{ fmt.dateHumaine(resa.rendez_vous.fin) }}</td>
+                            <td>{{ resa.rendez_vous.type }}</td>
+                            <td>{{ resa.rendez_vous.avec }}</td>
+                            <td>{{ resa.statut == 'ACTIVE' ? 'Active' : 'Annulée' }}</td>
+                            <td>{{ resa.commentaire ?? '—' }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="6" class="text-center text-secondary py-3">Aucun rendez-vous.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+{# ── Notifications ───────────────────────────────────────────────────── #}
+<section class="card border-0 shadow-sm mb-4" style="border-radius: var(--cs-radius-lg);" aria-labelledby="titre-notifs">
+    <div class="card-body p-4">
+        <h2 id="titre-notifs" class="h6 fw-bold mb-3" style="color: var(--cs-text-primary);">Mes notifications</h2>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <caption class="visually-hidden">Liste des notifications</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Date</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Titre</th>
+                        <th scope="col">Message</th>
+                        <th scope="col">Lue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for notif in donnees.notifications %}
+                        <tr>
+                            <td>{{ fmt.dateHumaine(notif.date) }}</td>
+                            <td>{{ notif.type }}</td>
+                            <td>{{ notif.titre }}</td>
+                            <td>{{ notif.message }}</td>
+                            <td>{{ notif.lu ? 'Oui' : 'Non' }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5" class="text-center text-secondary py-3">Aucune notification.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+{# ── Créneaux proposés (Personnel uniquement) ────────────────────────── #}
+{% if donnees.creneaux_proposes is defined %}
+    <section class="card border-0 shadow-sm mb-4" style="border-radius: var(--cs-radius-lg);" aria-labelledby="titre-creneaux">
+        <div class="card-body p-4">
+            <h2 id="titre-creneaux" class="h6 fw-bold mb-3" style="color: var(--cs-text-primary);">Créneaux proposés</h2>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <caption class="visually-hidden">Liste des créneaux proposés</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Début</th>
+                            <th scope="col">Fin</th>
+                            <th scope="col">Type</th>
+                            <th scope="col">Actif</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for creneau in donnees.creneaux_proposes %}
+                            <tr>
+                                <td>{{ fmt.dateHumaine(creneau.debut) }}</td>
+                                <td>{{ fmt.dateHumaine(creneau.fin) }}</td>
+                                <td>{{ creneau.type }}</td>
+                                <td>{{ creneau.actif ? 'Oui' : 'Non' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+{% endif %}
