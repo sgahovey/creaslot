@@ -30,6 +30,28 @@
         </div>
     </div>
 
+    {% set parametresRecherche = recherche ? { recherche: recherche } : {} %}
+
+    {# ── Recherche (nom, prénom, email) ──────────────────────────────────── #}
+    <form method="get" role="search" class="row g-2 align-items-end mb-3">
+        <div class="col-12 col-sm-auto flex-grow-1">
+            <label for="recherche-compte" class="form-label mb-1" style="font-size: var(--cs-fs-small);">
+                Rechercher (nom, prénom ou email)
+            </label>
+            <input type="search" id="recherche-compte" name="recherche" value="{{ recherche }}"
+                   class="form-control form-control-sm" placeholder="Rechercher…">
+        </div>
+        <div class="col-12 col-sm-auto">
+            <button type="submit" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1">
+                <i class="bi bi-search" aria-hidden="true"></i>
+                Rechercher
+            </button>
+            {% if recherche %}
+                <a href="{{ path('app_admin_comptes') }}" class="btn btn-sm btn-link text-decoration-none">Réinitialiser</a>
+            {% endif %}
+        </div>
+    </form>
+
     <div class="card border-0 shadow-sm" style="border-radius: var(--cs-radius-lg);">
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -52,7 +74,7 @@
                                 <th scope="row" class="fw-semibold">{{ compte.nomComplet }}</th>
                                 <td>{{ compte.email }}</td>
                                 <td>
-                                    <span class="badge text-bg-light">{{ compte.role.libelle }}</span>
+                                    <span class="badge {{ compte.role.couleurBadge }}">{{ compte.role.libelle }}</span>
                                 </td>
                                 <td>
                                     {% if compte.estActif %}
@@ -134,7 +156,7 @@
 
                 <li class="page-item {% if page == 1 %}disabled{% endif %}">
                     <a class="page-link"
-                       href="{{ path('app_admin_comptes', { page: page - 1 }) }}"
+                       href="{{ path('app_admin_comptes', parametresRecherche|merge({ page: page - 1 })) }}"
                        aria-label="Page précédente"
                        {% if page == 1 %}aria-disabled="true" tabindex="-1"{% endif %}>
                         <i class="bi bi-chevron-left" aria-hidden="true"></i>
@@ -144,13 +166,13 @@
                 {% for p in 1..nbPages %}
                     <li class="page-item {% if p == page %}active{% endif %}"
                         {% if p == page %}aria-current="page"{% endif %}>
-                        <a class="page-link" href="{{ path('app_admin_comptes', { page: p }) }}">{{ p }}</a>
+                        <a class="page-link" href="{{ path('app_admin_comptes', parametresRecherche|merge({ page: p })) }}">{{ p }}</a>
                     </li>
                 {% endfor %}
 
                 <li class="page-item {% if page == nbPages %}disabled{% endif %}">
                     <a class="page-link"
-                       href="{{ path('app_admin_comptes', { page: page + 1 }) }}"
+                       href="{{ path('app_admin_comptes', parametresRecherche|merge({ page: page + 1 })) }}"
                        aria-label="Page suivante"
                        {% if page == nbPages %}aria-disabled="true" tabindex="-1"{% endif %}>
                         <i class="bi bi-chevron-right" aria-hidden="true"></i>

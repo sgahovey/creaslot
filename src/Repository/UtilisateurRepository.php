@@ -70,7 +70,7 @@ class UtilisateurRepository extends ServiceEntityRepository
      *
      * @return Paginator<Utilisateur>
      */
-    public function findAllPourAdmin(int $page, int $limit = 20): Paginator
+    public function findAllPourAdmin(int $page, int $limit = 20, ?string $recherche = null): Paginator
     {
         $qb = $this->createQueryBuilder('u')
             ->leftJoin('u.service', 's')->addSelect('s')
@@ -78,6 +78,19 @@ class UtilisateurRepository extends ServiceEntityRepository
             ->addOrderBy('u.prenom', 'ASC')
             ->setFirstResult(($page - 1) * $limit)
             ->setMaxResults($limit);
+
+        if ($recherche !== null && $recherche !== '') {
+            // Échappe les jokers LIKE (% et _) avec un caractère d'échappement dédié
+            // « ! » (le backslash est mal acheminé via DQL→SQL, cf. MySQL ESCAPE).
+            // Recherche en sous-chaîne littérale : un email contient souvent « _ »,
+            // qui sinon sur-matcherait. On échappe « ! » lui-même d'abord.
+            $terme = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $recherche);
+            $qb->andWhere(
+                "u.nom LIKE :recherche ESCAPE '!' "
+                . "OR u.prenom LIKE :recherche ESCAPE '!' "
+                . "OR u.email LIKE :recherche ESCAPE '!'",
+            )->setParameter('recherche', '%' . $terme . '%');
+        }
 
         return new Paginator($qb->getQuery(), false);
     }
