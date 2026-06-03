@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Creneau;
+use App\Entity\Reservation;
 use App\Entity\Utilisateur;
 use App\Enum\StatutReservation;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -415,5 +416,95 @@ class CreneauRepository extends ServiceEntityRepository
             ->orderBy('c.dateDebut', 'DESC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Tous les créneaux actifs de l'organisation dont le début tombe dans
+     * [debut, fin], pour la vue globale occupé/libre du Super-admin (US-5.7).
+     *
+     * JOINs eager (typeRdv, personnel, service) pour éviter le N+1 lors du rendu.
+     * **Aucune jointure sur `c.reservations`** : l'occupation est déterminée à part
+     * par findIdsCreneauxOccupesDansPlage(), ce qui évite à la fois le fan-out
+     * OneToMany [[DT-1]] et l'hydratation de l'identité des auditeurs (RGPD).
+     *
+     * @return Creneau[]
+     */
+    public function findDansPlageGlobale(
+        \DateTimeImmutable $debut,
+        \DateTimeImmutable $fin,
+        ?int $serviceId,
+        ?int $typeId,
+    ): array {
+        $qb = $this->createQueryBuilder('c')
+            ->innerJoin('c.typeRdv', 't')->addSelect('t')
+            ->innerJoin('c.utilisateur', 'u')->addSelect('u')
+            ->leftJoin('u.service', 's')->addSelect('s')
+            ->andWhere('c.estActif = true')
+            ->andWhere('c.dateDebut BETWEEN :debut AND :fin')
+            ->setParameter('debut', $debut)
+            ->setParameter('fin', $fin)
+            ->orderBy('c.dateDebut', 'ASC');
+
+        $this->appliquerFiltresOccupationGlobale($qb, $serviceId, $typeId);
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * Identifiants des créneaux occupés (au moins une réservation ACTIVE) dont le
+     * début tombe dans [debut, fin], avec les mêmes filtres que findDansPlageGlobale
+     * (US-5.7). Le serializer croise cet ensemble avec la liste des créneaux.
+     *
+     * `DISTINCT IDENTITY(r.creneau)` sur le côté Reservation filtré par statut ACTIVE :
+     * un créneau à [ACTIVE + ANNULEE] ne ressort qu'une fois, un créneau à ANNULEE
+     * seule n'y figure pas. Aucune entité hydratée (scalaires), aucun auditeur exposé.
+     *
+     * @return list<int>
+     */
+    public function findIdsCreneauxOccupesDansPlage(
+        \DateTimeImmutable $debut,
+        \DateTimeImmutable $fin,
+        ?int $serviceId,
+        ?int $typeId,
+    ): array {
+        $qb = $this->getEntityManager()->createQueryBuilder()
+            ->select('DISTINCT IDENTITY(r.creneau)')
+            ->from(Reservation::class, 'r')
+            ->innerJoin('r.creneau', 'c')
+            ->innerJoin('c.typeRdv', 't')
+            ->innerJoin('c.utilisateur', 'u')
+            ->leftJoin('u.service', 's')
+            ->andWhere('r.statut = :statutActif')
+            ->andWhere('c.estActif = true')
+            ->andWhere('c.dateDebut BETWEEN :debut AND :fin')
+            ->setParameter('statutActif', StatutReservation::ACTIVE)
+            ->setParameter('debut', $debut)
+            ->setParameter('fin', $fin);
+
+        $this->appliquerFiltresOccupationGlobale($qb, $serviceId, $typeId);
+
+        return array_map(
+            static fn (mixed $id): int => (int) $id,
+            $qb->getQuery()->getSingleColumnResult(),
+        );
+    }
+
+    /**
+     * Filtres communs (service, type) des requêtes de la vue globale occupé/libre,
+     * pour garantir des ensembles « créneaux » et « occupés » strictement cohérents.
+     * Suppose des alias `t` (typeRdv) et `s` (service) déjà joints.
+     */
+    private function appliquerFiltresOccupationGlobale(
+        QueryBuilder $qb,
+        ?int $serviceId,
+        ?int $typeId,
+    ): void {
+        if ($serviceId !== null) {
+            $qb->andWhere('s.id = :serviceId')->setParameter('serviceId', $serviceId);
+        }
+
+        if ($typeId !== null) {
+            $qb->andWhere('t.id = :typeId')->setParameter('typeId', $typeId);
+        }
     }
 }

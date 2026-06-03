@@ -550,6 +550,126 @@
 }
 
 /* ============================================================
+   13b. FullCalendar — occupation globale Super-admin (US-5.7)
+   Pastille au rendu IDENTIQUE à l'agenda (même typo, même troncature).
+   Bloc dupliqué à dessein, sans toucher l'agenda livré (cf. DT-16,
+   extraction d'un rendu d'event partagé en itération 6). Seule différence :
+   une ligne « personnel » (l'agenda ne l'affiche pas) et l'état Occupé/Libre.
+   ============================================================ */
+
+.cs-occupation-page .fc-v-event.cs-fc-creneau,
+.cs-occupation-page .fc-v-event.cs-fc-creneau .fc-event-main,
+.cs-occupation-page .fc-v-event.cs-fc-creneau .fc-event-main-frame,
+.cs-occupation-page .fc-v-event.cs-fc-creneau .fc-event-title,
+.cs-occupation-page .fc-v-event.cs-fc-creneau .fc-event-time {
+    color: #1a1a1a !important;
+}
+
+/* L'occupation affiche 4 lignes (horaire + personnel + type + état) là où
+   l'agenda en a 3 : on resserre légèrement typo, interligne et padding vertical
+   pour que tout TIENNE dans une pastille d'1 h, sans changer le style (horaire en
+   gras, etc.). overflow caché en filet de sécurité contre tout débordement. */
+.cs-occupation-page .fc-v-event.cs-fc-creneau .fc-event-main-frame.cs-fc-lines {
+    overflow: hidden;
+    padding-top: 1px !important;
+    padding-bottom: 1px !important;
+}
+
+.cs-occupation-page .fc-v-event.cs-fc-creneau .cs-fc-line-time {
+    font-weight: 700;
+    font-size: 0.66rem;
+    line-height: 1.1;
+}
+
+.cs-occupation-page .fc-v-event.cs-fc-creneau .cs-fc-line-personnel {
+    font-weight: 600;
+    font-size: 0.66rem;
+    line-height: 1.05;
+}
+
+.cs-occupation-page .fc-v-event.cs-fc-creneau .cs-fc-line-type {
+    font-weight: 600;
+    font-size: 0.66rem;
+    line-height: 1.05;
+}
+
+.cs-occupation-page .fc-v-event.cs-fc-creneau .cs-fc-line-etat {
+    font-weight: 600;
+    font-size: 0.62rem;
+    line-height: 1.05;
+    opacity: 0.92;
+}
+
+.cs-occupation-page .fc-v-event.cs-fc-creneau.fc-event-passe,
+.cs-occupation-page .fc-v-event.cs-fc-creneau.fc-event-past {
+    opacity: 0.62 !important;
+    filter: grayscale(0.08);
+}
+
+.cs-occupation-page .fc-v-event.cs-fc-creneau.fc-event-occupe .cs-fc-line-etat {
+    font-weight: 700;
+}
+
+/* Toolbar : prev | titre | next sur UNE seule ligne, flèches collées au titre.
+   Règles identiques au <style> de personnel/creneau/agenda.html.twig (scope
+   .cs-agenda-page) : sans elles, le titre h2 (bloc) empile prev/titre/next. */
+.cs-occupation-page .fc .fc-toolbar.fc-header-toolbar {
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--cs-space-md);
+    margin-bottom: var(--cs-space-md);
+}
+.cs-occupation-page .fc .fc-toolbar-chunk {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    align-items: center !important;
+    gap: var(--cs-space-xs);
+}
+.cs-occupation-page .fc .fc-toolbar-chunk:nth-child(2) {
+    justify-content: center;
+    flex-wrap: nowrap !important;
+    gap: var(--cs-space-sm);
+}
+.cs-occupation-page .fc .fc-toolbar-chunk:nth-child(2) .fc-button-group {
+    flex-direction: row !important;
+    gap: var(--cs-space-xs);
+}
+.cs-occupation-page .fc .fc-toolbar-chunk:nth-child(2) .fc-prev-button,
+.cs-occupation-page .fc .fc-toolbar-chunk:nth-child(2) .fc-next-button {
+    flex: 0 0 auto !important;
+}
+.cs-occupation-page .fc .fc-toolbar-title {
+    margin: 0 !important;
+    padding: 0 var(--cs-space-xs);
+    white-space: nowrap;
+    line-height: 1.25;
+    display: inline-block;
+}
+.cs-occupation-page .fc .fc-toolbar-chunk:first-child .fc-button-group {
+    gap: 0;
+}
+.cs-occupation-page .fc .fc-button {
+    border-radius: var(--cs-radius-md) !important;
+    font-weight: var(--cs-fw-medium);
+}
+.cs-occupation-page .fc .fc-button-primary:not(:disabled):not(.fc-button-active),
+.cs-occupation-page .fc .fc-button:not(.fc-button-active):not(:disabled) {
+    background-color: var(--cs-bg-subtle);
+    border-color: var(--cs-border);
+    color: var(--cs-text-primary);
+}
+.cs-occupation-page .fc .fc-button-primary:not(:disabled).fc-button-active,
+.cs-occupation-page .fc .fc-button-primary:not(:disabled):hover,
+.cs-occupation-page .fc .fc-button:not(.fc-button-active):not(:disabled):hover {
+    background-color: var(--cs-blue-primary) !important;
+    border-color: var(--cs-blue-primary) !important;
+    color: var(--cs-text-light) !important;
+}
+
+/* ============================================================
    14. RESPONSIVE
    ============================================================ */
 
