@@ -41,7 +41,13 @@ final class UtilisateurVoter extends Voter
      */
     public const string CHANGE_ROLE = 'UTILISATEUR_CHANGE_ROLE';
 
-    private const array ATTRIBUTS = [self::VIEW, self::EDIT, self::DELETE, self::DEACTIVATE, self::CHANGE_ROLE];
+    /**
+     * Seul le SUPER_ADMIN peut réactiver un compte. Pas d'anti-soi : un compte
+     * inactif n'est jamais l'acteur courant, et réactiver ne crée aucun lock-out.
+     */
+    public const string ACTIVATE = 'UTILISATEUR_ACTIVATE';
+
+    private const array ATTRIBUTS = [self::VIEW, self::EDIT, self::DELETE, self::DEACTIVATE, self::CHANGE_ROLE, self::ACTIVATE];
 
     protected function supports(string $attribute, mixed $subject): bool
     {
@@ -64,6 +70,7 @@ final class UtilisateurVoter extends Voter
             self::DELETE      => $utilisateur->getRole() === RoleUtilisateur::SUPER_ADMIN,
             self::DEACTIVATE  => $this->peutDesactiver($subject, $utilisateur),
             self::CHANGE_ROLE => $this->peutChangerRole($subject, $utilisateur),
+            self::ACTIVATE    => $this->peutActiver($utilisateur),
             default           => false,
         };
     }
@@ -98,5 +105,10 @@ final class UtilisateurVoter extends Voter
 
         // Un SUPER_ADMIN ne peut pas changer son propre rôle — évite l'auto-rétrogradation
         return $cible->getId() !== $utilisateur->getId();
+    }
+
+    private function peutActiver(Utilisateur $utilisateur): bool
+    {
+        return $utilisateur->getRole() === RoleUtilisateur::SUPER_ADMIN;
     }
 }

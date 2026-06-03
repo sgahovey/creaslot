@@ -12,7 +12,9 @@ use App\Repository\UtilisateurRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 
 /**
  * Test fonctionnel de la gestion des comptes Super-admin (US-5.3).
@@ -311,6 +313,104 @@ final class CompteControllerTest extends WebTestCase
         self::assertNull($this->compteEnBase($cible->getEmail())->getService());
     }
 
+    // -------------------------------------------------------------------------
+    // Activation / désactivation (US-5.4)
+    // -------------------------------------------------------------------------
+
+    public function test_super_admin_desactive_un_autre_compte(): void
+    {
+        $cible = $this->creerCompte(RoleUtilisateur::AUDITEUR);
+
+        $this->client->loginUser($this->recupererUtilisateur(self::EMAIL_SUPER_ADMIN));
+        $this->soumettreBasculeDepuisListe($cible->getId());
+
+        self::assertResponseRedirects('/admin/comptes');
+        self::assertFalse($this->estActifEnBase($cible->getEmail()));
+    }
+
+    public function test_super_admin_reactive_un_compte_inactif(): void
+    {
+        $cible = $this->creerCompte(RoleUtilisateur::AUDITEUR, null, false);
+
+        $this->client->loginUser($this->recupererUtilisateur(self::EMAIL_SUPER_ADMIN));
+        $this->soumettreBasculeDepuisListe($cible->getId());
+
+        self::assertResponseRedirects('/admin/comptes');
+        self::assertTrue($this->estActifEnBase($cible->getEmail()));
+    }
+
+    public function test_auto_desactivation_bloquee_avec_deux_super_admins(): void
+    {
+        // Un 2e super-admin actif → countSuperAdminsActifs() = 2 : la garde « dernier
+        // admin » ne s'applique pas, c'est l'anti-soi (DEACTIVATE) qui doit bloquer.
+        $this->creerCompte(RoleUtilisateur::SUPER_ADMIN);
+
+        $admin = $this->recupererUtilisateur(self::EMAIL_SUPER_ADMIN);
+        $this->client->loginUser($admin);
+        $this->client->request('GET', '/admin/comptes');
+
+        $this->client->request('POST', '/admin/comptes/' . $admin->getId() . '/activation', [
+            '_token' => $this->jetonActivation($admin->getId()),
+        ]);
+
+        self::assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
+        self::assertTrue($this->estActifEnBase(self::EMAIL_SUPER_ADMIN));
+    }
+
+    public function test_desactivation_du_dernier_super_admin_actif_bloquee(): void
+    {
+        // Aucun super-admin de test créé → countSuperAdminsActifs() = 1 (fixtures).
+        $admin = $this->recupererUtilisateur(self::EMAIL_SUPER_ADMIN);
+        $this->client->loginUser($admin);
+        $this->client->request('GET', '/admin/comptes');
+
+        $this->client->request('POST', '/admin/comptes/' . $admin->getId() . '/activation', [
+            '_token' => $this->jetonActivation($admin->getId()),
+        ]);
+
+        self::assertResponseRedirects('/admin/comptes');
+        $this->client->followRedirect();
+        self::assertStringContainsString(
+            'Vous ne pouvez pas désactiver le dernier super-administrateur actif.',
+            (string) $this->client->getResponse()->getContent(),
+        );
+        self::assertTrue($this->estActifEnBase(self::EMAIL_SUPER_ADMIN));
+    }
+
+    public function test_bascule_refusee_au_personnel(): void
+    {
+        $admin = $this->recupererUtilisateur(self::EMAIL_SUPER_ADMIN);
+        $this->client->loginUser($this->recupererUtilisateur(self::EMAIL_PERSONNEL));
+
+        $this->client->request('POST', '/admin/comptes/' . $admin->getId() . '/activation', ['_token' => 'x']);
+
+        self::assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
+    }
+
+    public function test_bascule_refusee_a_l_auditeur(): void
+    {
+        $admin = $this->recupererUtilisateur(self::EMAIL_SUPER_ADMIN);
+        $this->client->loginUser($this->recupererUtilisateur(self::EMAIL_AUDITEUR));
+
+        $this->client->request('POST', '/admin/comptes/' . $admin->getId() . '/activation', ['_token' => 'x']);
+
+        self::assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
+    }
+
+    public function test_bascule_avec_csrf_invalide_est_rejetee(): void
+    {
+        $cible = $this->creerCompte(RoleUtilisateur::AUDITEUR);
+
+        $this->client->loginUser($this->recupererUtilisateur(self::EMAIL_SUPER_ADMIN));
+        $this->client->request('POST', '/admin/comptes/' . $cible->getId() . '/activation', [
+            '_token' => 'jeton-invalide',
+        ]);
+
+        self::assertResponseRedirects('/admin/comptes');
+        // État inchangé : le compte reste actif.
+        self::assertTrue($this->estActifEnBase($cible->getEmail()));
+    }
+
     /**
      * Compte réellement persisté en base. `clear()` détache les entités managées :
      * sans cela, `findOneBy` relirait l'entité mutée en mémoire par `handleRequest`
@@ -340,7 +440,7 @@ final class CompteControllerTest extends WebTestCase
         return $service;
     }
 
-    private function creerCompte(RoleUtilisateur $role, ?Service $service = null): Utilisateur
+    private function creerCompte(RoleUtilisateur $role, ?Service $service = null, bool $estActif = true): Utilisateur
     {
         $entityManager = static::getContainer()->get(EntityManagerInterface::class);
 
@@ -349,7 +449,7 @@ final class CompteControllerTest extends WebTestCase
             ->setNom('CibleNom')
             ->setPrenom('CiblePrenom')
             ->setRole($role)
-            ->setEstActif(true)
+            ->setEstActif($estActif)
             ->setService($service)
             ->setMotDePasseHash('placeholder-not-real');
 
@@ -357,6 +457,49 @@ final class CompteControllerTest extends WebTestCase
         $entityManager->flush();
 
         return $compte;
+    }
+
+    private function estActifEnBase(string $email): bool
+    {
+        return $this->compteEnBase($email)->isEstActif();
+    }
+
+    /** Soumet le formulaire de bascule rendu pour ce compte dans la liste (token réel). */
+    private function soumettreBasculeDepuisListe(int $id): void
+    {
+        $crawler    = $this->client->request('GET', '/admin/comptes');
+        $formulaire = $crawler->filter('form[action="/admin/comptes/' . $id . '/activation"]')->form();
+        $this->client->submit($formulaire);
+    }
+
+    /**
+     * Jeton CSRF valide pour la bascule — cas « action sur soi » (aucun formulaire
+     * n'est rendu pour sa propre ligne). Le token manager exige une session active :
+     * on pousse une requête portant la session du client sur le RequestStack, on
+     * génère le token, puis on persiste la session pour le POST suivant.
+     * (Nécessite une requête préalable du client pour disposer d'une session.)
+     */
+    private function jetonActivation(int $id): string
+    {
+        $session      = $this->client->getRequest()->getSession();
+        $requestStack = static::getContainer()->get('request_stack');
+
+        $requete = new Request();
+        $requete->setSession($session);
+        $requestStack->push($requete);
+
+        try {
+            $token = static::getContainer()
+                ->get(CsrfTokenManagerInterface::class)
+                ->getToken('activation-' . $id)
+                ->getValue();
+        } finally {
+            $requestStack->pop();
+        }
+
+        $session->save();
+
+        return $token;
     }
 
     private function recupererUtilisateur(string $email): Utilisateur

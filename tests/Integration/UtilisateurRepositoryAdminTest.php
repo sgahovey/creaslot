@@ -76,6 +76,21 @@ final class UtilisateurRepositoryAdminTest extends KernelTestCase
         self::assertSame($baseline + 1, $this->utilisateurRepository->countSuperAdmins());
     }
 
+    public function test_countSuperAdminsActifs_ignore_les_super_admins_inactifs(): void
+    {
+        $baseline = $this->utilisateurRepository->countSuperAdminsActifs();
+
+        // Un super-admin INACTIF ne doit PAS être compté (preuve du filtre estActif).
+        $this->creerUtilisateur('SuperAdmin-Inactif-' . uniqid(), 'Bob', RoleUtilisateur::SUPER_ADMIN, false);
+        $this->entityManager->flush();
+        self::assertSame($baseline, $this->utilisateurRepository->countSuperAdminsActifs());
+
+        // Un super-admin ACTIF ajoute +1.
+        $this->creerUtilisateur('SuperAdmin-Actif-' . uniqid(), 'Alice', RoleUtilisateur::SUPER_ADMIN, true);
+        $this->entityManager->flush();
+        self::assertSame($baseline + 1, $this->utilisateurRepository->countSuperAdminsActifs());
+    }
+
     private function creerUtilisateur(string $nom, string $prenom, RoleUtilisateur $role, bool $estActif): Utilisateur
     {
         $utilisateur = (new Utilisateur())

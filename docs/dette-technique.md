@@ -1,6 +1,6 @@
 # Dette technique CreaSlot — Suivi
 
-Date dernière mise à jour : 1 juin 2026.
+Date dernière mise à jour : 3 juin 2026.
 Convention : DT-N = Dette Technique numéro N.
 
 ---
@@ -339,3 +339,19 @@ FullCalendar de `CLAUDE.md`.
 **Action proposée** : vendoriser ces dépendances via AssetMapper (même approche que FullCalendar en [[DT-8]]) — self-host CSS/JS/police, versions tracées. **À batcher avec US-5.2** (qui introduira le self-host de Chart.js pour les graphiques du dashboard), pour traiter tout le front CDN en une passe cohérente.
 
 **Priorité** : 🟡 moyenne (supply-chain + CSP + RGESN), à planifier avec US-5.2.
+
+---
+
+## DT-14 — Invalidation immédiate de session à la désactivation (🟡 MOYEN) — 🟠 OUVERTE
+
+**Détecté** : 03/06/2026, lors de l'implémentation d'US-5.4 (activation / désactivation des comptes).
+
+**Constat** : La désactivation d'un compte (US-5.4) bloque les **nouvelles** connexions — `UserChecker::checkPreAuth` lève `DisabledException` à l'**authentification** — mais une **session déjà ouverte survit** jusqu'à son expiration : `UserChecker` n'est **pas** réexécuté à chaque requête (il n'agit qu'au login, pas sur le `refreshUser` du firewall stateful).
+
+**Impact** : un compte désactivé **en cours de session** conserve son accès jusqu'à déconnexion ou expiration de la session. Risque **faible** au volume Cnam (peu d'utilisateurs, désactivations rares), mais réel sur le plan sécurité.
+
+**Fichiers concernés** : `src/Security/UserChecker.php`, `config/packages/security.yaml` (firewall `main` / provider `app_user_provider`).
+
+**Action proposée** : re-vérifier `estActif` à **chaque requête** — soit (a) en faisant **échouer `refreshUser`** quand le compte est inactif (provider décorant `app_user_provider`, ou `Utilisateur` implémentant `EquatableInterface`/contrôle au refresh), soit (b) via un **listener `kernel.request`** qui invalide la session d'un utilisateur devenu inactif. Tâche **dédiée**, avec test fonctionnel : **session active → désactivation du compte → 302 vers login à la requête suivante**.
+
+**Priorité** : 🟡 moyenne (sécurité ; risque faible au volume Cnam), à planifier en tâche dédiée.
