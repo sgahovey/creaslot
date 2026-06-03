@@ -6,9 +6,11 @@ namespace App\Controller\Admin;
 
 use App\Entity\Utilisateur;
 use App\Enum\RoleUtilisateur;
+use App\Enum\TypeActionJournal;
 use App\Form\UtilisateurAdminType;
 use App\Repository\UtilisateurRepository;
 use App\Security\UtilisateurVoter;
+use App\Service\JournalAdminService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -36,6 +38,7 @@ final class CompteController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly LoggerInterface $logger,
+        private readonly JournalAdminService $journalAdminService,
     ) {}
 
     #[Route('/admin/comptes', name: 'app_admin_comptes', methods: ['GET'])]
@@ -64,11 +67,24 @@ final class CompteController extends AbstractController
             $motDePasseEnClair = $formulaire->get('motDePasse')->getData();
             $compte->setMotDePasseHash($this->passwordHasher->hashPassword($compte, $motDePasseEnClair));
 
-            $this->entityManager->persist($compte);
-            $this->entityManager->flush();
-
             /** @var Utilisateur $administrateur */
             $administrateur = $this->getUser();
+
+            // Compte + trace dans une même transaction. Un premier flush génère
+            // l'id du compte (cibleId du journal), le second enregistre la trace.
+            $this->entityManager->wrapInTransaction(function () use ($compte, $administrateur): void {
+                $this->entityManager->persist($compte);
+                $this->entityManager->flush();
+
+                $this->journalAdminService->enregistrer(
+                    TypeActionJournal::COMPTE_CREATION,
+                    $administrateur,
+                    $compte,
+                    details: $compte->getEmail(),
+                );
+                $this->entityManager->flush();
+            });
+
             $this->logger->info('Compte créé', [
                 'admin_id' => $administrateur->getId(),
                 'cible_id' => $compte->getId(),
@@ -113,10 +129,18 @@ final class CompteController extends AbstractController
                 $this->denyAccessUnlessGranted(UtilisateurVoter::CHANGE_ROLE, $compte);
             }
 
-            $this->entityManager->flush();
-
             /** @var Utilisateur $administrateur */
             $administrateur = $this->getUser();
+
+            // Trace persistée AVANT le flush : action + journal commités ensemble.
+            $this->journalAdminService->enregistrer(
+                $roleChange ? TypeActionJournal::COMPTE_CHANGEMENT_ROLE : TypeActionJournal::COMPTE_MODIFICATION,
+                $administrateur,
+                $compte,
+            );
+
+            $this->entityManager->flush();
+
             $this->logger->info('Compte modifié', [
                 'admin_id'    => $administrateur->getId(),
                 'cible_id'    => $compte->getId(),
@@ -160,10 +184,19 @@ final class CompteController extends AbstractController
         );
 
         $compte->setEstActif(!$desactivation);
-        $this->entityManager->flush();
 
         /** @var Utilisateur $administrateur */
         $administrateur = $this->getUser();
+
+        // Trace persistée AVANT le flush : action + journal commités ensemble.
+        $this->journalAdminService->enregistrer(
+            $desactivation ? TypeActionJournal::COMPTE_DESACTIVATION : TypeActionJournal::COMPTE_ACTIVATION,
+            $administrateur,
+            $compte,
+        );
+
+        $this->entityManager->flush();
+
         $this->logger->info('Compte activation basculée', [
             'admin_id'  => $administrateur->getId(),
             'cible_id'  => $compte->getId(),

@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Admin;
 
+use App\Entity\JournalAdmin;
 use App\Entity\Service;
 use App\Entity\Utilisateur;
 use App\Enum\RoleUtilisateur;
+use App\Enum\TypeActionJournal;
+use App\Repository\JournalAdminRepository;
 use App\Repository\ServiceRepository;
 use App\Repository\UtilisateurRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -43,14 +46,16 @@ final class CompteControllerTest extends WebTestCase
     /**
      * Nettoie TOUT compte créé par les tests (déterministe, même après échec) :
      * garantit que countSuperAdmins() reste à 1 (le seul super-admin des fixtures)
-     * d'un test à l'autre.
+     * d'un test à l'autre. Vide aussi le journal (US-5.5) : les actions commitées
+     * en WebTest y laissent des entrées (table peuplée uniquement par les tests).
      */
     protected function tearDown(): void
     {
-        static::getContainer()->get(EntityManagerInterface::class)
-            ->createQuery('DELETE FROM App\Entity\Utilisateur u WHERE u.email LIKE :marqueur')
+        $entityManager = static::getContainer()->get(EntityManagerInterface::class);
+        $entityManager->createQuery('DELETE FROM App\Entity\Utilisateur u WHERE u.email LIKE :marqueur')
             ->setParameter('marqueur', '%' . self::MARQUEUR_TEST)
             ->execute();
+        $entityManager->createQuery('DELETE FROM App\Entity\JournalAdmin j')->execute();
 
         parent::tearDown();
     }
@@ -126,6 +131,45 @@ final class CompteControllerTest extends WebTestCase
         $entityManager = static::getContainer()->get(EntityManagerInterface::class);
         $entityManager->remove($cree);
         $entityManager->flush();
+    }
+
+    public function test_creation_compte_enregistre_une_entree_journal(): void
+    {
+        $this->client->loginUser($this->recupererUtilisateur(self::EMAIL_SUPER_ADMIN));
+
+        $emailNouveau = 'journal-' . uniqid() . self::MARQUEUR_TEST;
+
+        $this->client->request('GET', '/admin/comptes/nouveau');
+        $this->client->submitForm('Créer le compte', [
+            'utilisateur_admin[prenom]'             => 'Jean',
+            'utilisateur_admin[nom]'                => 'Tracé',
+            'utilisateur_admin[email]'              => $emailNouveau,
+            'utilisateur_admin[role]'               => RoleUtilisateur::AUDITEUR->value,
+            'utilisateur_admin[motDePasse][first]'  => 'MotDePasse12!',
+            'utilisateur_admin[motDePasse][second]' => 'MotDePasse12!',
+        ]);
+
+        self::assertResponseRedirects('/admin/comptes');
+
+        $compte = static::getContainer()->get(UtilisateurRepository::class)->findOneBy(['email' => $emailNouveau]);
+        self::assertInstanceOf(Utilisateur::class, $compte);
+
+        // Une entrée COMPTE_CREATION figée sur le compte créé doit exister.
+        $entrees = static::getContainer()->get(JournalAdminRepository::class)
+            ->findPourAdmin(1, 25, TypeActionJournal::COMPTE_CREATION);
+
+        $entreeCible = null;
+        foreach ($entrees as $entree) {
+            if ($entree->getCibleId() === $compte->getId()) {
+                $entreeCible = $entree;
+                break;
+            }
+        }
+
+        self::assertInstanceOf(JournalAdmin::class, $entreeCible);
+        self::assertSame(TypeActionJournal::COMPTE_CREATION, $entreeCible->getTypeAction());
+        self::assertSame('Jean Tracé', $entreeCible->getCibleLibelle());
+        self::assertSame($emailNouveau, $entreeCible->getDetails());
     }
 
     public function test_creation_refusee_au_personnel(): void

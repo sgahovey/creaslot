@@ -1,0 +1,116 @@
+{#
+ # Journal d'administration — consultation (US-5.5, LECTURE SEULE).
+ #
+ # Aucun lien/formulaire de mutation : la trace est immuable. Données nominatives
+ # figées (acteur/cible). Variables : entrees (Paginator<JournalAdmin>), page,
+ # nbPages, total, typeSelectionne (?TypeActionJournal), typesDisponibles.
+ #}
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Journal{% endblock %}
+
+{% block admin_contenu %}
+
+    {% set parametresFiltre = typeSelectionne ? { type: typeSelectionne.value } : {} %}
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <h2 class="h5 d-flex align-items-center gap-2 mb-0"
+            style="color: var(--cs-text-primary); font-weight: var(--cs-fw-semibold);">
+            <i class="bi bi-journal-text" aria-hidden="true"></i>
+            Journal d'administration
+        </h2>
+        <span class="text-secondary" style="font-size: var(--cs-fs-small);">
+            {{ total }} entrée{{ total > 1 ? 's' : '' }}
+        </span>
+    </div>
+
+    {# ── Filtre par type d'action ────────────────────────────────────────── #}
+    <form method="get" class="row g-2 align-items-end mb-3">
+        <div class="col-12 col-sm-auto">
+            <label for="filtre-type" class="form-label mb-1" style="font-size: var(--cs-fs-small);">
+                Type d'action
+            </label>
+            <select id="filtre-type" name="type" class="form-select form-select-sm">
+                <option value="">Toutes</option>
+                {% for type in typesDisponibles %}
+                    <option value="{{ type.value }}" {{ typeSelectionne == type ? 'selected' : '' }}>
+                        {{ type.libelle }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12 col-sm-auto">
+            <button type="submit" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-funnel" aria-hidden="true"></i>
+                Filtrer
+            </button>
+        </div>
+    </form>
+
+    <div class="card border-0 shadow-sm" style="border-radius: var(--cs-radius-lg);">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <caption class="visually-hidden">Journal des actions d'administration sur les comptes</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Date</th>
+                            <th scope="col">Acteur</th>
+                            <th scope="col">Action</th>
+                            <th scope="col">Cible</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entree in entrees %}
+                            <tr>
+                                <td class="text-nowrap">{{ entree.dateAction|date('d/m/Y H\\hi', 'Indian/Reunion') }}</td>
+                                <td>{{ entree.acteurLibelle }}</td>
+                                <td><span class="badge text-bg-light">{{ entree.typeAction.libelle }}</span></td>
+                                <td>{{ entree.cibleLibelle ?? '—' }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-secondary py-4">Aucune entrée.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {# ── Pagination (conserve le filtre) ─────────────────────────────────── #}
+    {% if nbPages > 1 %}
+        <nav aria-label="Pagination du journal" class="mt-4">
+            <ul class="pagination justify-content-center">
+
+                <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                    <a class="page-link"
+                       href="{{ path('app_admin_journal', parametresFiltre|merge({ page: page - 1 })) }}"
+                       aria-label="Page précédente"
+                       {% if page == 1 %}aria-disabled="true" tabindex="-1"{% endif %}>
+                        <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                    </a>
+                </li>
+
+                {% for p in 1..nbPages %}
+                    <li class="page-item {% if p == page %}active{% endif %}"
+                        {% if p == page %}aria-current="page"{% endif %}>
+                        <a class="page-link" href="{{ path('app_admin_journal', parametresFiltre|merge({ page: p })) }}">{{ p }}</a>
+                    </li>
+                {% endfor %}
+
+                <li class="page-item {% if page == nbPages %}disabled{% endif %}">
+                    <a class="page-link"
+                       href="{{ path('app_admin_journal', parametresFiltre|merge({ page: page + 1 })) }}"
+                       aria-label="Page suivante"
+                       {% if page == nbPages %}aria-disabled="true" tabindex="-1"{% endif %}>
+                        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                    </a>
+                </li>
+
+            </ul>
+        </nav>
+    {% endif %}
+
+{% endblock %}
