@@ -1,0 +1,95 @@
+{#
+ # Page self-service « Mon profil » (US-6.1), pour tous les rôles.
+ #
+ # Deux sections : édition prénom/nom, et changement de mot de passe. Email, rôle et
+ # service sont en LECTURE SEULE (texte, aucun input), donc non modifiables côté
+ # serveur. Variables : formInformations (MonProfilType), formMotDePasse (ChangementMotDePasseType).
+ #}
+{% extends 'base.html.twig' %}
+
+{% form_theme formInformations 'bootstrap_5_layout.html.twig' %}
+{% form_theme formMotDePasse 'bootstrap_5_layout.html.twig' 'form/champ_mot_de_passe.html.twig' %}
+
+{% block title %}Mon profil{% endblock %}
+
+{% block body %}
+<div class="container py-4 py-md-5" style="max-width: 720px;">
+
+    <h1 class="h3 d-flex align-items-center gap-2 mb-4"
+        style="color: var(--cs-text-primary); font-weight: var(--cs-fw-bold);">
+        <i class="bi bi-person-circle" aria-hidden="true"></i>
+        Mon profil
+    </h1>
+
+    {# ── Section : Mes informations ──────────────────────────────────────── #}
+    <section class="card border-0 shadow-sm mb-4" style="border-radius: var(--cs-radius-lg);"
+             aria-labelledby="cs-profil-infos-titre">
+        <div class="card-body p-3 p-md-4">
+            <h2 id="cs-profil-infos-titre" class="h5 mb-3"
+                style="color: var(--cs-text-primary); font-weight: var(--cs-fw-semibold);">
+                Mes informations
+            </h2>
+
+            {{ form_start(formInformations, { action: path('app_mon_profil_informations'), attr: { novalidate: 'novalidate' } }) }}
+                {{ form_errors(formInformations) }}
+
+                <div class="row g-3">
+                    <div class="col-12 col-sm-6">{{ form_row(formInformations.prenom) }}</div>
+                    <div class="col-12 col-sm-6">{{ form_row(formInformations.nom) }}</div>
+                </div>
+
+                {# Lecture seule : email / rôle / service, en texte, jamais en champ de formulaire. #}
+                <dl class="row mt-3 mb-0" style="font-size: var(--cs-fs-small);">
+                    <dt class="col-sm-4 text-secondary fw-semibold">Adresse email</dt>
+                    <dd class="col-sm-8">{{ app.user.email }}</dd>
+
+                    <dt class="col-sm-4 text-secondary fw-semibold">Rôle</dt>
+                    <dd class="col-sm-8">{{ app.user.role.libelle() }}</dd>
+
+                    <dt class="col-sm-4 text-secondary fw-semibold">Service</dt>
+                    <dd class="col-sm-8">{{ app.user.service ? app.user.service.nom : '—' }}</dd>
+                </dl>
+                <p class="text-secondary mt-1 mb-3" style="font-size: var(--cs-fs-tiny);">
+                    L'adresse email, le rôle et le service ne sont pas modifiables ici.
+                </p>
+
+                <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-check-lg" aria-hidden="true"></i>
+                    Enregistrer
+                </button>
+            {{ form_end(formInformations) }}
+        </div>
+    </section>
+
+    {# ── Section : Changer mon mot de passe ──────────────────────────────── #}
+    <section class="card border-0 shadow-sm mb-4" style="border-radius: var(--cs-radius-lg);"
+             aria-labelledby="cs-profil-mdp-titre">
+        <div class="card-body p-3 p-md-4">
+            <h2 id="cs-profil-mdp-titre" class="h5 mb-3"
+                style="color: var(--cs-text-primary); font-weight: var(--cs-fw-semibold);">
+                Changer mon mot de passe
+            </h2>
+
+            {{ form_start(formMotDePasse, { action: path('app_mon_profil_mot_de_passe'), attr: { novalidate: 'novalidate' } }) }}
+                {{ form_errors(formMotDePasse) }}
+
+                {{ form_row(formMotDePasse.motDePasseActuel) }}
+                {{ form_row(formMotDePasse.nouveauMotDePasse.first) }}
+                {{ form_row(formMotDePasse.nouveauMotDePasse.second) }}
+
+                <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-shield-lock" aria-hidden="true"></i>
+                    Modifier le mot de passe
+                </button>
+            {{ form_end(formMotDePasse) }}
+        </div>
+    </section>
+
+    {# ── Cross-link RGPD ─────────────────────────────────────────────────── #}
+    <p class="text-secondary" style="font-size: var(--cs-fs-small);">
+        <i class="bi bi-shield-check" aria-hidden="true"></i>
+        <a href="{{ path('app_mes_donnees') }}">Consulter et exporter mes données personnelles</a>
+    </p>
+
+</div>
+{% endblock %}

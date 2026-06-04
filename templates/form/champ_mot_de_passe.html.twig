@@ -1,0 +1,23 @@
+{#
+ # Thème de formulaire : champ mot de passe avec bouton « œil » afficher/masquer (US-6.1).
+ #
+ # Surcharge le widget password du thème Bootstrap 5 pour l'envelopper dans un
+ # input-group muni d'un bouton de bascule, piloté par le contrôleur Stimulus
+ # `afficher-mot-de-passe`. L'accessibilité de form_row (label, aide, erreurs,
+ # aria-describedby) est préservée car seul le widget est personnalisé.
+ #
+ # RGAA : bouton type="button" (n'envoie pas le formulaire), aria-label explicite
+ # et aria-pressed reflétant l'état. L'icône est décorative (aria-hidden).
+ #}
+{% block password_widget %}
+    {%- set attr = attr|merge({'data-afficher-mot-de-passe-target': 'champ'}) -%}
+    <div class="input-group" data-controller="afficher-mot-de-passe">
+        {{- block('form_widget_simple') -}}
+        <button class="btn btn-outline-secondary" type="button"
+                data-action="afficher-mot-de-passe#basculer"
+                aria-label="Afficher le mot de passe"
+                aria-pressed="false">
+            <i class="bi bi-eye" aria-hidden="true" data-afficher-mot-de-passe-target="icone"></i>
+        </button>
+    </div>
+{% endblock %}
