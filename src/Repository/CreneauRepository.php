@@ -400,6 +400,174 @@ class CreneauRepository extends ServiceEntityRepository
     }
 
     /**
+     * Statistiques d'occupation agrégées par service sur [debut, fin], pour la page
+     * Statistiques Super-admin (US-5.8). Le service est porté par le Personnel
+     * propriétaire du créneau (Creneau → Utilisateur → Service, relation nullable).
+     *
+     * Même pattern que statistiquesOccupationParJour : deux requêtes GROUP BY
+     * (offre / réservés) fusionnées par clé en PHP, plutôt qu'un
+     * `COUNT(DISTINCT CASE WHEN ... ELSE NULL ...)` rejeté par la grammaire DQL.
+     * Agrégats scalaires : aucune entité hydratée.
+     *
+     * `LEFT JOIN` sur le service (nullable) : les créneaux d'un Personnel sans
+     * rattachement sont regroupés sous la clé-sentinelle 0 (serviceId et nom à null),
+     * pour le bucket « Sans service » assemblé côté StatistiquesService. La requête
+     * des réservés n'a pas besoin de cette jointure : `IDENTITY(u.service)` lit
+     * directement la clé étrangère.
+     *
+     * Aucun filtre sur `Service::estActif` : on regroupe sur les données présentes,
+     * donc un service désactivé ayant des créneaux actifs dans la fenêtre reste
+     * compté. `COUNT(DISTINCT c.id)` + `r.statut = ACTIVE` évite le double comptage
+     * d'un créneau ayant plusieurs réservations (ex. ACTIVE + ANNULEE) [[DT-1]].
+     *
+     * @return array<int, array{serviceId: int|null, nom: string|null, offre: int, reserves: int}>
+     *         indexé par (serviceId ?? 0).
+     */
+    public function statistiquesParService(\DateTimeImmutable $debut, \DateTimeImmutable $fin): array
+    {
+        $offreParService = $this->createQueryBuilder('c')
+            ->select('IDENTITY(u.service) AS serviceId', 's.nom AS nom', 'COUNT(c.id) AS offre')
+            ->innerJoin('c.utilisateur', 'u')
+            ->leftJoin('u.service', 's')
+            ->andWhere('c.estActif = true')
+            ->andWhere('c.dateDebut BETWEEN :debut AND :fin')
+            ->setParameter('debut', $debut)
+            ->setParameter('fin', $fin)
+            ->groupBy('serviceId')
+            ->addGroupBy('s.nom')
+            ->getQuery()
+            ->getResult();
+
+        $reservesParService = $this->createQueryBuilder('c')
+            ->select('IDENTITY(u.service) AS serviceId', 'COUNT(DISTINCT c.id) AS reserves')
+            ->innerJoin('c.utilisateur', 'u')
+            ->innerJoin('c.reservations', 'r')
+            ->andWhere('c.estActif = true')
+            ->andWhere('c.dateDebut BETWEEN :debut AND :fin')
+            ->andWhere('r.statut = :statutActif')
+            ->setParameter('debut', $debut)
+            ->setParameter('fin', $fin)
+            ->setParameter('statutActif', StatutReservation::ACTIVE)
+            ->groupBy('serviceId')
+            ->getQuery()
+            ->getResult();
+
+        return $this->fusionnerStatistiquesParService($offreParService, $reservesParService);
+    }
+
+    /**
+     * Statistiques d'occupation agrégées par type de RDV sur [debut, fin], pour la
+     * page Statistiques Super-admin (US-5.8). Chemin Creneau → TypeRdv non-nullable
+     * (`INNER JOIN`), donc pas de bucket « sans type ».
+     *
+     * Même structure à deux requêtes que statistiquesParService ; on remonte aussi
+     * `t.couleurHex` pour colorer le graphique en doughnut côté front. Aucun filtre
+     * sur `TypeRdv::estActif` (regroupement sur les données présentes).
+     *
+     * @return array<int, array{typeId: int, libelle: string, couleurHex: string, offre: int, reserves: int}>
+     *         indexé par typeId.
+     */
+    public function statistiquesParType(\DateTimeImmutable $debut, \DateTimeImmutable $fin): array
+    {
+        $offreParType = $this->createQueryBuilder('c')
+            ->select(
+                'IDENTITY(c.typeRdv) AS typeId',
+                't.libelle AS libelle',
+                't.couleurHex AS couleurHex',
+                'COUNT(c.id) AS offre',
+            )
+            ->innerJoin('c.typeRdv', 't')
+            ->andWhere('c.estActif = true')
+            ->andWhere('c.dateDebut BETWEEN :debut AND :fin')
+            ->setParameter('debut', $debut)
+            ->setParameter('fin', $fin)
+            ->groupBy('typeId')
+            ->addGroupBy('t.libelle')
+            ->addGroupBy('t.couleurHex')
+            ->getQuery()
+            ->getResult();
+
+        $reservesParType = $this->createQueryBuilder('c')
+            ->select('IDENTITY(c.typeRdv) AS typeId', 'COUNT(DISTINCT c.id) AS reserves')
+            ->innerJoin('c.reservations', 'r')
+            ->andWhere('c.estActif = true')
+            ->andWhere('c.dateDebut BETWEEN :debut AND :fin')
+            ->andWhere('r.statut = :statutActif')
+            ->setParameter('debut', $debut)
+            ->setParameter('fin', $fin)
+            ->setParameter('statutActif', StatutReservation::ACTIVE)
+            ->groupBy('typeId')
+            ->getQuery()
+            ->getResult();
+
+        return $this->fusionnerStatistiquesParType($offreParType, $reservesParType);
+    }
+
+    /**
+     * Fusionne les agrégats offre/réservés par service sous une clé-sentinelle
+     * (serviceId ?? 0 ; 0 = bucket « sans service »). Un créneau réservé étant
+     * toujours actif, chaque clé de $reservesParService figure aussi dans
+     * $offreParService : on indexe sur l'offre et on greffe les réservés (0 sinon).
+     *
+     * @param list<array{serviceId: int|string|null, nom: string|null, offre: int|string}>  $offreParService
+     * @param list<array{serviceId: int|string|null, reserves: int|string}>                  $reservesParService
+     * @return array<int, array{serviceId: int|null, nom: string|null, offre: int, reserves: int}>
+     */
+    private function fusionnerStatistiquesParService(array $offreParService, array $reservesParService): array
+    {
+        $reservesIndexees = [];
+        foreach ($reservesParService as $ligne) {
+            $reservesIndexees[(int) $ligne['serviceId']] = (int) $ligne['reserves'];
+        }
+
+        $statistiques = [];
+        foreach ($offreParService as $ligne) {
+            $serviceId = $ligne['serviceId'] !== null ? (int) $ligne['serviceId'] : null;
+            $cle       = $serviceId ?? 0;
+
+            $statistiques[$cle] = [
+                'serviceId' => $serviceId,
+                'nom'       => $ligne['nom'],
+                'offre'     => (int) $ligne['offre'],
+                'reserves'  => $reservesIndexees[$cle] ?? 0,
+            ];
+        }
+
+        return $statistiques;
+    }
+
+    /**
+     * Fusionne les agrégats offre/réservés par type sous la clé typeId. Même
+     * invariant que par service : tout type réservé figure dans l'offre.
+     *
+     * @param list<array{typeId: int|string, libelle: string, couleurHex: string, offre: int|string}> $offreParType
+     * @param list<array{typeId: int|string, reserves: int|string}>                                    $reservesParType
+     * @return array<int, array{typeId: int, libelle: string, couleurHex: string, offre: int, reserves: int}>
+     */
+    private function fusionnerStatistiquesParType(array $offreParType, array $reservesParType): array
+    {
+        $reservesIndexees = [];
+        foreach ($reservesParType as $ligne) {
+            $reservesIndexees[(int) $ligne['typeId']] = (int) $ligne['reserves'];
+        }
+
+        $statistiques = [];
+        foreach ($offreParType as $ligne) {
+            $typeId = (int) $ligne['typeId'];
+
+            $statistiques[$typeId] = [
+                'typeId'     => $typeId,
+                'libelle'    => $ligne['libelle'],
+                'couleurHex' => $ligne['couleurHex'],
+                'offre'      => (int) $ligne['offre'],
+                'reserves'   => $reservesIndexees[$typeId] ?? 0,
+            ];
+        }
+
+        return $statistiques;
+    }
+
+    /**
      * Tous les créneaux proposés par un Personnel (tous statuts), pour l'export
      * RGPD (US-5.6). Jointure `typeRdv` uniquement, de la plus récente à la plus
      * ancienne. **Aucune jointure sur `reservations`** : l'export d'un Personnel ne
