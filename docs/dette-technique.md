@@ -410,3 +410,24 @@ FullCalendar de `CLAUDE.md`.
 **Action proposée** : extraire un module partagé (ex. `assets/chartjs_helpers.js` : `couleurToken`, garde `window.Chart`) voire une classe de base Stimulus mutualisant le cycle connect/disconnect des graphiques Chart.js. Refacto pur, sans changement de comportement, à valider par les WebTests existants (dashboard + statistiques) et une vérification visuelle. À planifier en **passe DRY de l'itération 6**, conjointement avec DT-16.
 
 **Priorité** : 🟡 moyenne (qualité de code ; aucun impact fonctionnel), à regrouper avec les autres axes DRY.
+
+---
+
+## DT-18 — Réplication des contraintes de mot de passe entre formulaires (🟡 MOYEN) — 🟠 OUVERTE
+
+**Détecté** : 04/06/2026, lors de l'implémentation d'US-6.1 (page « Mon profil » self-service).
+
+**Constat** : la politique de mot de passe — `NotBlank` + `Length(min: 12)` + `Regex` (au moins 1 majuscule, 1 minuscule, 1 chiffre, 1 caractère spécial) — ainsi que le texte d'aide associé sont **dupliqués à l'identique** dans trois formulaires :
+- `src/Form/InscriptionType.php` (auto-inscription publique, US-1) ;
+- `src/Form/UtilisateurAdminType.php` (création de compte par le Super-admin, US-5.3) ;
+- `src/Form/ChangementMotDePasseType.php` (changement self-service, US-6.1).
+
+Mêmes règles, mêmes messages, même `help` : toute évolution de la politique (longueur minimale, jeu de caractères exigés, wording) doit être **répercutée en trois endroits** → risque de divergence silencieuse. Contraire au principe DRY. Analogue à DT-7 (duplication de logique de présentation).
+
+**Impact** : faible (contraintes pures et peu volatiles), mais une politique de sécurité incohérente entre les trois points d'entrée serait un défaut de sécurité difficile à repérer.
+
+**Fichiers concernés** : `src/Form/InscriptionType.php`, `src/Form/UtilisateurAdminType.php`, `src/Form/ChangementMotDePasseType.php`.
+
+**Action proposée** : extraire une **source unique** des règles — soit une fabrique `App\Validator\ContraintesMotDePasse::regles(): array` retournant le tableau de contraintes (et une constante pour le texte d'aide), soit une **contrainte composite** réutilisée par les trois `*Type`. Refacto pur, sans changement de comportement, couvert par les WebTests existants (inscription, admin, profil). À planifier en **passe DRY de l'itération 6** (avec DT-7, DT-16, DT-17).
+
+**Priorité** : 🟡 moyenne (qualité de code ; aucun impact fonctionnel), à regrouper avec les autres axes DRY.
