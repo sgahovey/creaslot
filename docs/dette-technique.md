@@ -391,3 +391,22 @@ FullCalendar de `CLAUDE.md`.
 **Action proposée** : extraire un module `assets/fullcalendar_helpers.js` (helpers purs partagés), **mutualiser le rendu d'event ET l'habillage de toolbar** (fonction `eventContent` paramétrable + bloc CSS commun pastille **et toolbar**, p. ex. classe partagée `.cs-fc-calendar` au lieu des scopes `.cs-agenda-page`/`.cs-occupation-page` et du `<style>` inline de l'agenda) et un **trait/utilitaire JSON no-store** partagé (ex. `RepondAvecJsonSansCacheTrait`). Refacto pur, sans changement de comportement, à valider par les suites existantes (agenda + occupation). À planifier en **passe DRY de l'itération 6** (extraction d'autant plus justifiée que le rendu d'event est désormais lui aussi dupliqué).
 
 **Priorité** : 🟡 moyenne (qualité de code ; aucun impact fonctionnel), à regrouper avec les autres axes DRY.
+
+---
+
+## DT-17 — Mutualisation des helpers Chart.js entre les deux contrôleurs Stimulus (🟡 MOYEN) — 🟠 OUVERTE
+
+**Détecté** : 04/06/2026, lors de l'implémentation d'US-5.8 (statistiques par service / type).
+
+**Constat** : la page Statistiques introduit un second contrôleur Stimulus à base de Chart.js (`statistiques_controller.js`), à côté de celui du dashboard (`graphique_occupation_controller.js`, US-5.2). Trois éléments y sont dupliqués à l'identique, duplication assumée pour garder l'US auto-contenue et **ne pas modifier de code déjà livré** (le graphique du dashboard) :
+- **Helper `couleurToken(nomToken, repli)`** : lecture d'un token de charte `--cs-*` avec repli — corps identique dans les deux contrôleurs.
+- **Garde `window.Chart`** : même bloc `if (typeof window.Chart === 'undefined') { console.error(...); return; }` (le bundle UMD est chargé par `<script>` classique dans chaque template, pas par l'importmap — cf. DT-8).
+- **Cycle `connect()`/`disconnect()`** : même schéma d'instanciation puis `destroy()` des graphiques Chart.js (ici deux instances, barres + doughnut).
+
+**Impact** : faible (fonctions pures, peu volatiles), mais toute évolution (ex. ajustement des tokens de couleur, gestion d'erreur de chargement, cycle de vie) doit être répercutée à deux endroits → risque de divergence silencieuse. Contraire au principe DRY. Analogue à DT-7 (duplication de logique de présentation).
+
+**Fichiers concernés** : `assets/controllers/graphique_occupation_controller.js`, `assets/controllers/statistiques_controller.js`.
+
+**Action proposée** : extraire un module partagé (ex. `assets/chartjs_helpers.js` : `couleurToken`, garde `window.Chart`) voire une classe de base Stimulus mutualisant le cycle connect/disconnect des graphiques Chart.js. Refacto pur, sans changement de comportement, à valider par les WebTests existants (dashboard + statistiques) et une vérification visuelle. À planifier en **passe DRY de l'itération 6**, conjointement avec DT-16.
+
+**Priorité** : 🟡 moyenne (qualité de code ; aucun impact fonctionnel), à regrouper avec les autres axes DRY.

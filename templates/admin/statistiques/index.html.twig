@@ -1,0 +1,182 @@
+{#
+ # Statistiques d'occupation par service et par type de RDV — Super-admin (US-5.8).
+ #
+ # Données strictement agrégées (compteurs + pourcentages) : aucune information
+ # nominative (aucun nom d'auditeur ni de personnel).
+ # Variable attendue :
+ #   statistiques  App\DTO\StatistiquesTableauBord (parService, parType, fenetreDebut, fenetreFin)
+ #
+ # Les graphiques (Chart.js, Morceau 4) sont alimentés par des data-attributes ;
+ # chaque graphique a une alternative textuelle RGAA (<details><table>) rendue serveur.
+ #}
+{% extends 'admin/base_admin.html.twig' %}
+
+{% block title %}Statistiques{% endblock %}
+
+{% block admin_contenu %}
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <h2 class="h5 d-flex align-items-center gap-2 mb-0"
+            style="color: var(--cs-text-primary); font-weight: var(--cs-fw-semibold);">
+            <i class="bi bi-graph-up" aria-hidden="true"></i>
+            Statistiques d'occupation
+        </h2>
+        <span class="text-secondary" style="font-size: var(--cs-fs-small);">
+            Occupation des créneaux à venir — du {{ statistiques.fenetreDebut|date('d/m/Y', 'Indian/Reunion') }}
+            au {{ statistiques.fenetreFin|date('d/m/Y', 'Indian/Reunion') }}
+        </span>
+    </div>
+
+    <div data-controller="statistiques"
+         data-statistiques-service-value="{{ statistiques.parService.lignes|map(l => { libelle: l.libelle, offre: l.offre, reserves: l.reserves })|json_encode|e('html_attr') }}"
+         data-statistiques-type-value="{{ statistiques.parType.lignes|map(l => { libelle: l.libelle, reserves: l.reserves, couleurHex: l.couleurHex })|json_encode|e('html_attr') }}">
+
+        <div class="row g-3 g-md-4">
+
+            {# ── Axe service : graphique en barres (offerts vs réservés) ──────── #}
+            <div class="col-12 col-lg-6">
+                <section class="card border-0 shadow-sm h-100" style="border-radius: var(--cs-radius-lg);"
+                         aria-labelledby="cs-stats-service-titre">
+                    <div class="card-body p-3 p-md-4">
+                        <h3 id="cs-stats-service-titre" class="h6 d-flex align-items-center gap-2 mb-3"
+                            style="color: var(--cs-text-primary); font-weight: var(--cs-fw-semibold);">
+                            <i class="bi bi-bar-chart-line" aria-hidden="true"></i>
+                            Par service
+                        </h3>
+
+                        <div style="position: relative; height: 300px;">
+                            <canvas data-statistiques-target="barres"
+                                    role="img"
+                                    aria-label="Graphique en barres des créneaux offerts et réservés par service sur la fenêtre glissante. Le détail chiffré est disponible dans le tableau « Voir les données » ci-dessous."></canvas>
+                        </div>
+
+                        <details class="mt-3">
+                            <summary>Voir les données par service</summary>
+                            <div class="table-responsive mt-2">
+                                <table class="table table-sm align-middle">
+                                    <caption class="visually-hidden">
+                                        Créneaux offerts, réservés, taux d'occupation et part des réservations par service
+                                    </caption>
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Service</th>
+                                            <th scope="col" class="text-end">Offerts</th>
+                                            <th scope="col" class="text-end">Réservés</th>
+                                            <th scope="col" class="text-end">Taux</th>
+                                            <th scope="col" class="text-end">Part&nbsp;%</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for ligne in statistiques.parService.lignes %}
+                                            <tr>
+                                                <th scope="row" class="fw-normal">{{ ligne.libelle }}</th>
+                                                <td class="text-end">{{ ligne.offre }}</td>
+                                                <td class="text-end">{{ ligne.reserves }}</td>
+                                                <td class="text-end">{{ ligne.tauxOccupation }}&nbsp;%</td>
+                                                <td class="text-end">{{ ligne.partReserves }}&nbsp;%</td>
+                                            </tr>
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="5" class="text-center text-secondary py-3">
+                                                    Aucun créneau sur la fenêtre.
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="fw-semibold">
+                                            <th scope="row">Total</th>
+                                            <td class="text-end">{{ statistiques.parService.totalOffre }}</td>
+                                            <td class="text-end">{{ statistiques.parService.totalReserves }}</td>
+                                            <td class="text-end" colspan="2"></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </details>
+                    </div>
+                </section>
+            </div>
+
+            {# ── Axe type : graphique en doughnut (répartition des réservés) ───── #}
+            <div class="col-12 col-lg-6">
+                <section class="card border-0 shadow-sm h-100" style="border-radius: var(--cs-radius-lg);"
+                         aria-labelledby="cs-stats-type-titre">
+                    <div class="card-body p-3 p-md-4">
+                        <h3 id="cs-stats-type-titre" class="h6 d-flex align-items-center gap-2 mb-3"
+                            style="color: var(--cs-text-primary); font-weight: var(--cs-fw-semibold);">
+                            <i class="bi bi-pie-chart" aria-hidden="true"></i>
+                            Par type de rendez-vous
+                        </h3>
+
+                        <div style="position: relative; height: 300px;">
+                            <canvas data-statistiques-target="doughnut"
+                                    role="img"
+                                    aria-label="Graphique de répartition des créneaux réservés par type de rendez-vous sur la fenêtre glissante. Le détail chiffré est disponible dans le tableau « Voir les données » ci-dessous."></canvas>
+                        </div>
+
+                        <details class="mt-3">
+                            <summary>Voir les données par type</summary>
+                            <div class="table-responsive mt-2">
+                                <table class="table table-sm align-middle">
+                                    <caption class="visually-hidden">
+                                        Créneaux offerts, réservés, taux d'occupation et part des réservations par type de rendez-vous
+                                    </caption>
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Type</th>
+                                            <th scope="col" class="text-end">Offerts</th>
+                                            <th scope="col" class="text-end">Réservés</th>
+                                            <th scope="col" class="text-end">Taux</th>
+                                            <th scope="col" class="text-end">Part&nbsp;%</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for ligne in statistiques.parType.lignes %}
+                                            <tr>
+                                                <th scope="row" class="fw-normal">
+                                                    {% if ligne.couleurHex %}
+                                                        <span class="d-inline-block rounded-circle me-1"
+                                                              style="width: 10px; height: 10px; background: {{ ligne.couleurHex }};"
+                                                              aria-hidden="true"></span>
+                                                    {% endif %}
+                                                    {{ ligne.libelle }}
+                                                </th>
+                                                <td class="text-end">{{ ligne.offre }}</td>
+                                                <td class="text-end">{{ ligne.reserves }}</td>
+                                                <td class="text-end">{{ ligne.tauxOccupation }}&nbsp;%</td>
+                                                <td class="text-end">{{ ligne.partReserves }}&nbsp;%</td>
+                                            </tr>
+                                        {% else %}
+                                            <tr>
+                                                <td colspan="5" class="text-center text-secondary py-3">
+                                                    Aucun créneau sur la fenêtre.
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="fw-semibold">
+                                            <th scope="row">Total</th>
+                                            <td class="text-end">{{ statistiques.parType.totalOffre }}</td>
+                                            <td class="text-end">{{ statistiques.parType.totalReserves }}</td>
+                                            <td class="text-end" colspan="2"></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </details>
+                    </div>
+                </section>
+            </div>
+
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    {# Chart.js v4 — bundle UMD vendorisé, chargé UNIQUEMENT sur cette page (expose window.Chart) #}
+    <script src="{{ asset('vendor/chartjs/chart.umd.min.js') }}"></script>
+{% endblock %}
