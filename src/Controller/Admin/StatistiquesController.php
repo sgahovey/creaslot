@@ -23,7 +23,8 @@ final class StatistiquesController extends AbstractController
 {
     public function __construct(
         private readonly StatistiquesService $statistiquesService,
-    ) {}
+    ) {
+    }
 
     #[Route('/admin/statistiques', name: 'app_admin_statistiques', methods: ['GET'])]
     public function index(): Response

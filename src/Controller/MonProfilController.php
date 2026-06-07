@@ -35,7 +35,8 @@ final class MonProfilController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     #[Route('/mon-profil', name: 'app_mon_profil', methods: ['GET'])]
     public function index(): Response
@@ -78,7 +79,7 @@ final class MonProfilController extends AbstractController
         /** @var Utilisateur $utilisateur */
         $utilisateur = $this->getUser();
 
-        $donnees       = new ChangementMotDePasse();
+        $donnees = new ChangementMotDePasse();
         $formMotDePasse = $this->createForm(ChangementMotDePasseType::class, $donnees);
         $formMotDePasse->handleRequest($request);
 

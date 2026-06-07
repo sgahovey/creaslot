@@ -26,7 +26,8 @@ final class JournalController extends AbstractController
 
     public function __construct(
         private readonly JournalAdminRepository $journalAdminRepository,
-    ) {}
+    ) {
+    }
 
     #[Route('/admin/journal', name: 'app_admin_journal', methods: ['GET'])]
     public function index(Request $request): Response
@@ -35,7 +36,7 @@ final class JournalController extends AbstractController
         $type = TypeActionJournal::tryFrom($request->query->getString('type'));
 
         $entrees = $this->journalAdminRepository->findPourAdmin($page, self::ENTREES_PAR_PAGE, $type);
-        $total   = count($entrees);
+        $total = count($entrees);
 
         return $this->render('admin/journal/liste.html.twig', [
             'entrees'          => $entrees,

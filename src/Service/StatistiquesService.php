@@ -26,7 +26,8 @@ final readonly class StatistiquesService
 
     public function __construct(
         private CreneauRepository $creneauRepository,
-    ) {}
+    ) {
+    }
 
     /**
      * Statistiques des deux axes sur la fenêtre prospective des 30 prochains jours
@@ -39,8 +40,8 @@ final readonly class StatistiquesService
      */
     public function calculerStatistiques(): StatistiquesTableauBord
     {
-        $maintenant  = new \DateTimeImmutable('now', new \DateTimeZone(self::FUSEAU_REUNION));
-        $finFenetre  = $maintenant->modify('+' . self::JOURS_FENETRE . ' days');
+        $maintenant = new \DateTimeImmutable('now', new \DateTimeZone(self::FUSEAU_REUNION));
+        $finFenetre = $maintenant->modify('+' . self::JOURS_FENETRE . ' days');
 
         $parService = $this->construireAxe(
             $this->normaliserLignesService(
@@ -62,6 +63,7 @@ final readonly class StatistiquesService
      * aucune couleur (la couleur n'a de sens que pour l'axe type).
      *
      * @param array<int, array{serviceId: int|null, nom: string|null, offre: int, reserves: int}> $lignesBrutes
+     *
      * @return list<array{libelle: string, couleurHex: string|null, offre: int, reserves: int}>
      */
     private function normaliserLignesService(array $lignesBrutes): array
@@ -84,6 +86,7 @@ final readonly class StatistiquesService
      * conservant la couleur métier du TypeRdv pour le graphique en doughnut.
      *
      * @param array<int, array{typeId: int, libelle: string, couleurHex: string, offre: int, reserves: int}> $lignesBrutes
+     *
      * @return list<array{libelle: string, couleurHex: string|null, offre: int, reserves: int}>
      */
     private function normaliserLignesType(array $lignesBrutes): array
@@ -110,10 +113,10 @@ final readonly class StatistiquesService
      */
     private function construireAxe(array $lignesNormalisees): StatistiquesParAxe
     {
-        $totalOffre    = 0;
+        $totalOffre = 0;
         $totalReserves = 0;
         foreach ($lignesNormalisees as $ligne) {
-            $totalOffre    += $ligne['offre'];
+            $totalOffre += $ligne['offre'];
             $totalReserves += $ligne['reserves'];
         }
 

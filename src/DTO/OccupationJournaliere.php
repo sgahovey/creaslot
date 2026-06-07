@@ -17,5 +17,6 @@ final readonly class OccupationJournaliere
         public string $jour,
         public int $offre,
         public int $reserves,
-    ) {}
+    ) {
+    }
 }

@@ -65,17 +65,17 @@ final class StatistiquesQueriesTest extends KernelTestCase
         self::bootKernel(['environment' => 'test']);
         $container = static::getContainer();
 
-        $this->entityManager     = $container->get(EntityManagerInterface::class);
+        $this->entityManager = $container->get(EntityManagerInterface::class);
         $this->creneauRepository = $container->get(CreneauRepository::class);
 
         $this->maintenant = new \DateTimeImmutable();
         $this->fenetreFin = $this->maintenant->modify('+30 days')->setTime(23, 59);
-        $this->jourCible  = $this->maintenant->modify('+3 days');
+        $this->jourCible = $this->maintenant->modify('+3 days');
 
         $this->entityManager->beginTransaction();
 
-        $bucketSansServiceAvant            = $this->statistiquesParService()[0] ?? ['offre' => 0, 'reserves' => 0];
-        $this->baselineSansServiceOffre    = $bucketSansServiceAvant['offre'];
+        $bucketSansServiceAvant = $this->statistiquesParService()[0] ?? ['offre' => 0, 'reserves' => 0];
+        $this->baselineSansServiceOffre = $bucketSansServiceAvant['offre'];
         $this->baselineSansServiceReserves = $bucketSansServiceAvant['reserves'];
 
         $this->preparerJeuDeDonnees();
@@ -108,7 +108,7 @@ final class StatistiquesQueriesTest extends KernelTestCase
 
     public function test_par_service_regroupe_les_personnels_sans_service_sous_la_cle_sentinelle(): void
     {
-        $stats  = $this->statistiquesParService();
+        $stats = $this->statistiquesParService();
         $bucket = $stats[0];
 
         self::assertNull($bucket['serviceId']);
@@ -197,13 +197,13 @@ final class StatistiquesQueriesTest extends KernelTestCase
     {
         $this->serviceA = $this->creerService(true);
         $this->serviceB = $this->creerService(false);
-        $this->typeX    = $this->creerTypeRdv(true, self::COULEUR_TYPE_X);
-        $this->typeY    = $this->creerTypeRdv(false, '#654321');
+        $this->typeX = $this->creerTypeRdv(true, self::COULEUR_TYPE_X);
+        $this->typeY = $this->creerTypeRdv(false, '#654321');
         $this->auditeur = $this->creerUtilisateur(RoleUtilisateur::AUDITEUR, null);
 
-        $personnelA            = $this->creerUtilisateur(RoleUtilisateur::PERSONNEL, $this->serviceA);
-        $personnelB            = $this->creerUtilisateur(RoleUtilisateur::PERSONNEL, $this->serviceB);
-        $personnelSansService  = $this->creerUtilisateur(RoleUtilisateur::PERSONNEL, null);
+        $personnelA = $this->creerUtilisateur(RoleUtilisateur::PERSONNEL, $this->serviceA);
+        $personnelB = $this->creerUtilisateur(RoleUtilisateur::PERSONNEL, $this->serviceB);
+        $personnelSansService = $this->creerUtilisateur(RoleUtilisateur::PERSONNEL, null);
 
         $c1 = $this->creerCreneau($personnelA, $this->typeX, $this->jourCible->setTime(9, 0), true);
         $c2 = $this->creerCreneau($personnelA, $this->typeX, $this->jourCible->setTime(10, 0), true);

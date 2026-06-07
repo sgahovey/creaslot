@@ -25,15 +25,15 @@ class ChangePasswordFormType extends AbstractType
     {
         $builder
             ->add('plainPassword', RepeatedType::class, [
-                'type'   => PasswordType::class,
-                'mapped' => false,
-                'first_options'   => [
-                    'label' => 'Nouveau mot de passe',
-                    'attr'  => ['autocomplete' => 'new-password', 'minlength' => '12'],
-                    'help'  => ContraintesMotDePasse::AIDE,
+                'type'          => PasswordType::class,
+                'mapped'        => false,
+                'first_options' => [
+                    'label'       => 'Nouveau mot de passe',
+                    'attr'        => ['autocomplete' => 'new-password', 'minlength' => '12'],
+                    'help'        => ContraintesMotDePasse::AIDE,
                     'constraints' => ContraintesMotDePasse::regles(),
                 ],
-                'second_options'  => [
+                'second_options' => [
                     'label' => 'Confirmer le nouveau mot de passe',
                     'attr'  => ['autocomplete' => 'new-password', 'minlength' => '12'],
                 ],

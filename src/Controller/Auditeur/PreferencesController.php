@@ -30,7 +30,8 @@ final class PreferencesController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-    ) {}
+    ) {
+    }
 
     #[Route('/mes-preferences', name: 'app_mes_preferences', methods: ['GET', 'POST'])]
     public function gerer(Request $request): Response

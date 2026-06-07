@@ -30,7 +30,8 @@ final class ExportController extends AbstractController
         private readonly JournalAdminService $journalAdminService,
         private readonly EntityManagerInterface $entityManager,
         private readonly LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     #[Route('/admin/comptes/{id}/export', name: 'app_admin_compte_export', methods: ['GET'])]
     #[IsGranted('ROLE_SUPER_ADMIN')]

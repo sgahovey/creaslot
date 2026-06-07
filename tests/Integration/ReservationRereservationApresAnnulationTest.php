@@ -67,9 +67,9 @@ final class ReservationRereservationApresAnnulationTest extends KernelTestCase
     public function test_un_creneau_peut_etre_reserve_apres_annulation_de_la_reservation_precedente(): void
     {
         $personnel = $this->creerPersonnel();
-        $auditeur  = $this->creerAuditeur();
-        $typeRdv   = $this->trouverOuCreerTypeRdv();
-        $creneau   = $this->creerCreneau($personnel, $typeRdv);
+        $auditeur = $this->creerAuditeur();
+        $typeRdv = $this->trouverOuCreerTypeRdv();
+        $creneau = $this->creerCreneau($personnel, $typeRdv);
 
         $this->entityManager->flush();
 
@@ -185,7 +185,7 @@ final class ReservationRereservationApresAnnulationTest extends KernelTestCase
     private function creerCreneau(Utilisateur $personnel, TypeRdv $typeRdv): Creneau
     {
         $dateDebut = new \DateTimeImmutable('+1 year');
-        $dateFin   = $dateDebut->modify('+1 hour');
+        $dateFin = $dateDebut->modify('+1 hour');
 
         $creneau = new Creneau();
         $creneau->setUtilisateur($personnel)

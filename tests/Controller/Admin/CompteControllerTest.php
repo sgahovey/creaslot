@@ -28,8 +28,8 @@ use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 final class CompteControllerTest extends WebTestCase
 {
     private const EMAIL_SUPER_ADMIN = 'creaslotdemo+admin@gmail.com';
-    private const EMAIL_PERSONNEL   = 'creaslotdemo+marie@gmail.com';
-    private const EMAIL_AUDITEUR    = 'creaslotdemo+xavier@gmail.com';
+    private const EMAIL_PERSONNEL = 'creaslotdemo+marie@gmail.com';
+    private const EMAIL_AUDITEUR = 'creaslotdemo+xavier@gmail.com';
 
     /** Suffixe d'email des comptes créés par les tests (nettoyés en tearDown). */
     private const MARQUEUR_TEST = '@m4-test.local';
@@ -134,12 +134,12 @@ final class CompteControllerTest extends WebTestCase
         $emailNouveau = 'nouveau-' . uniqid() . '@test.local';
 
         $this->client->submitForm('Créer le compte', [
-            'utilisateur_admin[prenom]'              => 'Nouvel',
-            'utilisateur_admin[nom]'                 => 'Agent',
-            'utilisateur_admin[email]'               => $emailNouveau,
-            'utilisateur_admin[role]'                => RoleUtilisateur::PERSONNEL->value,
-            'utilisateur_admin[motDePasse][first]'   => 'MotDePasse12!',
-            'utilisateur_admin[motDePasse][second]'  => 'MotDePasse12!',
+            'utilisateur_admin[prenom]'             => 'Nouvel',
+            'utilisateur_admin[nom]'                => 'Agent',
+            'utilisateur_admin[email]'              => $emailNouveau,
+            'utilisateur_admin[role]'               => RoleUtilisateur::PERSONNEL->value,
+            'utilisateur_admin[motDePasse][first]'  => 'MotDePasse12!',
+            'utilisateur_admin[motDePasse][second]' => 'MotDePasse12!',
         ]);
 
         self::assertResponseRedirects('/admin/comptes');
@@ -300,7 +300,7 @@ final class CompteControllerTest extends WebTestCase
     {
         $this->client->loginUser($this->recupererUtilisateur(self::EMAIL_SUPER_ADMIN));
         $serviceId = $this->unService()->getId();
-        $email     = 'auditeur-' . uniqid() . self::MARQUEUR_TEST;
+        $email = 'auditeur-' . uniqid() . self::MARQUEUR_TEST;
 
         $this->client->request('GET', '/admin/comptes/nouveau');
         $this->client->submitForm('Créer le compte', [
@@ -321,7 +321,7 @@ final class CompteControllerTest extends WebTestCase
     {
         $this->client->loginUser($this->recupererUtilisateur(self::EMAIL_SUPER_ADMIN));
         $serviceId = $this->unService()->getId();
-        $email     = 'personnel-' . uniqid() . self::MARQUEUR_TEST;
+        $email = 'personnel-' . uniqid() . self::MARQUEUR_TEST;
 
         $this->client->request('GET', '/admin/comptes/nouveau');
         $this->client->submitForm('Créer le compte', [
@@ -345,7 +345,7 @@ final class CompteControllerTest extends WebTestCase
         // Un super-admin agit aussi comme personnel (role_hierarchy) : il conserve son service.
         $this->client->loginUser($this->recupererUtilisateur(self::EMAIL_SUPER_ADMIN));
         $serviceId = $this->unService()->getId();
-        $email     = 'superadmin-' . uniqid() . self::MARQUEUR_TEST;
+        $email = 'superadmin-' . uniqid() . self::MARQUEUR_TEST;
 
         $this->client->request('GET', '/admin/comptes/nouveau');
         $this->client->submitForm('Créer le compte', [
@@ -535,7 +535,7 @@ final class CompteControllerTest extends WebTestCase
     /** Soumet le formulaire de bascule rendu pour ce compte dans la liste (token réel). */
     private function soumettreBasculeDepuisListe(int $id): void
     {
-        $crawler    = $this->client->request('GET', '/admin/comptes');
+        $crawler = $this->client->request('GET', '/admin/comptes');
         $formulaire = $crawler->filter('form[action="/admin/comptes/' . $id . '/activation"]')->form();
         $this->client->submit($formulaire);
     }
@@ -545,11 +545,11 @@ final class CompteControllerTest extends WebTestCase
      * n'est rendu pour sa propre ligne). Le token manager exige une session active :
      * on pousse une requête portant la session du client sur le RequestStack, on
      * génère le token, puis on persiste la session pour le POST suivant.
-     * (Nécessite une requête préalable du client pour disposer d'une session.)
+     * (Nécessite une requête préalable du client pour disposer d'une session.).
      */
     private function jetonActivation(int $id): string
     {
-        $session      = $this->client->getRequest()->getSession();
+        $session = $this->client->getRequest()->getSession();
         $requestStack = static::getContainer()->get('request_stack');
 
         $requete = new Request();

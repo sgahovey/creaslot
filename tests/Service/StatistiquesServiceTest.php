@@ -126,7 +126,7 @@ final class StatistiquesServiceTest extends TestCase
     }
 
     /**
-     * @param array<int, array{serviceId: int|null, nom: string|null, offre: int, reserves: int}>          $parService
+     * @param array<int, array{serviceId: int|null, nom: string|null, offre: int, reserves: int}>            $parService
      * @param array<int, array{typeId: int, libelle: string, couleurHex: string, offre: int, reserves: int}> $parType
      */
     private function statistiquesAvec(array $parService, array $parType): StatistiquesTableauBord

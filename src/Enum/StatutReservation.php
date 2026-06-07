@@ -6,6 +6,6 @@ namespace App\Enum;
 
 enum StatutReservation: string
 {
-    case ACTIVE  = 'ACTIVE';
+    case ACTIVE = 'ACTIVE';
     case ANNULEE = 'ANNULEE';
 }

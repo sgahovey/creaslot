@@ -46,7 +46,7 @@ final class CreneauRepositoryQueriesTest extends KernelTestCase
         self::bootKernel(['environment' => 'test']);
         $container = static::getContainer();
 
-        $this->entityManager     = $container->get(EntityManagerInterface::class);
+        $this->entityManager = $container->get(EntityManagerInterface::class);
         $this->creneauRepository = $container->get(CreneauRepository::class);
 
         $this->entityManager->beginTransaction();
@@ -65,7 +65,7 @@ final class CreneauRepositoryQueriesTest extends KernelTestCase
         parent::tearDown();
     }
 
-    public function test_findByPersonnelWithFilters_executes_sans_erreur_dql(): void
+    public function test_find_by_personnel_with_filters_executes_sans_erreur_dql(): void
     {
         // CRITIQUE : query exacte qui a déclenché le HTTP 500 en E2E DT-2.
         foreach (['tous', 'a_venir', 'passes', 'annules'] as $filtre) {
@@ -79,39 +79,39 @@ final class CreneauRepositoryQueriesTest extends KernelTestCase
         }
     }
 
-    public function test_findByPersonnelInDateRange_executes_sans_erreur_dql(): void
+    public function test_find_by_personnel_in_date_range_executes_sans_erreur_dql(): void
     {
         $debut = new \DateTimeImmutable('2026-01-01');
-        $fin   = new \DateTimeImmutable('2027-12-31');
+        $fin = new \DateTimeImmutable('2027-12-31');
 
         self::assertIsArray($this->creneauRepository->findByPersonnelInDateRange($this->personnel, $debut, $fin, false));
         self::assertIsArray($this->creneauRepository->findByPersonnelInDateRange($this->personnel, $debut, $fin, true));
     }
 
-    public function test_findChevauchements_executes_sans_erreur_dql(): void
+    public function test_find_chevauchements_executes_sans_erreur_dql(): void
     {
         $debut = new \DateTimeImmutable('2026-06-01 10:00');
-        $fin   = new \DateTimeImmutable('2026-06-01 11:00');
+        $fin = new \DateTimeImmutable('2026-06-01 11:00');
 
         self::assertIsArray($this->creneauRepository->findChevauchements($this->personnel, $debut, $fin));
         self::assertIsArray($this->creneauRepository->findChevauchements($this->personnel, $debut, $fin, 999));
     }
 
-    public function test_findNextReservedCreneau_executes_sans_erreur_dql(): void
+    public function test_find_next_reserved_creneau_executes_sans_erreur_dql(): void
     {
         $result = $this->creneauRepository->findNextReservedCreneau($this->personnel);
 
         self::assertTrue($result === null || $result instanceof Creneau);
     }
 
-    public function test_findCreneauEnCoursAvecRdv_executes_sans_erreur_dql(): void
+    public function test_find_creneau_en_cours_avec_rdv_executes_sans_erreur_dql(): void
     {
         $result = $this->creneauRepository->findCreneauEnCoursAvecRdv($this->personnel, new \DateTimeImmutable());
 
         self::assertTrue($result === null || $result instanceof Creneau);
     }
 
-    public function test_findDisponibles_executes_sans_erreur_dql(): void
+    public function test_find_disponibles_executes_sans_erreur_dql(): void
     {
         $paginator = $this->creneauRepository->findDisponibles(null, null, null, 1);
 
@@ -120,7 +120,7 @@ final class CreneauRepositoryQueriesTest extends KernelTestCase
         self::assertIsArray(iterator_to_array($paginator));
     }
 
-    public function test_existeCreneauActifFuturOuEnCours_executes_sans_erreur_dql(): void
+    public function test_existe_creneau_actif_futur_ou_en_cours_executes_sans_erreur_dql(): void
     {
         $result = $this->creneauRepository->existeCreneauActifFuturOuEnCours($this->personnel, new \DateTimeImmutable());
 

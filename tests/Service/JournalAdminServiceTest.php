@@ -23,7 +23,7 @@ final class JournalAdminServiceTest extends TestCase
     public function test_enregistre_fige_les_libelles_acteur_et_cible(): void
     {
         $acteur = $this->creerUtilisateur(10, 'Alice', 'Martin');
-        $cible  = $this->creerUtilisateur(20, 'Bob', 'Durand');
+        $cible = $this->creerUtilisateur(20, 'Bob', 'Durand');
 
         $entree = $this->capturerEntree(
             fn (JournalAdminService $service) => $service->enregistrer(

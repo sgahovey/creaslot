@@ -44,8 +44,8 @@ final class NotificationServicePersistTest extends KernelTestCase
         self::bootKernel(['environment' => 'test']);
         $container = static::getContainer();
 
-        $this->entityManager          = $container->get(EntityManagerInterface::class);
-        $this->service                = $container->get(NotificationService::class);
+        $this->entityManager = $container->get(EntityManagerInterface::class);
+        $this->service = $container->get(NotificationService::class);
         $this->notificationRepository = $container->get(NotificationRepository::class);
 
         $this->entityManager->beginTransaction();
@@ -61,12 +61,12 @@ final class NotificationServicePersistTest extends KernelTestCase
         parent::tearDown();
     }
 
-    public function test_notifierAuditeurReservation_persiste_une_notification_in_app(): void
+    public function test_notifier_auditeur_reservation_persiste_une_notification_in_app(): void
     {
         // GIVEN
-        $auditeur    = $this->creerUtilisateur(RoleUtilisateur::AUDITEUR);
-        $personnel   = $this->creerUtilisateur(RoleUtilisateur::PERSONNEL);
-        $creneau     = $this->creerCreneau($personnel);
+        $auditeur = $this->creerUtilisateur(RoleUtilisateur::AUDITEUR);
+        $personnel = $this->creerUtilisateur(RoleUtilisateur::PERSONNEL);
+        $creneau = $this->creerCreneau($personnel);
         $reservation = $this->creerReservationActive($creneau, $auditeur);
 
         self::assertSame(0, $this->notificationRepository->countNonLues($auditeur), 'Aucune notification avant l\'appel.');

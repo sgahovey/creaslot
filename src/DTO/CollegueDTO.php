@@ -18,8 +18,9 @@ final class CollegueDTO
 {
     public function __construct(
         public readonly Utilisateur $utilisateur,
-        public readonly string      $statut,
-        public readonly ?string     $heureFinRdv,
+        public readonly string $statut,
+        public readonly ?string $heureFinRdv,
         public readonly ?\DateTimeImmutable $prochainRdvDate,
-    ) {}
+    ) {
+    }
 }

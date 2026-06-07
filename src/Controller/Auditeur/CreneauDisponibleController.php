@@ -22,20 +22,21 @@ class CreneauDisponibleController extends AbstractController
         private readonly CreneauRepository $creneauRepository,
         private readonly ServiceRepository $serviceRepository,
         private readonly TypeRdvRepository $typeRdvRepository,
-        private readonly LoggerInterface   $logger,
-    ) {}
+        private readonly LoggerInterface $logger,
+    ) {
+    }
 
     #[Route('/creneaux-disponibles', name: 'app_creneaux_disponibles', methods: ['GET'])]
     public function liste(Request $request): Response
     {
         $typeRdvId = $this->parseIntParam($request->query->getString('type', ''));
         $serviceId = $this->parseIntParam($request->query->getString('service', ''));
-        $dateStr   = $request->query->getString('date', '');
-        $date      = $this->parseDate($dateStr);
-        $page      = max(1, $this->parseIntParam($request->query->getString('page', '')) ?? 1);
+        $dateStr = $request->query->getString('date', '');
+        $date = $this->parseDate($dateStr);
+        $page = max(1, $this->parseIntParam($request->query->getString('page', '')) ?? 1);
 
         $paginator = $this->creneauRepository->findDisponibles($typeRdvId, $serviceId, $date, $page);
-        $total     = count($paginator);
+        $total = count($paginator);
 
         /** @var Utilisateur $utilisateur */
         $utilisateur = $this->getUser();
@@ -45,13 +46,13 @@ class CreneauDisponibleController extends AbstractController
         ]);
 
         return $this->render('auditeur/creneau/disponibles.html.twig', [
-            'creneaux'  => $paginator,
-            'total'     => $total,
-            'page'      => $page,
-            'nbPages'   => max(1, (int) ceil($total / 12)),
-            'typesRdv'  => $this->typeRdvRepository->findActifs(),
-            'services'  => $this->serviceRepository->findActifs(),
-            'filtres'   => ['type' => $typeRdvId, 'service' => $serviceId, 'date' => $dateStr],
+            'creneaux' => $paginator,
+            'total'    => $total,
+            'page'     => $page,
+            'nbPages'  => max(1, (int) ceil($total / 12)),
+            'typesRdv' => $this->typeRdvRepository->findActifs(),
+            'services' => $this->serviceRepository->findActifs(),
+            'filtres'  => ['type' => $typeRdvId, 'service' => $serviceId, 'date' => $dateStr],
         ]);
     }
 

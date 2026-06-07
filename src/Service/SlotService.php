@@ -7,8 +7,6 @@ namespace App\Service;
 use App\Entity\Creneau;
 use App\Entity\Utilisateur;
 use App\Repository\CreneauRepository;
-use DateTimeImmutable;
-use DateTimeInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -27,21 +25,21 @@ final readonly class SlotService
      */
     public function detecteChevauchements(
         Utilisateur $user,
-        DateTimeInterface $debut,
-        DateTimeInterface $fin,
+        \DateTimeInterface $debut,
+        \DateTimeInterface $fin,
         ?int $excludeId = null,
     ): array {
         return $this->creneauRepository->findChevauchements(
             $user,
-            DateTimeImmutable::createFromInterface($debut),
-            DateTimeImmutable::createFromInterface($fin),
+            \DateTimeImmutable::createFromInterface($debut),
+            \DateTimeImmutable::createFromInterface($fin),
             $excludeId,
         );
     }
 
     /**
-     * @param Creneau  $creneau   créneau candidat (dates et utilisateur déjà renseignés)
-     * @param ?int     $excludeId identifiant à exclure (ex.: en modification) ; sinon l'id du créneau s'il existe
+     * @param Creneau $creneau   créneau candidat (dates et utilisateur déjà renseignés)
+     * @param ?int    $excludeId identifiant à exclure (ex.: en modification) ; sinon l'id du créneau s'il existe
      */
     public function chevaucheAvecExistant(Creneau $creneau, ?int $excludeId = null): bool
     {
@@ -77,13 +75,13 @@ final readonly class SlotService
         $this->logger->warning(
             'Chevauchement de créneau détecté',
             [
-                'contexte'               => $contexte,
-                'candidat_user_id'       => $candidat->getUtilisateur()->getId(),
-                'candidat_date_debut'    => $candidat->getDateDebut()->format(\DateTimeInterface::ATOM),
-                'candidat_date_fin'      => $candidat->getDateFin()->format(\DateTimeInterface::ATOM),
-                'creneau_conflit_id'     => $conflit->getId(),
-                'conflit_date_debut'     => $conflit->getDateDebut()->format(\DateTimeInterface::ATOM),
-                'conflit_date_fin'       => $conflit->getDateFin()->format(\DateTimeInterface::ATOM),
+                'contexte'            => $contexte,
+                'candidat_user_id'    => $candidat->getUtilisateur()->getId(),
+                'candidat_date_debut' => $candidat->getDateDebut()->format(\DateTimeInterface::ATOM),
+                'candidat_date_fin'   => $candidat->getDateFin()->format(\DateTimeInterface::ATOM),
+                'creneau_conflit_id'  => $conflit->getId(),
+                'conflit_date_debut'  => $conflit->getDateDebut()->format(\DateTimeInterface::ATOM),
+                'conflit_date_fin'    => $conflit->getDateFin()->format(\DateTimeInterface::ATOM),
             ],
         );
     }

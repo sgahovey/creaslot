@@ -18,5 +18,6 @@ final readonly class StatistiquesTableauBord
         public StatistiquesParAxe $parType,
         public \DateTimeImmutable $fenetreDebut,
         public \DateTimeImmutable $fenetreFin,
-    ) {}
+    ) {
+    }
 }

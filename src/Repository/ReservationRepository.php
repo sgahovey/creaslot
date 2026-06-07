@@ -101,6 +101,7 @@ class ReservationRepository extends ServiceEntityRepository
      *
      * @param \DateTimeImmutable $demainDebut Demain 00:00:00 (timezone applicative Réunion)
      * @param \DateTimeImmutable $demainFin   Demain 23:59:59 (timezone applicative Réunion)
+     *
      * @return Reservation[]
      */
     public function findActivesPourDemainSansRappel(

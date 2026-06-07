@@ -59,7 +59,7 @@ final class DashboardServiceTest extends TestCase
         self::assertSame(30, $kpis->fenetreDebut->diff($kpis->fenetreFin)->days);
     }
 
-    public function test_getOccupationParJour_comble_les_jours_manquants_et_reste_chronologique(): void
+    public function test_get_occupation_par_jour_comble_les_jours_manquants_et_reste_chronologique(): void
     {
         $aujourdhui = new \DateTimeImmutable();
         $jourRecent = $aujourdhui->format('Y-m-d');

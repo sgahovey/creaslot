@@ -56,19 +56,19 @@ final class OccupationParJourQueriesTest extends KernelTestCase
         self::bootKernel(['environment' => 'test']);
         $container = static::getContainer();
 
-        $this->entityManager     = $container->get(EntityManagerInterface::class);
+        $this->entityManager = $container->get(EntityManagerInterface::class);
         $this->creneauRepository = $container->get(CreneauRepository::class);
 
-        $this->maintenant         = new \DateTimeImmutable();
-        $this->fenetreDebut       = $this->maintenant->modify('-30 days')->setTime(0, 0);
-        $this->jourCible          = $this->maintenant->modify('-3 days');
-        $this->cleJourCible       = $this->jourCible->format('Y-m-d');
+        $this->maintenant = new \DateTimeImmutable();
+        $this->fenetreDebut = $this->maintenant->modify('-30 days')->setTime(0, 0);
+        $this->jourCible = $this->maintenant->modify('-3 days');
+        $this->cleJourCible = $this->jourCible->format('Y-m-d');
         $this->cleJourHorsFenetre = $this->maintenant->modify('-40 days')->format('Y-m-d');
 
         $this->entityManager->beginTransaction();
 
-        $statsAvant            = $this->statistiques();
-        $this->baselineOffre   = $statsAvant[$this->cleJourCible]['offre'] ?? 0;
+        $statsAvant = $this->statistiques();
+        $this->baselineOffre = $statsAvant[$this->cleJourCible]['offre'] ?? 0;
         $this->baselineReserves = $statsAvant[$this->cleJourCible]['reserves'] ?? 0;
 
         $this->preparerJeuDeDonnees();
@@ -125,9 +125,9 @@ final class OccupationParJourQueriesTest extends KernelTestCase
 
     private function preparerJeuDeDonnees(): void
     {
-        $this->typeRdv   = $this->creerTypeRdv();
+        $this->typeRdv = $this->creerTypeRdv();
         $this->personnel = $this->creerUtilisateur(RoleUtilisateur::PERSONNEL, $this->creerService());
-        $this->auditeur  = $this->creerUtilisateur(RoleUtilisateur::AUDITEUR, null);
+        $this->auditeur = $this->creerUtilisateur(RoleUtilisateur::AUDITEUR, null);
 
         $c1 = $this->creerCreneauLeJourCible(9, true);
         $c2 = $this->creerCreneauLeJourCible(10, true);

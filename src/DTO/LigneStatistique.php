@@ -21,5 +21,6 @@ final readonly class LigneStatistique
         public float $tauxOccupation,
         public float $partReserves,
         public ?string $couleurHex = null,
-    ) {}
+    ) {
+    }
 }

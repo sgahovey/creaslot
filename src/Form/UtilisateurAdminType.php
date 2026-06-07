@@ -87,16 +87,16 @@ class UtilisateurAdminType extends AbstractType
     private function ajouterChampMotDePasse(FormBuilderInterface $builder): void
     {
         $builder->add('motDePasse', RepeatedType::class, [
-            'type'            => PasswordType::class,
-            'mapped'          => false,
-            'first_options'   => [
+            'type'          => PasswordType::class,
+            'mapped'        => false,
+            'first_options' => [
                 'label' => 'Mot de passe',
                 'attr'  => ['autocomplete' => 'new-password', 'minlength' => '12'],
                 'help'  => ContraintesMotDePasse::AIDE,
                 // Source unique de la politique de mot de passe (DT-18).
                 'constraints' => ContraintesMotDePasse::regles(),
             ],
-            'second_options'  => [
+            'second_options' => [
                 'label' => 'Confirmer le mot de passe',
                 'attr'  => ['autocomplete' => 'new-password', 'minlength' => '12'],
             ],
@@ -113,7 +113,7 @@ class UtilisateurAdminType extends AbstractType
             'avec_mot_de_passe' => false,
             // Amélioration progressive : grise le service quand le rôle Auditeur
             // est choisi (la cohérence reste garantie côté serveur, cf. POST_SUBMIT).
-            'attr'              => ['data-controller' => 'compte-role-service'],
+            'attr' => ['data-controller' => 'compte-role-service'],
         ]);
 
         $resolver->setAllowedTypes('avec_mot_de_passe', 'bool');

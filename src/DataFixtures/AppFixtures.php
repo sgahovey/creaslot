@@ -21,14 +21,15 @@ class AppFixtures extends Fixture
 {
     public function __construct(
         private readonly UserPasswordHasherInterface $passwordHasher,
-    ) {}
+    ) {
+    }
 
     public function load(ObjectManager $manager): void
     {
-        $services  = $this->creerServices($manager);
-        $types     = $this->creerTypesRdv($manager);
+        $services = $this->creerServices($manager);
+        $types = $this->creerTypesRdv($manager);
         $personnels = $this->creerPersonnel($manager, $services);
-        $auditeurs  = $this->creerAuditeurs($manager);
+        $auditeurs = $this->creerAuditeurs($manager);
         $this->creerAdmin($manager);
 
         $creneaux = $this->creerCreneaux($manager, $personnels, $types);
@@ -84,7 +85,8 @@ class AppFixtures extends Fixture
     }
 
     /**
-     * @param  Service[] $services
+     * @param Service[] $services
+     *
      * @return Utilisateur[]
      */
     private function creerPersonnel(ObjectManager $manager, array $services): array
@@ -105,7 +107,7 @@ class AppFixtures extends Fixture
                         ->setEstActif(true)
                         ->setService($service)
                         ->setMotDePasseHash(
-                            $this->passwordHasher->hashPassword($utilisateur, 'password')
+                            $this->passwordHasher->hashPassword($utilisateur, 'password'),
                         );
             $manager->persist($utilisateur);
             $personnels[] = $utilisateur;
@@ -134,7 +136,7 @@ class AppFixtures extends Fixture
                         ->setRole(RoleUtilisateur::AUDITEUR)
                         ->setEstActif(true)
                         ->setMotDePasseHash(
-                            $this->passwordHasher->hashPassword($utilisateur, 'password')
+                            $this->passwordHasher->hashPassword($utilisateur, 'password'),
                         );
             $manager->persist($utilisateur);
             $auditeurs[] = $utilisateur;
@@ -156,14 +158,15 @@ class AppFixtures extends Fixture
               ->setRole(RoleUtilisateur::SUPER_ADMIN)
               ->setEstActif(true)
               ->setMotDePasseHash(
-                  $this->passwordHasher->hashPassword($admin, 'password')
+                  $this->passwordHasher->hashPassword($admin, 'password'),
               );
         $manager->persist($admin);
     }
 
     /**
-     * @param  Utilisateur[] $personnels
-     * @param  TypeRdv[]     $types
+     * @param Utilisateur[] $personnels
+     * @param TypeRdv[]     $types
+     *
      * @return Creneau[]
      */
     private function creerCreneaux(
@@ -171,7 +174,7 @@ class AppFixtures extends Fixture
         array $personnels,
         array $types,
     ): array {
-        $now      = new \DateTimeImmutable();
+        $now = new \DateTimeImmutable();
         $creneaux = [];
 
         $donnees = [
@@ -192,7 +195,7 @@ class AppFixtures extends Fixture
             $dateDebut = $now
                 ->setTime($offsetHeures, 0)
                 ->modify(sprintf('%+d days', $offsetJours));
-            $dateFin   = $dateDebut->modify('+1 hour');
+            $dateFin = $dateDebut->modify('+1 hour');
 
             $creneau = new Creneau();
             $creneau->setDateDebut($dateDebut)
@@ -257,7 +260,7 @@ class AppFixtures extends Fixture
     private function creerNotifications(ObjectManager $manager, array $auditeurs): void
     {
         $xavier = $auditeurs[0];
-        $julie  = $auditeurs[1];
+        $julie = $auditeurs[1];
 
         $donnees = [
             [$xavier, TypeNotification::CONFIRMATION_RESERVATION, 'Réservation confirmée',

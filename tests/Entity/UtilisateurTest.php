@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 
 final class UtilisateurTest extends TestCase
 {
-    public function test_getNomComplet_concatenePrenomEtNom(): void
+    public function test_get_nom_complet_concatene_prenom_et_nom(): void
     {
         $u = new Utilisateur();
         $u->setPrenom('Marie');
@@ -18,7 +18,7 @@ final class UtilisateurTest extends TestCase
         self::assertSame('Marie Bernard', $u->getNomComplet());
     }
 
-    public function test_getNomComplet_gereLesCaracteresAccentues(): void
+    public function test_get_nom_complet_gere_les_caracteres_accentues(): void
     {
         $u = new Utilisateur();
         $u->setPrenom('François');

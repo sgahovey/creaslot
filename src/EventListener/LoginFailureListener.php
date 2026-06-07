@@ -14,11 +14,12 @@ final class LoginFailureListener
 {
     public function __construct(
         private readonly LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     public function __invoke(LoginFailureEvent $event): void
     {
-        $email     = $event->getRequest()->request->get('email', '');
+        $email = $event->getRequest()->request->get('email', '');
         $exception = $event->getException();
 
         if ($exception instanceof DisabledException) {

@@ -34,7 +34,8 @@ final readonly class ExportDonneesPersonnellesService
         private ReservationRepository $reservationRepository,
         private NotificationRepository $notificationRepository,
         private CreneauRepository $creneauRepository,
-    ) {}
+    ) {
+    }
 
     /**
      * @return array<string, mixed>

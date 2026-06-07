@@ -39,19 +39,20 @@ final class CompteController extends AbstractController
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly LoggerInterface $logger,
         private readonly JournalAdminService $journalAdminService,
-    ) {}
+    ) {
+    }
 
     #[Route('/admin/comptes', name: 'app_admin_comptes', methods: ['GET'])]
     public function liste(Request $request): Response
     {
-        $page      = max(1, $request->query->getInt('page', 1));
+        $page = max(1, $request->query->getInt('page', 1));
         $recherche = trim($request->query->getString('recherche'));
-        $comptes   = $this->utilisateurRepository->findAllPourAdmin(
+        $comptes = $this->utilisateurRepository->findAllPourAdmin(
             $page,
             self::COMPTES_PAR_PAGE,
             $recherche !== '' ? $recherche : null,
         );
-        $total     = count($comptes);
+        $total = count($comptes);
 
         return $this->render('admin/compte/liste.html.twig', [
             'comptes'   => $comptes,
@@ -65,7 +66,7 @@ final class CompteController extends AbstractController
     #[Route('/admin/comptes/nouveau', name: 'app_admin_compte_nouveau', methods: ['GET', 'POST'])]
     public function nouveau(Request $request): Response
     {
-        $compte     = new Utilisateur();
+        $compte = new Utilisateur();
         $formulaire = $this->createForm(UtilisateurAdminType::class, $compte, ['avec_mot_de_passe' => true]);
         $formulaire->handleRequest($request);
 
@@ -111,7 +112,7 @@ final class CompteController extends AbstractController
     {
         $this->denyAccessUnlessGranted(UtilisateurVoter::EDIT, $compte);
 
-        $roleAvant  = $compte->getRole();
+        $roleAvant = $compte->getRole();
         $formulaire = $this->createForm(UtilisateurAdminType::class, $compte, ['avec_mot_de_passe' => false]);
         $formulaire->handleRequest($request);
 

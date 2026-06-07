@@ -37,20 +37,20 @@ class InscriptionType extends AbstractType
                 'attr'     => ['placeholder' => 'votre.email@exemple.fr', 'autocomplete' => 'email'],
             ])
             ->add('motDePasse', RepeatedType::class, [
-                'type'            => PasswordType::class,
-                'mapped'          => false,
-                'first_options'   => [
+                'type'          => PasswordType::class,
+                'mapped'        => false,
+                'first_options' => [
                     'label' => 'Mot de passe',
                     'attr'  => [
                         'placeholder'  => 'Minimum 12 caractères',
                         'autocomplete' => 'new-password',
                         'minlength'    => '12',
                     ],
-                    'help'        => ContraintesMotDePasse::AIDE,
+                    'help' => ContraintesMotDePasse::AIDE,
                     // Contraintes sur le premier champ : c'est là qu'elles sont évaluées (source unique, DT-18).
                     'constraints' => ContraintesMotDePasse::regles(),
                 ],
-                'second_options'  => [
+                'second_options' => [
                     'label' => 'Confirmer le mot de passe',
                     'attr'  => [
                         'placeholder'  => 'Répétez votre mot de passe',
@@ -72,9 +72,9 @@ class InscriptionType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-            'data_class'         => Utilisateur::class,
-            'csrf_protection'    => true,
-            'csrf_token_id'      => 'inscription',
+            'data_class'      => Utilisateur::class,
+            'csrf_protection' => true,
+            'csrf_token_id'   => 'inscription',
         ]);
     }
 }

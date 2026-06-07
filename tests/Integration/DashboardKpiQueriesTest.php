@@ -72,19 +72,19 @@ final class DashboardKpiQueriesTest extends KernelTestCase
         self::bootKernel(['environment' => 'test']);
         $container = static::getContainer();
 
-        $this->entityManager         = $container->get(EntityManagerInterface::class);
+        $this->entityManager = $container->get(EntityManagerInterface::class);
         $this->reservationRepository = $container->get(ReservationRepository::class);
-        $this->creneauRepository     = $container->get(CreneauRepository::class);
+        $this->creneauRepository = $container->get(CreneauRepository::class);
 
-        $this->maintenant   = new \DateTimeImmutable();
+        $this->maintenant = new \DateTimeImmutable();
         $this->debutFenetre = $this->maintenant->modify('-30 days');
 
         $this->entityManager->beginTransaction();
 
         // Baselines AVANT toute insertion : état pré-existant (fixtures éventuelles).
         $this->baselineActivesAVenir = $this->reservationRepository->countActivesAVenir($this->maintenant);
-        $this->baselineOffre         = $this->creneauRepository->countActifsDansFenetre($this->debutFenetre, $this->maintenant);
-        $this->baselineReserves      = $this->creneauRepository->countReservesActifsDansFenetre($this->debutFenetre, $this->maintenant);
+        $this->baselineOffre = $this->creneauRepository->countActifsDansFenetre($this->debutFenetre, $this->maintenant);
+        $this->baselineReserves = $this->creneauRepository->countReservesActifsDansFenetre($this->debutFenetre, $this->maintenant);
 
         $this->preparerJeuDeDonnees();
         $this->entityManager->flush();
@@ -100,7 +100,7 @@ final class DashboardKpiQueriesTest extends KernelTestCase
         parent::tearDown();
     }
 
-    public function test_countActivesAVenir_ne_compte_que_les_reservations_actives_futures_sur_creneau_actif(): void
+    public function test_count_actives_a_venir_ne_compte_que_les_reservations_actives_futures_sur_creneau_actif(): void
     {
         $delta = $this->reservationRepository->countActivesAVenir($this->maintenant) - $this->baselineActivesAVenir;
 
@@ -109,7 +109,7 @@ final class DashboardKpiQueriesTest extends KernelTestCase
         self::assertSame(1, $delta);
     }
 
-    public function test_countActifsDansFenetre_compte_l_offre_active_de_la_fenetre(): void
+    public function test_count_actifs_dans_fenetre_compte_l_offre_active_de_la_fenetre(): void
     {
         $delta = $this->creneauRepository->countActifsDansFenetre($this->debutFenetre, $this->maintenant) - $this->baselineOffre;
 
@@ -118,7 +118,7 @@ final class DashboardKpiQueriesTest extends KernelTestCase
         self::assertSame(4, $delta);
     }
 
-    public function test_countReservesActifsDansFenetre_ne_compte_que_les_creneaux_avec_resa_active(): void
+    public function test_count_reserves_actifs_dans_fenetre_ne_compte_que_les_creneaux_avec_resa_active(): void
     {
         $delta = $this->creneauRepository->countReservesActifsDansFenetre($this->debutFenetre, $this->maintenant) - $this->baselineReserves;
 
@@ -133,7 +133,7 @@ final class DashboardKpiQueriesTest extends KernelTestCase
         // (1 ACTIVE + 1 ANNULEE). Le numérateur ne doit pas le compter deux fois.
         // Démontré ici : offre (4) et réservés (2) restent des comptes de créneaux
         // distincts, jamais de lignes de réservation.
-        $offre    = $this->creneauRepository->countActifsDansFenetre($this->debutFenetre, $this->maintenant) - $this->baselineOffre;
+        $offre = $this->creneauRepository->countActifsDansFenetre($this->debutFenetre, $this->maintenant) - $this->baselineOffre;
         $reserves = $this->creneauRepository->countReservesActifsDansFenetre($this->debutFenetre, $this->maintenant) - $this->baselineReserves;
 
         self::assertLessThanOrEqual($offre, $reserves, 'Le numérateur ne peut excéder le dénominateur.');
@@ -146,9 +146,9 @@ final class DashboardKpiQueriesTest extends KernelTestCase
 
     private function preparerJeuDeDonnees(): void
     {
-        $this->typeRdv   = $this->creerTypeRdv();
+        $this->typeRdv = $this->creerTypeRdv();
         $this->personnel = $this->creerUtilisateur(RoleUtilisateur::PERSONNEL, $this->creerService());
-        $this->auditeur  = $this->creerUtilisateur(RoleUtilisateur::AUDITEUR, null);
+        $this->auditeur = $this->creerUtilisateur(RoleUtilisateur::AUDITEUR, null);
 
         $creneauA = $this->creerCreneau(5, true);    // futur, actif
         $creneauB = $this->creerCreneau(6, false);   // futur, inactif

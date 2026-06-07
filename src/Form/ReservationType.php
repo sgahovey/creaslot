@@ -15,9 +15,9 @@ class ReservationType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder->add('commentaireAuditeur', TextareaType::class, [
-            'label'       => 'Commentaire (optionnel)',
-            'required'    => false,
-            'attr'        => [
+            'label'    => 'Commentaire (optionnel)',
+            'required' => false,
+            'attr'     => [
                 'class'       => 'form-control',
                 'rows'        => 4,
                 'maxlength'   => 500,

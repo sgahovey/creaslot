@@ -43,12 +43,12 @@ final class CreneauVoter extends Voter
             return false;
         }
 
-        /** @var Creneau $subject */
+        /* @var Creneau $subject */
         return match ($attribute) {
-            self::VIEW          => true, // tout utilisateur authentifié
+            self::VIEW => true, // tout utilisateur authentifié
             self::EDIT,
-            self::DELETE        => $this->peutModifier($subject, $utilisateur),
-            default             => false,
+            self::DELETE => $this->peutModifier($subject, $utilisateur),
+            default      => false,
         };
     }
 

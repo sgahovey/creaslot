@@ -21,7 +21,8 @@ final class DashboardController extends AbstractController
 {
     public function __construct(
         private readonly DashboardService $dashboardService,
-    ) {}
+    ) {
+    }
 
     #[Route('/admin', name: 'app_admin_dashboard', methods: ['GET'])]
     public function index(): Response

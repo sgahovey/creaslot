@@ -6,10 +6,10 @@ namespace App\Controller\Personnel;
 
 use App\Entity\Creneau;
 use App\Entity\Utilisateur;
+use App\Enum\StatutReservation;
 use App\Form\CreneauType;
 use App\Repository\CreneauRepository;
 use App\Repository\TypeRdvRepository;
-use App\Enum\StatutReservation;
 use App\Security\CreneauVoter;
 use App\Service\NotificationService;
 use App\Service\SlotService;
@@ -30,16 +30,17 @@ class CreneauController extends AbstractController
         private readonly LoggerInterface $logger,
         private readonly NotificationService $notificationService,
         private readonly SlotService $slotService,
-    ) {}
+    ) {
+    }
 
     #[Route('/creneau', name: 'app_creneau_liste', methods: ['GET'])]
     public function liste(Request $request, CreneauRepository $creneauRepository): Response
     {
         /** @var Utilisateur $utilisateur */
-        $utilisateur   = $this->getUser();
-        $filtre        = $request->query->getString('filtre', 'tous');
-        $page          = max(1, $request->query->getInt('page', 1));
-        $creneaux      = $creneauRepository->findByPersonnelWithFilters($utilisateur, $filtre, $page, 10);
+        $utilisateur = $this->getUser();
+        $filtre = $request->query->getString('filtre', 'tous');
+        $page = max(1, $request->query->getInt('page', 1));
+        $creneaux = $creneauRepository->findByPersonnelWithFilters($utilisateur, $filtre, $page, 10);
         $totalCreneaux = count($creneaux);
 
         return $this->render('personnel/creneau/liste.html.twig', [
@@ -66,11 +67,13 @@ class CreneauController extends AbstractController
 
         if ($creneau->isPasse()) {
             $this->addFlash('error', 'Ce créneau est passé et ne peut plus être modifié.');
+
             return $this->redirectToRoute('app_creneau_liste');
         }
 
         if (!$creneau->isEstActif()) {
             $this->addFlash('error', 'Ce créneau a été annulé et ne peut plus être modifié.');
+
             return $this->redirectToRoute('app_creneau_liste');
         }
 
@@ -142,7 +145,7 @@ class CreneauController extends AbstractController
     #[Route('/creneau/nouveau', name: 'app_creneau_nouveau', methods: ['GET', 'POST'])]
     public function nouveau(Request $request): Response
     {
-        $creneau    = new Creneau();
+        $creneau = new Creneau();
         $formulaire = $this->createForm(CreneauType::class, $creneau);
         $formulaire->handleRequest($request);
 
@@ -212,7 +215,7 @@ class CreneauController extends AbstractController
         // explicitement à notifierAuditeurSuppressionCreneau() après. Cohérent
         // avec OneToMany (évite l'ambiguïté sur quelle résa annulée notifier).
         $reservationAAnnuler = $creneau->getReservationActive();
-        $auditeur            = $reservationAAnnuler?->getUtilisateur();
+        $auditeur = $reservationAAnnuler?->getUtilisateur();
 
         if ($reservationAAnnuler !== null) {
             $this->annulerReservationLiee($creneau);
@@ -290,10 +293,10 @@ class CreneauController extends AbstractController
 
     private function preremplirChampsNonMappes(FormInterface $formulaire, Creneau $creneau): void
     {
-        $dateDebut   = $creneau->getDateDebut();
-        $dateFin     = $creneau->getDateFin();
-        $dureeMin    = (int) (($dateFin->getTimestamp() - $dateDebut->getTimestamp()) / 60);
-        $dureeCode   = in_array((string) $dureeMin, ['15', '30', '60'], true) ? (string) $dureeMin : 'custom';
+        $dateDebut = $creneau->getDateDebut();
+        $dateFin = $creneau->getDateFin();
+        $dureeMin = (int) (($dateFin->getTimestamp() - $dateDebut->getTimestamp()) / 60);
+        $dureeCode = in_array((string) $dureeMin, ['15', '30', '60'], true) ? (string) $dureeMin : 'custom';
 
         $formulaire->get('date')->setData($dateDebut);
         $formulaire->get('heureDebut')->setData($dateDebut);

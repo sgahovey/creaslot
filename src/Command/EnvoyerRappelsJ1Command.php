@@ -58,7 +58,7 @@ final class EnvoyerRappelsJ1Command extends Command
 
         // Plage "demain 00:00 → 23:59" en heure Réunion (timezone applicative).
         $demainDebut = (new \DateTimeImmutable('tomorrow'))->setTime(0, 0, 0);
-        $demainFin   = (new \DateTimeImmutable('tomorrow'))->setTime(23, 59, 59);
+        $demainFin = (new \DateTimeImmutable('tomorrow'))->setTime(23, 59, 59);
 
         $io->title('Envoi des rappels J-1');
         $io->writeln(sprintf(
@@ -76,9 +76,9 @@ final class EnvoyerRappelsJ1Command extends Command
             try {
                 $this->notificationService->notifierAuditeurRappel($reservation);
                 $reservation->setRappelEnvoyeAt(new \DateTimeImmutable());
-                $envoyes++;
+                ++$envoyes;
             } catch (\Throwable $e) {
-                $erreurs++;
+                ++$erreurs;
                 $this->logger->error('Echec envoi rappel J-1 (batch)', [
                     'reservation_id' => $reservation->getId(),
                     'exception'      => $e::class,

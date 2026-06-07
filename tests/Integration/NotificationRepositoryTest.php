@@ -38,7 +38,7 @@ final class NotificationRepositoryTest extends KernelTestCase
         $container = static::getContainer();
 
         $this->entityManager = $container->get(EntityManagerInterface::class);
-        $this->repository    = $container->get(NotificationRepository::class);
+        $this->repository = $container->get(NotificationRepository::class);
 
         $this->entityManager->beginTransaction();
     }
@@ -53,7 +53,7 @@ final class NotificationRepositoryTest extends KernelTestCase
         parent::tearDown();
     }
 
-    public function test_findByDestinatairePaginated_retourne_les_notifications_triees_desc(): void
+    public function test_find_by_destinataire_paginated_retourne_les_notifications_triees_desc(): void
     {
         $destinataire = $this->creerAuditeur();
 
@@ -72,7 +72,7 @@ final class NotificationRepositoryTest extends KernelTestCase
         self::assertSame(TypeNotification::CONFIRMATION_RESERVATION, $notifications[2]->getType());
     }
 
-    public function test_countNonLues_ne_compte_que_les_non_lues(): void
+    public function test_count_non_lues_ne_compte_que_les_non_lues(): void
     {
         $destinataire = $this->creerAuditeur();
 
@@ -83,10 +83,10 @@ final class NotificationRepositoryTest extends KernelTestCase
         self::assertSame(2, $this->repository->countNonLues($destinataire));
     }
 
-    public function test_marquerToutesLues_ne_touche_que_les_non_lues_du_destinataire(): void
+    public function test_marquer_toutes_lues_ne_touche_que_les_non_lues_du_destinataire(): void
     {
         $destinataire = $this->creerAuditeur();
-        $autre        = $this->creerAuditeur();
+        $autre = $this->creerAuditeur();
 
         $this->creerNotification($destinataire, TypeNotification::CONFIRMATION_RESERVATION, 'now', lu: false);
         $this->creerNotification($destinataire, TypeNotification::ANNULATION_RESERVATION, 'now', lu: false);

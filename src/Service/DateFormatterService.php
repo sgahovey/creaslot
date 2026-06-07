@@ -33,6 +33,7 @@ final readonly class DateFormatterService
      * Utilisé par les 6 méthodes notifier*() de NotificationService.
      *
      * @param \DateTimeInterface $date La date à formater (UTC, locale, ou autre tz)
+     *
      * @return string La date formatée en heure de la Réunion
      */
     public function pourSujetEmail(\DateTimeInterface $date): string

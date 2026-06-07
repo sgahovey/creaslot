@@ -60,7 +60,8 @@ readonly class NotificationService
         private string $replyTo,
         #[Autowire('%env(default::APP_MAILER_REDIRECT_TO)%')]
         private ?string $redirectionDev = null,
-    ) {}
+    ) {
+    }
 
     /**
      * Envoie un email transactionnel à partir d'un template Twig.
@@ -88,7 +89,7 @@ readonly class NotificationService
 
         if ($redirige) {
             $subject = sprintf('[DEV→%s] %s', $to, $subject);
-            $to      = $this->redirectionDev;
+            $to = $this->redirectionDev;
         }
 
         try {
@@ -134,6 +135,7 @@ readonly class NotificationService
      * en mode CLI/worker async, et du contexte HTTP courant en mode web.
      *
      * @param string $route Nom de la route Symfony (ex: app_mes_reservations)
+     *
      * @return string URL absolue (ex: https://creaslot.re/mes-reservations)
      */
     private function genererLienAbsolu(string $route): string
@@ -157,8 +159,8 @@ readonly class NotificationService
         // Une Reservation::utilisateur représente l'Auditeur (règle métier).
         // Un Creneau::utilisateur représente le Personnel (règle métier).
         // Le typage Utilisateur reste neutre côté ORM.
-        $auditeur  = $reservation->getUtilisateur();
-        $creneau   = $reservation->getCreneau();
+        $auditeur = $reservation->getUtilisateur();
+        $creneau = $reservation->getCreneau();
         $personnel = $creneau->getUtilisateur();
 
         $subject = sprintf(
@@ -167,14 +169,14 @@ readonly class NotificationService
         );
 
         $context = [
-            'auditeur_prenom'        => $auditeur->getPrenom(),
-            'creneau_debut'          => $creneau->getDateDebut(),
-            'creneau_fin'            => $creneau->getDateFin(),
-            'personnel_nom_complet'  => $personnel->getNomComplet(),
-            'service_nom'            => $personnel->getService()?->getNom(),
-            'type_rdv_libelle'       => $creneau->getTypeRdv()->getLibelle(),
-            'commentaire_auditeur'   => $reservation->getCommentaireAuditeur(),
-            'lien_mes_reservations'  => $this->genererLienAbsolu('app_mes_reservations'),
+            'auditeur_prenom'       => $auditeur->getPrenom(),
+            'creneau_debut'         => $creneau->getDateDebut(),
+            'creneau_fin'           => $creneau->getDateFin(),
+            'personnel_nom_complet' => $personnel->getNomComplet(),
+            'service_nom'           => $personnel->getService()?->getNom(),
+            'type_rdv_libelle'      => $creneau->getTypeRdv()->getLibelle(),
+            'commentaire_auditeur'  => $reservation->getCommentaireAuditeur(),
+            'lien_mes_reservations' => $this->genererLienAbsolu('app_mes_reservations'),
         ];
 
         // US-4.7 : persiste la notification in-app AVANT l'envoi email (Q-US47-F).
@@ -225,8 +227,8 @@ readonly class NotificationService
         // Une Reservation::utilisateur représente l'Auditeur (règle métier).
         // Un Creneau::utilisateur représente le Personnel (règle métier).
         // Le typage Utilisateur reste neutre côté ORM.
-        $auditeur  = $reservation->getUtilisateur();
-        $creneau   = $reservation->getCreneau();
+        $auditeur = $reservation->getUtilisateur();
+        $creneau = $reservation->getCreneau();
         $personnel = $creneau->getUtilisateur();
 
         $subject = sprintf(
@@ -235,14 +237,14 @@ readonly class NotificationService
         );
 
         $context = [
-            'personnel_prenom'      => $personnel->getPrenom(),
-            'auditeur_nom_complet'  => $auditeur->getNomComplet(),
-            'auditeur_categorie'    => null, // Champ non implémenté en BDD (cf. décision A1, audit 3.1).
-            'creneau_debut'         => $creneau->getDateDebut(),
-            'creneau_fin'           => $creneau->getDateFin(),
-            'type_rdv_libelle'      => $creneau->getTypeRdv()->getLibelle(),
-            'commentaire_auditeur'  => $reservation->getCommentaireAuditeur(),
-            'lien_mon_agenda'       => $this->genererLienAbsolu('app_creneau_agenda'),
+            'personnel_prenom'     => $personnel->getPrenom(),
+            'auditeur_nom_complet' => $auditeur->getNomComplet(),
+            'auditeur_categorie'   => null, // Champ non implémenté en BDD (cf. décision A1, audit 3.1).
+            'creneau_debut'        => $creneau->getDateDebut(),
+            'creneau_fin'          => $creneau->getDateFin(),
+            'type_rdv_libelle'     => $creneau->getTypeRdv()->getLibelle(),
+            'commentaire_auditeur' => $reservation->getCommentaireAuditeur(),
+            'lien_mon_agenda'      => $this->genererLienAbsolu('app_creneau_agenda'),
         ];
 
         try {
@@ -278,8 +280,8 @@ readonly class NotificationService
         // Une Reservation::utilisateur représente l'Auditeur (règle métier).
         // Un Creneau::utilisateur représente le Personnel (règle métier).
         // Le typage Utilisateur reste neutre côté ORM.
-        $auditeur  = $reservation->getUtilisateur();
-        $creneau   = $reservation->getCreneau();
+        $auditeur = $reservation->getUtilisateur();
+        $creneau = $reservation->getCreneau();
         $personnel = $creneau->getUtilisateur();
 
         $subject = sprintf(
@@ -359,8 +361,8 @@ readonly class NotificationService
         // Une Reservation::utilisateur représente l'Auditeur (règle métier).
         // Un Creneau::utilisateur représente le Personnel (règle métier).
         // Le typage Utilisateur reste neutre côté ORM.
-        $auditeur  = $reservation->getUtilisateur();
-        $creneau   = $reservation->getCreneau();
+        $auditeur = $reservation->getUtilisateur();
+        $creneau = $reservation->getCreneau();
         $personnel = $creneau->getUtilisateur();
 
         $subject = sprintf(
@@ -415,7 +417,7 @@ readonly class NotificationService
      * RGPD : le log error ne contient QUE les longueurs (avant/après) du
      * commentaire, jamais son contenu (potentiellement données sensibles).
      *
-     * @param Creneau $creneau Le créneau venant d'être modifié
+     * @param Creneau $creneau          Le créneau venant d'être modifié
      * @param ?string $commentaireAvant Le commentaire AVANT modification (snapshot pris dans le contrôleur)
      */
     public function notifierAuditeurCommentaireCreneau(Creneau $creneau, ?string $commentaireAvant): void
@@ -425,7 +427,7 @@ readonly class NotificationService
             return;
         }
 
-        $auditeur  = $creneau->getAuditeurReservation();
+        $auditeur = $creneau->getAuditeurReservation();
         $personnel = $creneau->getUtilisateur();
 
         $subject = sprintf(
@@ -518,7 +520,7 @@ readonly class NotificationService
             return;
         }
 
-        $auditeur  = $reservation->getUtilisateur();
+        $auditeur = $reservation->getUtilisateur();
         $personnel = $creneau->getUtilisateur();
 
         $subject = sprintf(
@@ -594,8 +596,8 @@ readonly class NotificationService
             return;
         }
 
-        $creneau   = $reservation->getCreneau();
-        $auditeur  = $reservation->getUtilisateur();
+        $creneau = $reservation->getCreneau();
+        $auditeur = $reservation->getUtilisateur();
         $personnel = $creneau->getUtilisateur();
 
         $subject = sprintf(

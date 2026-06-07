@@ -25,5 +25,6 @@ final readonly class TableauBordKpis
         public int $creneauxOffre,
         public \DateTimeImmutable $fenetreDebut,
         public \DateTimeImmutable $fenetreFin,
-    ) {}
+    ) {
+    }
 }

@@ -34,7 +34,7 @@ final class CreneauCalendarSerializer
      */
     private function serializerEvenement(Creneau $creneau): array
     {
-        $typeRdv  = $creneau->getTypeRdv();
+        $typeRdv = $creneau->getTypeRdv();
         $auditeur = $creneau->getAuditeurReservation();
 
         $nomAuditeur = '';

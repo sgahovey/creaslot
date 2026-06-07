@@ -25,7 +25,8 @@ final readonly class JournalAdminService
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
-    ) {}
+    ) {
+    }
 
     public function enregistrer(
         TypeActionJournal $type,

@@ -16,12 +16,13 @@ use App\Repository\UtilisateurRepository;
 class CollegueService
 {
     public const STATUT_EN_RDV = 'EN_RDV';
-    public const STATUT_LIBRE  = 'LIBRE';
+    public const STATUT_LIBRE = 'LIBRE';
 
     public function __construct(
         private readonly UtilisateurRepository $utilisateurRepository,
-        private readonly CreneauRepository     $creneauRepository,
-    ) {}
+        private readonly CreneauRepository $creneauRepository,
+    ) {
+    }
 
     /**
      * Retourne les collègues actifs ayant au moins un créneau actif futur ou en cours,
@@ -34,7 +35,7 @@ class CollegueService
         ?int $serviceId,
         bool $disponiblesOnly,
     ): array {
-        $collegues  = $this->utilisateurRepository->findOtherPersonnel($current, $serviceId);
+        $collegues = $this->utilisateurRepository->findOtherPersonnel($current, $serviceId);
         $maintenant = new \DateTimeImmutable();
 
         $dtos = [];
@@ -60,7 +61,7 @@ class CollegueService
      */
     public function getStatut(Utilisateur $utilisateur): string
     {
-        $maintenant     = new \DateTimeImmutable();
+        $maintenant = new \DateTimeImmutable();
         $creneauEnCours = $this->creneauRepository->findCreneauEnCoursAvecRdv($utilisateur, $maintenant);
 
         return $creneauEnCours !== null ? self::STATUT_EN_RDV : self::STATUT_LIBRE;
@@ -82,9 +83,9 @@ class CollegueService
      */
     private function construireDTO(Utilisateur $collegue, \DateTimeImmutable $maintenant): CollegueDTO
     {
-        $creneauEnCours  = $this->creneauRepository->findCreneauEnCoursAvecRdv($collegue, $maintenant);
-        $statut          = $creneauEnCours !== null ? self::STATUT_EN_RDV : self::STATUT_LIBRE;
-        $heureFinRdv     = $creneauEnCours?->getDateFin()->format('H\hi');
+        $creneauEnCours = $this->creneauRepository->findCreneauEnCoursAvecRdv($collegue, $maintenant);
+        $statut = $creneauEnCours !== null ? self::STATUT_EN_RDV : self::STATUT_LIBRE;
+        $heureFinRdv = $creneauEnCours?->getDateFin()->format('H\hi');
         $prochainCreneau = $this->creneauRepository->findNextReservedCreneau($collegue);
         $prochainRdvDate = $prochainCreneau?->getDateDebut();
 
