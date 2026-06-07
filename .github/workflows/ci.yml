@@ -144,6 +144,9 @@ jobs:
       - name: Installer les dépendances
         run: composer install --no-scripts --no-interaction --prefer-dist --no-progress
 
+      - name: Installer les assets de l'importmap (requis pour le rendu des WebTests)
+        run: php bin/console importmap:install
+
       - name: Créer la base de test
         run: php bin/console doctrine:database:create --env=test --if-not-exists --no-interaction
 
