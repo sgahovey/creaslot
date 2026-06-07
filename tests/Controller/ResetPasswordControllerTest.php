@@ -81,7 +81,9 @@ final class ResetPasswordControllerTest extends WebTestCase
         // le destinataire est l'adresse de redirection si elle est définie, sinon le compte.
         $redirection = $_ENV['APP_MAILER_REDIRECT_TO'] ?? '';
         $destinataireAttendu = $redirection !== '' ? $redirection : $this->emailTest;
-        self::assertEmailAddressContains($this->getMailerMessage(), 'To', $destinataireAttendu);
+        $message = $this->getMailerMessage();
+        self::assertNotNull($message);
+        self::assertEmailAddressContains($message, 'To', $destinataireAttendu);
     }
 
     public function test_demande_pour_un_email_inexistant_ne_revele_rien(): void

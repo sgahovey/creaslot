@@ -58,7 +58,7 @@ final class JournalAdminRepositoryTest extends KernelTestCase
     {
         $paginator = $this->journalRepository->findPourAdmin(1);
 
-        self::assertSame(3, count($paginator));
+        self::assertCount(3, $paginator);
         self::assertSame(['e3', 'e2', 'e1'], $this->marqueurs($paginator));
     }
 
@@ -72,7 +72,7 @@ final class JournalAdminRepositoryTest extends KernelTestCase
     {
         $paginator = $this->journalRepository->findPourAdmin(1, 25, TypeActionJournal::COMPTE_CREATION);
 
-        self::assertSame(2, count($paginator));
+        self::assertCount(2, $paginator);
         self::assertSame(['e3', 'e1'], $this->marqueurs($paginator));
     }
 
@@ -83,10 +83,10 @@ final class JournalAdminRepositoryTest extends KernelTestCase
      */
     private function marqueurs(iterable $paginator): array
     {
-        return array_map(
+        return array_values(array_map(
             static fn (JournalAdmin $entree): string => (string) $entree->getDetails(),
             iterator_to_array($paginator),
-        );
+        ));
     }
 
     private function creerEntree(TypeActionJournal $type, string $marqueur, \DateTimeImmutable $date): void

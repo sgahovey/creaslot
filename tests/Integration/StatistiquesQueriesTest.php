@@ -100,10 +100,10 @@ final class StatistiquesQueriesTest extends KernelTestCase
     {
         $stats = $this->statistiquesParService();
 
-        self::assertSame(3, $stats[$this->serviceA->getId()]['offre']);
-        self::assertSame(2, $stats[$this->serviceA->getId()]['reserves']);
-        self::assertSame($this->serviceA->getNom(), $stats[$this->serviceA->getId()]['nom']);
-        self::assertSame($this->serviceA->getId(), $stats[$this->serviceA->getId()]['serviceId']);
+        self::assertSame(3, $stats[$this->idDe($this->serviceA)]['offre']);
+        self::assertSame(2, $stats[$this->idDe($this->serviceA)]['reserves']);
+        self::assertSame($this->serviceA->getNom(), $stats[$this->idDe($this->serviceA)]['nom']);
+        self::assertSame($this->idDe($this->serviceA), $stats[$this->idDe($this->serviceA)]['serviceId']);
     }
 
     public function test_par_service_regroupe_les_personnels_sans_service_sous_la_cle_sentinelle(): void
@@ -123,8 +123,8 @@ final class StatistiquesQueriesTest extends KernelTestCase
         // C3 (ANNULEE seule) non comptée bien que le créneau soit offert (offre 3).
         $stats = $this->statistiquesParService();
 
-        self::assertSame(3, $stats[$this->serviceA->getId()]['offre']);
-        self::assertSame(2, $stats[$this->serviceA->getId()]['reserves']);
+        self::assertSame(3, $stats[$this->idDe($this->serviceA)]['offre']);
+        self::assertSame(2, $stats[$this->idDe($this->serviceA)]['reserves']);
     }
 
     public function test_par_service_inclut_un_service_desactive_ayant_des_creneaux(): void
@@ -142,7 +142,7 @@ final class StatistiquesQueriesTest extends KernelTestCase
         // l'offre : si l'un était compté, serviceA aurait offre > 3.
         $stats = $this->statistiquesParService();
 
-        self::assertSame(3, $stats[$this->serviceA->getId()]['offre']);
+        self::assertSame(3, $stats[$this->idDe($this->serviceA)]['offre']);
     }
 
     // ---------------------------------------------------------------------
@@ -153,10 +153,10 @@ final class StatistiquesQueriesTest extends KernelTestCase
     {
         $stats = $this->statistiquesParType();
 
-        self::assertSame(3, $stats[$this->typeX->getId()]['offre']);
-        self::assertSame(3, $stats[$this->typeX->getId()]['reserves']);
-        self::assertSame(self::COULEUR_TYPE_X, $stats[$this->typeX->getId()]['couleurHex']);
-        self::assertSame($this->typeX->getLibelle(), $stats[$this->typeX->getId()]['libelle']);
+        self::assertSame(3, $stats[$this->idDe($this->typeX)]['offre']);
+        self::assertSame(3, $stats[$this->idDe($this->typeX)]['reserves']);
+        self::assertSame(self::COULEUR_TYPE_X, $stats[$this->idDe($this->typeX)]['couleurHex']);
+        self::assertSame($this->typeX->getLibelle(), $stats[$this->idDe($this->typeX)]['libelle']);
     }
 
     public function test_par_type_inclut_un_type_desactive_et_ne_compte_que_les_actives(): void
@@ -187,6 +187,15 @@ final class StatistiquesQueriesTest extends KernelTestCase
     private function statistiquesParType(): array
     {
         return $this->creneauRepository->statistiquesParType($this->maintenant, $this->fenetreFin);
+    }
+
+    /** Identifiant d'une entité persistée, en garantissant qu'il est bien attribué (clé d'agrégat). */
+    private function idDe(Service|TypeRdv $entite): int
+    {
+        $id = $entite->getId();
+        self::assertNotNull($id);
+
+        return $id;
     }
 
     // ---------------------------------------------------------------------

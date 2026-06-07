@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Integration;
 
 use App\Entity\Creneau;
-use App\Entity\Notification;
 use App\Entity\Reservation;
 use App\Entity\TypeRdv;
 use App\Entity\Utilisateur;
@@ -76,10 +75,11 @@ final class NotificationServicePersistTest extends KernelTestCase
 
         // THEN
         $paginator = $this->notificationRepository->findByDestinatairePaginated($auditeur, 1);
-        self::assertSame(1, count($paginator), 'Exactement 1 notification persistée.');
+        self::assertCount(1, $paginator, 'Exactement 1 notification persistée.');
 
-        $notification = array_values(iterator_to_array($paginator))[0];
-        self::assertInstanceOf(Notification::class, $notification);
+        $notifications = array_values(iterator_to_array($paginator));
+        self::assertNotEmpty($notifications);
+        $notification = $notifications[0];
         self::assertSame(TypeNotification::CONFIRMATION_RESERVATION, $notification->getType());
         self::assertSame($auditeur, $notification->getDestinataire());
         self::assertSame($reservation, $notification->getReservation());

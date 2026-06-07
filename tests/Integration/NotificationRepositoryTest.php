@@ -10,7 +10,6 @@ use App\Enum\RoleUtilisateur;
 use App\Enum\TypeNotification;
 use App\Repository\NotificationRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\Pagination\Paginator;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
@@ -63,8 +62,7 @@ final class NotificationRepositoryTest extends KernelTestCase
 
         $paginator = $this->repository->findByDestinatairePaginated($destinataire, 1);
 
-        self::assertInstanceOf(Paginator::class, $paginator);
-        self::assertSame(3, count($paginator));
+        self::assertCount(3, $paginator);
 
         $notifications = array_values(iterator_to_array($paginator));
         self::assertSame(TypeNotification::RAPPEL_J1, $notifications[0]->getType(), 'La plus récente en premier (DESC).');

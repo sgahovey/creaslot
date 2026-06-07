@@ -80,6 +80,9 @@ final class CreneauTypeTest extends KernelTestCase
     // Helpers
     // ---------------------------------------------------------------------
 
+    /**
+     * @return \Symfony\Component\Form\FormInterface<mixed>
+     */
     private function soumettreCustom(string $heureDebut, string $heureFin): \Symfony\Component\Form\FormInterface
     {
         $form = $this->formFactory->create(CreneauType::class);
@@ -94,6 +97,8 @@ final class CreneauTypeTest extends KernelTestCase
     }
 
     /**
+     * @param \Symfony\Component\Form\FormErrorIterator<\Symfony\Component\Form\FormError> $errors
+     *
      * @return list<string>
      */
     private function messagesErreur(\Symfony\Component\Form\FormErrorIterator $errors): array
