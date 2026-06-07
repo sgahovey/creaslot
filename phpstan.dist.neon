@@ -1,0 +1,19 @@
+parameters:
+    level: 8
+    paths:
+        - src
+        - tests
+
+    # Le script de bootstrap Doctrine n'est pas du code applicatif à analyser.
+    excludePaths:
+        - tests/phpstan-object-manager.php
+
+    # Intégration Symfony : le conteneur compilé permet à PHPStan de connaître les
+    # services, leurs types réels et les retours de $this->getUser(), etc.
+    symfony:
+        containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml
+
+    # Intégration Doctrine : un script renvoyant l'EntityManager permet de typer
+    # finement les repositories, les résultats de requêtes et les entités.
+    doctrine:
+        objectManagerLoader: tests/phpstan-object-manager.php
