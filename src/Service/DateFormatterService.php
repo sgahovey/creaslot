@@ -38,7 +38,10 @@ final readonly class DateFormatterService
      */
     public function pourSujetEmail(\DateTimeInterface $date): string
     {
-        return $date
+        // Conversion en immutable : accepte tout DateTimeInterface (\DateTime
+        // mutable compris) sans muter l'entrée, et setTimezone() est déclaré sur
+        // \DateTimeImmutable (pas sur l'interface).
+        return \DateTimeImmutable::createFromInterface($date)
             ->setTimezone(new \DateTimeZone(self::TIMEZONE_REUNION))
             ->format('d/m/Y \à H\hi');
     }

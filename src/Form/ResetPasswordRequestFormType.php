@@ -17,6 +17,8 @@ use Symfony\Component\Validator\Constraints\NotBlank;
  * Aucune fuite d'information : la validité métier de l'email (compte existant ou
  * non) n'est jamais vérifiée ici — seul le format est contrôlé. La réponse est
  * identique quel que soit le résultat (cf. ResetPasswordController).
+ *
+ * @extends AbstractType<mixed>
  */
 class ResetPasswordRequestFormType extends AbstractType
 {

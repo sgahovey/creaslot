@@ -31,9 +31,11 @@ class ResetPasswordRequest implements ResetPasswordRequestInterface
     #[ORM\Column]
     private ?int $id = null;
 
+    // FK non nullable + toujours fournie au constructeur → propriété non nullable
+    // (cohérent avec la colonne, et getUser() ne retourne jamais null).
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(name: 'id_utilisateur', nullable: false)]
-    private ?Utilisateur $user = null;
+    private Utilisateur $user;
 
     public function __construct(Utilisateur $user, \DateTimeInterface $expiresAt, string $selector, string $hashedToken)
     {

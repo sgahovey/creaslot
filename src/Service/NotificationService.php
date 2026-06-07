@@ -428,6 +428,11 @@ readonly class NotificationService
         }
 
         $auditeur = $creneau->getAuditeurReservation();
+        if (null === $auditeur) {
+            // Race : la réservation a été annulée entre isReserve() et ici. Plus
+            // d'auditeur à notifier → on s'arrête (cohérent avec le garde-fou ci-dessus).
+            return;
+        }
         $personnel = $creneau->getUtilisateur();
 
         $subject = sprintf(

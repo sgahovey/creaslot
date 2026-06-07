@@ -22,6 +22,9 @@ use Symfony\Component\Validator\Constraints\GreaterThanOrEqual;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 
+/**
+ * @extends AbstractType<Creneau>
+ */
 class CreneauType extends AbstractType
 {
     public function buildForm(FormBuilderInterface $builder, array $options): void
@@ -54,6 +57,8 @@ class CreneauType extends AbstractType
     /**
      * Ajoute les champs non accessibles quand le créneau est réservé.
      * Séparé pour respecter le SRP et garder buildForm court.
+     *
+     * @param FormBuilderInterface<Creneau|null> $builder
      */
     private function ajouterChampsModifiables(FormBuilderInterface $builder): void
     {

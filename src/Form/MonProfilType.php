@@ -21,6 +21,8 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  *
  * Les contraintes de validation de prénom/nom (NotBlank, Length 2..100) portent
  * déjà sur l'entité Utilisateur : rien à répliquer ici.
+ *
+ * @extends AbstractType<Utilisateur>
  */
 class MonProfilType extends AbstractType
 {
