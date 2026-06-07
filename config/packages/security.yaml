@@ -30,6 +30,11 @@ security:
                 target: /
                 # Désactivé pour que les messages flash survivent à la déconnexion
                 invalidate_session: false
+            # Anti-brute-force (OWASP A07) : Symfony limite les tentatives échouées
+            # par couple (identifiant + IP) ET globalement par IP (5× sur la fenêtre
+            # par défaut), puis lève TooManyLoginAttemptsAuthenticationException.
+            login_throttling:
+                max_attempts: 5
 
     role_hierarchy:
         ROLE_SUPER_ADMIN: [ROLE_PERSONNEL, ROLE_AUDITEUR]
