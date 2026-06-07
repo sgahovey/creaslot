@@ -413,7 +413,7 @@ FullCalendar de `CLAUDE.md`.
 
 ---
 
-## DT-18 — Réplication des contraintes de mot de passe entre formulaires (🟡 MOYEN) — 🟠 OUVERTE
+## DT-18 — Réplication des contraintes de mot de passe entre formulaires (🟡 MOYEN) — ✅ RÉSOLUE (04/06/2026)
 
 **Détecté** : 04/06/2026, lors de l'implémentation d'US-6.1 (page « Mon profil » self-service).
 
@@ -428,6 +428,8 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 
 **Fichiers concernés** : `src/Form/InscriptionType.php`, `src/Form/UtilisateurAdminType.php`, `src/Form/ChangementMotDePasseType.php`.
 
-**Action proposée** : extraire une **source unique** des règles — soit une fabrique `App\Validator\ContraintesMotDePasse::regles(): array` retournant le tableau de contraintes (et une constante pour le texte d'aide), soit une **contrainte composite** réutilisée par les trois `*Type`. Refacto pur, sans changement de comportement, couvert par les WebTests existants (inscription, admin, profil). À planifier en **passe DRY de l'itération 6** (avec DT-7, DT-16, DT-17).
+**Action proposée** : extraire une **source unique** des règles — soit une fabrique `App\Validator\ContraintesMotDePasse::regles(): array` retournant le tableau de contraintes (et une constante pour le texte d'aide), soit une **contrainte composite** réutilisée par les trois `*Type`. Refacto pur, sans changement de comportement, couvert par les WebTests existants (inscription, admin, profil).
 
-**Priorité** : 🟡 moyenne (qualité de code ; aucun impact fonctionnel), à regrouper avec les autres axes DRY.
+**Résolution** (04/06/2026, US-6.2 Morceau 1) : création de `src/Validator/ContraintesMotDePasse.php` — constante `AIDE` (texte d'aide) + méthode statique `regles(): array` (NotBlank + Length(min: 12) + Regex, mêmes messages). `InscriptionType`, `UtilisateurAdminType` et `ChangementMotDePasseType` consomment désormais cette source unique ; le futur `ChangePasswordFormType` (réinitialisation US-6.2) en sera le 4ᵉ consommateur. Comportement inchangé, validé par les WebTests existants (inscription / admin compte / mon profil).
+
+**Priorité** : 🟡 moyenne (qualité de code ; aucun impact fonctionnel) — close.
