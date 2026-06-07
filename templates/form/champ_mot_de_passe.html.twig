@@ -10,6 +10,9 @@
  # et aria-pressed reflétant l'état. L'icône est décorative (aria-hidden).
  #}
 {% block password_widget %}
+    {# Rétablit le type 'password' : sans cela, form_widget_simple retombe sur 'text'
+       et le mot de passe s'afficherait en clair avant tout clic sur l'œil. #}
+    {%- set type = type|default('password') -%}
     {%- set attr = attr|merge({'data-afficher-mot-de-passe-target': 'champ'}) -%}
     <div class="input-group" data-controller="afficher-mot-de-passe">
         {{- block('form_widget_simple') -}}
