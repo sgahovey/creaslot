@@ -22,7 +22,7 @@ final class OccupationCalendarSerializer
 {
     /**
      * @param array<int|string, Creneau> $creneaux
-     * @param list<int>                   $idsOccupes identifiants des créneaux occupés
+     * @param list<int>                  $idsOccupes identifiants des créneaux occupés
      *
      * @return list<array<string, mixed>>
      */
@@ -46,9 +46,9 @@ final class OccupationCalendarSerializer
      */
     private function serializerEvenement(Creneau $creneau, array $idsOccupes): array
     {
-        $typeRdv      = $creneau->getTypeRdv();
+        $typeRdv = $creneau->getTypeRdv();
         $personnelNom = $creneau->getUtilisateur()->getNomComplet();
-        $occupe       = in_array($creneau->getId(), $idsOccupes, true);
+        $occupe = in_array($creneau->getId(), $idsOccupes, true);
 
         return [
             'id'            => $creneau->getId(),

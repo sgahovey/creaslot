@@ -55,8 +55,8 @@ final class AppEmailTestCommand extends Command
         $io->title('CreaSlot — Email Test');
 
         $destinataire = (string) $input->getArgument('destinataire');
-        $template     = (string) $input->getOption('template');
-        $maintenant   = new \DateTimeImmutable();
+        $template = (string) $input->getOption('template');
+        $maintenant = new \DateTimeImmutable();
 
         $io->writeln(sprintf('  <info>Envoi d\'un email de test à</info> : %s', $destinataire));
         $io->writeln(sprintf('  <info>Template utilisé</info>            : %s', $template));

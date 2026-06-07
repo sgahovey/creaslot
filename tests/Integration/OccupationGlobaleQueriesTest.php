@@ -59,12 +59,12 @@ final class OccupationGlobaleQueriesTest extends KernelTestCase
         self::bootKernel(['environment' => 'test']);
         $container = static::getContainer();
 
-        $this->entityManager     = $container->get(EntityManagerInterface::class);
+        $this->entityManager = $container->get(EntityManagerInterface::class);
         $this->creneauRepository = $container->get(CreneauRepository::class);
 
-        $maintenant         = new \DateTimeImmutable();
+        $maintenant = new \DateTimeImmutable();
         $this->debutFenetre = $maintenant->modify('-1 day')->setTime(0, 0);
-        $this->finFenetre   = $maintenant->modify('+10 days')->setTime(23, 59);
+        $this->finFenetre = $maintenant->modify('+10 days')->setTime(23, 59);
 
         $this->entityManager->beginTransaction();
 
@@ -249,12 +249,12 @@ final class OccupationGlobaleQueriesTest extends KernelTestCase
     {
         $this->serviceA = $this->creerService();
         $this->serviceB = $this->creerService();
-        $this->typeX    = $this->creerTypeRdv();
-        $this->typeY    = $this->creerTypeRdv();
+        $this->typeX = $this->creerTypeRdv();
+        $this->typeY = $this->creerTypeRdv();
 
         $this->personnelA = $this->creerUtilisateur(RoleUtilisateur::PERSONNEL, $this->serviceA);
         $this->personnelB = $this->creerUtilisateur(RoleUtilisateur::PERSONNEL, $this->serviceB);
-        $this->auditeur   = $this->creerUtilisateur(RoleUtilisateur::AUDITEUR, null);
+        $this->auditeur = $this->creerUtilisateur(RoleUtilisateur::AUDITEUR, null);
 
         $this->c1 = $this->creerCreneau($this->personnelA, $this->typeX, $maintenant->modify('+1 day'), true);
         $this->c2 = $this->creerCreneau($this->personnelB, $this->typeY, $maintenant->modify('+2 days'), true);

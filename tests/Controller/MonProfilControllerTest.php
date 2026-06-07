@@ -41,7 +41,7 @@ final class MonProfilControllerTest extends WebTestCase
         $this->client = static::createClient(['environment' => 'test']);
 
         $entityManager = static::getContainer()->get(EntityManagerInterface::class);
-        $hasher        = static::getContainer()->get(UserPasswordHasherInterface::class);
+        $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
 
         $this->emailTest = 'profil-' . uniqid() . self::MARQUEUR_TEST;
 
@@ -121,7 +121,7 @@ final class MonProfilControllerTest extends WebTestCase
         $this->client->loginUser($avant);
 
         $crawler = $this->client->request('GET', '/mon-profil');
-        $token   = $crawler->filter('form[action="/mon-profil/informations"] input[name="mon_profil[_token]"]')->attr('value');
+        $token = $crawler->filter('form[action="/mon-profil/informations"] input[name="mon_profil[_token]"]')->attr('value');
 
         // Payload forgé : on injecte rôle / service / email, absents du formulaire.
         // Le formulaire n'autorise pas les champs supplémentaires (défaut Symfony) :
@@ -156,8 +156,8 @@ final class MonProfilControllerTest extends WebTestCase
 
         $this->client->request('GET', '/mon-profil');
         $this->client->submitForm('Modifier le mot de passe', [
-            'changement_mot_de_passe[motDePasseActuel]'         => 'MauvaisActuel!2024',
-            'changement_mot_de_passe[nouveauMotDePasse][first]' => self::NOUVEAU_MOT_DE_PASSE,
+            'changement_mot_de_passe[motDePasseActuel]'          => 'MauvaisActuel!2024',
+            'changement_mot_de_passe[nouveauMotDePasse][first]'  => self::NOUVEAU_MOT_DE_PASSE,
             'changement_mot_de_passe[nouveauMotDePasse][second]' => self::NOUVEAU_MOT_DE_PASSE,
         ]);
 

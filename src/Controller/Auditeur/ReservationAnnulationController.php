@@ -22,9 +22,10 @@ final class ReservationAnnulationController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly LoggerInterface        $logger,
-        private readonly NotificationService    $notificationService,
-    ) {}
+        private readonly LoggerInterface $logger,
+        private readonly NotificationService $notificationService,
+    ) {
+    }
 
     #[Route('/reservation/{id}/annuler', name: 'app_reservation_annulation', methods: ['POST'])]
     public function annuler(Reservation $reservation, Request $request): Response
@@ -36,6 +37,7 @@ final class ReservationAnnulationController extends AbstractController
 
         if (!$form->isSubmitted() || !$form->isValid()) {
             $this->addFlash('error', 'Demande d\'annulation invalide.');
+
             return $this->redirigerVersListe($request);
         }
 
@@ -58,6 +60,7 @@ final class ReservationAnnulationController extends AbstractController
             if (!$reservation->isAnnulable()) {
                 $this->entityManager->rollback();
                 $this->addFlash('error', $this->messageRefus($reservation));
+
                 return $this->redirigerVersListe($request);
             }
 

@@ -15,9 +15,9 @@ class AnnulationReservationType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder->add('motifAnnulation', TextareaType::class, [
-            'label'       => 'Motif (optionnel)',
-            'required'    => false,
-            'attr'        => [
+            'label'    => 'Motif (optionnel)',
+            'required' => false,
+            'attr'     => [
                 'class'       => 'form-control',
                 'rows'        => 3,
                 'maxlength'   => 500,

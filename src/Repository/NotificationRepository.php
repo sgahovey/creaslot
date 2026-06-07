@@ -81,7 +81,7 @@ class NotificationRepository extends ServiceEntityRepository
      * chargées en mémoire ne sont pas synchronisées). Le caller doit donc lire
      * la liste APRÈS cet appel pour refléter l'état lu=true.
      *
-     * @return int Nombre de notifications mises à jour (0 si déjà toutes lues).
+     * @return int nombre de notifications mises à jour (0 si déjà toutes lues)
      */
     public function marquerToutesLues(Utilisateur $destinataire): int
     {

@@ -49,7 +49,7 @@ final class ReservationVoter extends Voter
             return false;
         }
 
-        /** @var Reservation $subject */
+        /* @var Reservation $subject */
         return match ($attribute) {
             self::VIEW   => $this->peutVoir($subject, $utilisateur),
             self::CANCEL => $this->peutAnnuler($subject, $utilisateur),
@@ -62,9 +62,9 @@ final class ReservationVoter extends Voter
         return match ($utilisateur->getRole()) {
             RoleUtilisateur::SUPER_ADMIN => true,
             // Auditeur : uniquement sa propre réservation
-            RoleUtilisateur::AUDITEUR    => $reservation->getUtilisateur()->getId() === $utilisateur->getId(),
+            RoleUtilisateur::AUDITEUR => $reservation->getUtilisateur()->getId() === $utilisateur->getId(),
             // Personnel : uniquement les réservations posées sur ses créneaux
-            RoleUtilisateur::PERSONNEL   => $reservation->getCreneau()->getUtilisateur()->getId() === $utilisateur->getId(),
+            RoleUtilisateur::PERSONNEL => $reservation->getCreneau()->getUtilisateur()->getId() === $utilisateur->getId(),
         };
     }
 

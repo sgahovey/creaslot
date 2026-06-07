@@ -33,7 +33,8 @@ final class NotificationListeController extends AbstractController
 
     public function __construct(
         private readonly NotificationRepository $notificationRepository,
-    ) {}
+    ) {
+    }
 
     #[Route('/mes-notifications', name: 'app_mes_notifications', methods: ['GET'])]
     public function liste(Request $request): Response
@@ -47,7 +48,7 @@ final class NotificationListeController extends AbstractController
         $this->notificationRepository->marquerToutesLues($utilisateur);
 
         $paginator = $this->notificationRepository->findByDestinatairePaginated($utilisateur, $page);
-        $total     = count($paginator);
+        $total = count($paginator);
 
         return $this->render('auditeur/notification/liste.html.twig', [
             'notifications' => $paginator,

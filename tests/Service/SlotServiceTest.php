@@ -10,7 +10,6 @@ use App\Entity\Utilisateur;
 use App\Enum\RoleUtilisateur;
 use App\Repository\CreneauRepository;
 use App\Service\SlotService;
-use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -34,7 +33,7 @@ final class SlotServiceTest extends TestCase
         $this->slotService = new SlotService($this->repository, $this->logger);
     }
 
-    public function test_pasDeChevauchement_avecCreneauPasse_returnsFalse(): void
+    public function test_pas_de_chevauchement_avec_creneau_passe_returns_false(): void
     {
         $user = $this->creerUtilisateur(1);
         $candidat = $this->creerCreneauCandidat($user, '2026-06-10 14:00', '2026-06-10 15:00');
@@ -52,7 +51,7 @@ final class SlotServiceTest extends TestCase
         $this->assertFalse($this->slotService->chevaucheAvecExistant($candidat));
     }
 
-    public function test_pasDeChevauchement_avecCreneauAdjacent_returnsFalse(): void
+    public function test_pas_de_chevauchement_avec_creneau_adjacent_returns_false(): void
     {
         $user = $this->creerUtilisateur(1);
         $candidat = $this->creerCreneauCandidat($user, '2026-06-10 11:00', '2026-06-10 12:00');
@@ -64,7 +63,7 @@ final class SlotServiceTest extends TestCase
         $this->assertFalse($this->slotService->chevaucheAvecExistant($candidat));
     }
 
-    public function test_chevauchement_avecCreneauIdentique_returnsTrue(): void
+    public function test_chevauchement_avec_creneau_identique_returns_true(): void
     {
         $user = $this->creerUtilisateur(1);
         $candidat = $this->creerCreneauCandidat($user, '2026-06-10 10:00', '2026-06-10 11:00');
@@ -77,7 +76,7 @@ final class SlotServiceTest extends TestCase
         $this->assertTrue($this->slotService->chevaucheAvecExistant($candidat));
     }
 
-    public function test_chevauchement_avecCreneauDebut_returnsTrue(): void
+    public function test_chevauchement_avec_creneau_debut_returns_true(): void
     {
         $user = $this->creerUtilisateur(1);
         $candidat = $this->creerCreneauCandidat($user, '2026-06-10 10:30', '2026-06-10 11:30');
@@ -90,7 +89,7 @@ final class SlotServiceTest extends TestCase
         $this->assertTrue($this->slotService->chevaucheAvecExistant($candidat));
     }
 
-    public function test_chevauchement_avecCreneauFin_returnsTrue(): void
+    public function test_chevauchement_avec_creneau_fin_returns_true(): void
     {
         $user = $this->creerUtilisateur(1);
         $candidat = $this->creerCreneauCandidat($user, '2026-06-10 09:00', '2026-06-10 10:30');
@@ -103,7 +102,7 @@ final class SlotServiceTest extends TestCase
         $this->assertTrue($this->slotService->chevaucheAvecExistant($candidat));
     }
 
-    public function test_chevauchement_avecCreneauPendant_returnsTrue(): void
+    public function test_chevauchement_avec_creneau_pendant_returns_true(): void
     {
         $user = $this->creerUtilisateur(1);
         $candidat = $this->creerCreneauCandidat($user, '2026-06-10 09:00', '2026-06-10 13:00');
@@ -116,7 +115,7 @@ final class SlotServiceTest extends TestCase
         $this->assertTrue($this->slotService->chevaucheAvecExistant($candidat));
     }
 
-    public function test_pasDeChevauchement_avecCreneauAutreUser_returnsFalse(): void
+    public function test_pas_de_chevauchement_avec_creneau_autre_user_returns_false(): void
     {
         $user = $this->creerUtilisateur(1);
         $candidat = $this->creerCreneauCandidat($user, '2026-06-10 10:00', '2026-06-10 11:00');
@@ -134,7 +133,7 @@ final class SlotServiceTest extends TestCase
         $this->assertFalse($this->slotService->chevaucheAvecExistant($candidat));
     }
 
-    public function test_pasDeChevauchement_avecCreneauDesactive_returnsFalse(): void
+    public function test_pas_de_chevauchement_avec_creneau_desactive_returns_false(): void
     {
         $user = $this->creerUtilisateur(1);
         $candidat = $this->creerCreneauCandidat($user, '2026-06-10 10:00', '2026-06-10 11:00');
@@ -146,7 +145,7 @@ final class SlotServiceTest extends TestCase
         $this->assertFalse($this->slotService->chevaucheAvecExistant($candidat));
     }
 
-    public function test_modification_excludeId_pasDeChevauchementSurSoiMeme_returnsFalse(): void
+    public function test_modification_exclude_id_pas_de_chevauchement_sur_soi_meme_returns_false(): void
     {
         $user = $this->creerUtilisateur(1);
         $candidat = $this->creerCreneauExistant(99, $user, '2026-06-10 10:00', '2026-06-10 11:00');
@@ -164,11 +163,11 @@ final class SlotServiceTest extends TestCase
         $this->assertFalse($this->slotService->chevaucheAvecExistant($candidat));
     }
 
-    public function test_detecteChevauchements_delegueAuRepository(): void
+    public function test_detecte_chevauchements_delegue_au_repository(): void
     {
         $user = $this->creerUtilisateur(1);
-        $debut = new DateTimeImmutable('2026-07-01 09:00');
-        $fin = new DateTimeImmutable('2026-07-01 10:00');
+        $debut = new \DateTimeImmutable('2026-07-01 09:00');
+        $fin = new \DateTimeImmutable('2026-07-01 10:00');
         $conflit = $this->creerCreneauExistant(7, $user, '2026-07-01 09:30', '2026-07-01 10:30');
 
         $this->repository->expects($this->once())
@@ -179,7 +178,7 @@ final class SlotServiceTest extends TestCase
         $this->assertSame([$conflit], $this->slotService->detecteChevauchements($user, $debut, $fin, 5));
     }
 
-    public function test_construireMessageChevauchement_contientTypeEtHoraires(): void
+    public function test_construire_message_chevauchement_contient_type_et_horaires(): void
     {
         $user = $this->creerUtilisateur(1);
         $conflit = $this->creerCreneauExistant(3, $user, '2026-08-20 14:30', '2026-08-20 15:45');
@@ -192,7 +191,7 @@ final class SlotServiceTest extends TestCase
         $this->assertStringContainsString('15:45', $msg);
     }
 
-    public function test_enregistrerPremierChevauchement_appelleLogger(): void
+    public function test_enregistrer_premier_chevauchement_appelle_logger(): void
     {
         $user = $this->creerUtilisateur(1);
         $candidat = $this->creerCreneauCandidat($user, '2026-06-10 10:00', '2026-06-10 11:00');
@@ -240,8 +239,8 @@ final class SlotServiceTest extends TestCase
         $c = new Creneau();
         $c->setUtilisateur($user);
         $c->setTypeRdv($this->creerTypeRdv());
-        $c->setDateDebut(new DateTimeImmutable($debut));
-        $c->setDateFin(new DateTimeImmutable($fin));
+        $c->setDateDebut(new \DateTimeImmutable($debut));
+        $c->setDateFin(new \DateTimeImmutable($fin));
 
         return $c;
     }

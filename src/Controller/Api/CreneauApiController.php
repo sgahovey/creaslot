@@ -21,7 +21,8 @@ final class CreneauApiController extends AbstractController
     public function __construct(
         private readonly CreneauRepository $creneauRepository,
         private readonly CreneauCalendarSerializer $serializer,
-    ) {}
+    ) {
+    }
 
     #[Route('/creneaux/next-reserved', name: 'api_creneaux_next_reserved', methods: ['GET'])]
     public function nextReserved(): JsonResponse
@@ -43,7 +44,7 @@ final class CreneauApiController extends AbstractController
         $utilisateur = $this->getUser();
 
         $debutRaw = $request->query->getString('start');
-        $finRaw   = $request->query->getString('end');
+        $finRaw = $request->query->getString('end');
 
         if ($debutRaw === '' || $finRaw === '') {
             return $this->jsonSansCache([]);
@@ -51,7 +52,7 @@ final class CreneauApiController extends AbstractController
 
         try {
             $debutPlage = new \DateTimeImmutable($debutRaw);
-            $finPlage   = new \DateTimeImmutable($finRaw);
+            $finPlage = new \DateTimeImmutable($finRaw);
         } catch (\Throwable) {
             return $this->jsonSansCache([], Response::HTTP_BAD_REQUEST);
         }

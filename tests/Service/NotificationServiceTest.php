@@ -14,7 +14,6 @@ use App\Enum\RoleUtilisateur;
 use App\Enum\StatutReservation;
 use App\Service\DateFormatterService;
 use App\Service\NotificationService;
-use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
@@ -61,9 +60,9 @@ final class NotificationServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->mailer       = $this->createMock(MailerInterface::class);
+        $this->mailer = $this->createMock(MailerInterface::class);
         $this->urlGenerator = $this->createMock(UrlGeneratorInterface::class);
-        $this->logger       = $this->createMock(LoggerInterface::class);
+        $this->logger = $this->createMock(LoggerInterface::class);
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
 
         // URLs absolues retournées de façon déterministe pour les 3 routes utilisées.
@@ -75,13 +74,13 @@ final class NotificationServiceTest extends TestCase
             ]);
 
         $this->service = new NotificationService(
-            mailer:         $this->mailer,
-            urlGenerator:   $this->urlGenerator,
-            logger:         $this->logger,
-            dateFormatter:  new DateFormatterService(), // instance réelle, service stateless
-            entityManager:  $this->entityManager,
-            expediteur:     'noreply@test.local',
-            replyTo:        'contact@test.local',
+            mailer: $this->mailer,
+            urlGenerator: $this->urlGenerator,
+            logger: $this->logger,
+            dateFormatter: new DateFormatterService(), // instance réelle, service stateless
+            entityManager: $this->entityManager,
+            expediteur: 'noreply@test.local',
+            replyTo: 'contact@test.local',
             redirectionDev: null, // pas de redirection en tests : sujet et destinataire non modifiés
         );
     }
@@ -90,7 +89,7 @@ final class NotificationServiceTest extends TestCase
     // Tests US-4.2 — Confirmation de réservation
     // ─────────────────────────────────────────────────────────────────────────
 
-    public function test_notifierAuditeurReservation_envoie_un_email_avec_bon_template(): void
+    public function test_notifier_auditeur_reservation_envoie_un_email_avec_bon_template(): void
     {
         $reservation = $this->creerReservationComplete(commentaire: 'Je veux discuter financement.');
 
@@ -122,7 +121,7 @@ final class NotificationServiceTest extends TestCase
         self::assertInstanceOf(\DateTimeInterface::class, $context['creneau_fin']);
     }
 
-    public function test_notifierPersonnelReservation_envoie_un_email_avec_bon_template(): void
+    public function test_notifier_personnel_reservation_envoie_un_email_avec_bon_template(): void
     {
         $reservation = $this->creerReservationComplete();
 
@@ -152,7 +151,7 @@ final class NotificationServiceTest extends TestCase
         self::assertInstanceOf(\DateTimeInterface::class, $context['creneau_fin']);
     }
 
-    public function test_notifierAuditeurReservation_capture_les_exceptions_sans_propager(): void
+    public function test_notifier_auditeur_reservation_capture_les_exceptions_sans_propager(): void
     {
         $reservation = $this->creerReservationComplete();
 
@@ -206,7 +205,7 @@ final class NotificationServiceTest extends TestCase
      * Le jour où categorie_auditeur sera implémentée en BDD, ce test devra
      * être modifié pour vérifier la valeur attendue (string non null).
      */
-    public function test_notifierPersonnelReservation_passe_auditeur_categorie_a_null(): void
+    public function test_notifier_personnel_reservation_passe_auditeur_categorie_a_null(): void
     {
         $reservation = $this->creerReservationComplete();
 
@@ -229,7 +228,7 @@ final class NotificationServiceTest extends TestCase
     // Tests US-4.3 — Annulation de réservation
     // ─────────────────────────────────────────────────────────────────────────
 
-    public function test_notifierAuditeurAnnulationReservation_envoie_un_email_avec_bon_template(): void
+    public function test_notifier_auditeur_annulation_reservation_envoie_un_email_avec_bon_template(): void
     {
         $reservation = $this->creerReservationAnnulee(motif: 'Empêchement de dernière minute.');
 
@@ -261,7 +260,7 @@ final class NotificationServiceTest extends TestCase
         self::assertInstanceOf(\DateTimeInterface::class, $context['creneau_fin']);
     }
 
-    public function test_notifierPersonnelAnnulationReservation_envoie_un_email_avec_bon_template(): void
+    public function test_notifier_personnel_annulation_reservation_envoie_un_email_avec_bon_template(): void
     {
         // Note : on passe volontairement un motif renseigné à la fixture pour
         // prouver qu'il N'EST PAS transmis au contexte du template Personnel
@@ -298,7 +297,7 @@ final class NotificationServiceTest extends TestCase
         self::assertArrayNotHasKey('motif_annulation', $context);
     }
 
-    public function test_notifierAuditeurAnnulationReservation_capture_les_exceptions_sans_propager(): void
+    public function test_notifier_auditeur_annulation_reservation_capture_les_exceptions_sans_propager(): void
     {
         $reservation = $this->creerReservationAnnulee();
 
@@ -349,7 +348,7 @@ final class NotificationServiceTest extends TestCase
      * Le jour où categorie_auditeur sera implémentée en BDD, ce test ET son
      * homologue US-4.2 devront être modifiés pour vérifier la valeur attendue.
      */
-    public function test_notifierPersonnelAnnulationReservation_passe_auditeur_categorie_a_null(): void
+    public function test_notifier_personnel_annulation_reservation_passe_auditeur_categorie_a_null(): void
     {
         $reservation = $this->creerReservationAnnulee();
 
@@ -382,7 +381,7 @@ final class NotificationServiceTest extends TestCase
      * Le jour où la politique d'affichage du motif change (ex: filtrage,
      * troncature, anonymisation), ce test devra être ajusté.
      */
-    public function test_notifierAuditeurAnnulationReservation_affiche_motif_si_renseigne_et_passe_null_sinon(): void
+    public function test_notifier_auditeur_annulation_reservation_affiche_motif_si_renseigne_et_passe_null_sinon(): void
     {
         $emailsCaptured = [];
         $this->mailer->expects($this->exactly(2))
@@ -417,10 +416,10 @@ final class NotificationServiceTest extends TestCase
     // Tests US-4.4 — Commentaire créneau
     // ─────────────────────────────────────────────────────────────────────────
 
-    public function test_notifierAuditeurCommentaireCreneau_envoie_un_email_avec_bon_template_et_commentaire(): void
+    public function test_notifier_auditeur_commentaire_creneau_envoie_un_email_avec_bon_template_et_commentaire(): void
     {
         $reservation = $this->creerReservationComplete();
-        $creneau     = $reservation->getCreneau();
+        $creneau = $reservation->getCreneau();
         // Le commentaire est porté par Creneau (cf. CreneauType data_class = Creneau).
         $creneau->setCommentaireAuditeur('Nouveau message du personnel');
         $commentaireAvant = 'Ancien commentaire';
@@ -459,22 +458,22 @@ final class NotificationServiceTest extends TestCase
         self::assertInstanceOf(\DateTimeInterface::class, $context['creneau_fin']);
     }
 
-    public function test_notifierAuditeurCommentaireCreneau_ne_fait_rien_si_creneau_non_reserve(): void
+    public function test_notifier_auditeur_commentaire_creneau_ne_fait_rien_si_creneau_non_reserve(): void
     {
         // Créneau standalone (pas de Reservation associée) → isReserve() = false.
         $personnel = $this->creerUtilisateur(
-            id:     1,
-            role:   RoleUtilisateur::PERSONNEL,
+            id: 1,
+            role: RoleUtilisateur::PERSONNEL,
             prenom: 'Marie',
-            nom:    'Dupont',
-            email:  'marie@test.local',
+            nom: 'Dupont',
+            email: 'marie@test.local',
         );
-        $creneau   = $this->creerCreneau(
-            id:        10,
+        $creneau = $this->creerCreneau(
+            id: 10,
             personnel: $personnel,
-            type:      $this->creerTypeRdv('Présentiel'),
-            debut:     '2026-06-15 14:00',
-            fin:       '2026-06-15 15:00',
+            type: $this->creerTypeRdv('Présentiel'),
+            debut: '2026-06-15 14:00',
+            fin: '2026-06-15 15:00',
         );
 
         // Sanity check : le créneau N'EST PAS réservé.
@@ -486,10 +485,10 @@ final class NotificationServiceTest extends TestCase
         $this->service->notifierAuditeurCommentaireCreneau($creneau, 'commentaire bidon');
     }
 
-    public function test_notifierAuditeurCommentaireCreneau_capture_les_exceptions_sans_propager(): void
+    public function test_notifier_auditeur_commentaire_creneau_capture_les_exceptions_sans_propager(): void
     {
         $reservation = $this->creerReservationComplete();
-        $creneau     = $reservation->getCreneau();
+        $creneau = $reservation->getCreneau();
         $creneau->setCommentaireAuditeur('Nouveau message');
         $commentaireAvant = 'Ancien';
 
@@ -533,10 +532,10 @@ final class NotificationServiceTest extends TestCase
     // Tests US-4.5 — Suppression créneau
     // ─────────────────────────────────────────────────────────────────────────
 
-    public function test_notifierAuditeurSuppressionCreneau_envoie_un_email_avec_bon_template(): void
+    public function test_notifier_auditeur_suppression_creneau_envoie_un_email_avec_bon_template(): void
     {
         $reservation = $this->creerReservationComplete();
-        $creneau     = $reservation->getCreneau();
+        $creneau = $reservation->getCreneau();
         // Reproduit annulerReservationLiee() côté controller (set statut ANNULEE).
         $reservation->annuler('Créneau supprimé par le Personnel');
 
@@ -573,11 +572,11 @@ final class NotificationServiceTest extends TestCase
         self::assertInstanceOf(\DateTimeInterface::class, $context['creneau_fin']);
     }
 
-    public function test_notifierAuditeurSuppressionCreneau_ne_fait_rien_si_reservation_non_annulee(): void
+    public function test_notifier_auditeur_suppression_creneau_ne_fait_rien_si_reservation_non_annulee(): void
     {
         // Réservation créée mais PAS annulée → garde-fou refuse (statut === ACTIVE).
         $reservation = $this->creerReservationComplete();
-        $creneau     = $reservation->getCreneau();
+        $creneau = $reservation->getCreneau();
 
         // Sanity check : la réservation est ACTIVE.
         self::assertSame(StatutReservation::ACTIVE, $reservation->getStatut());
@@ -588,10 +587,10 @@ final class NotificationServiceTest extends TestCase
         $this->service->notifierAuditeurSuppressionCreneau($creneau, $reservation);
     }
 
-    public function test_notifierAuditeurSuppressionCreneau_capture_les_exceptions_sans_propager(): void
+    public function test_notifier_auditeur_suppression_creneau_capture_les_exceptions_sans_propager(): void
     {
         $reservation = $this->creerReservationComplete();
-        $creneau     = $reservation->getCreneau();
+        $creneau = $reservation->getCreneau();
         $reservation->annuler('Créneau supprimé par le Personnel');
 
         $this->mailer->method('send')
@@ -632,10 +631,10 @@ final class NotificationServiceTest extends TestCase
     // Tests US-4.6 — Rappel J-1
     // ─────────────────────────────────────────────────────────────────────────
 
-    public function test_notifierAuditeurRappel_envoie_un_email_avec_bon_template(): void
+    public function test_notifier_auditeur_rappel_envoie_un_email_avec_bon_template(): void
     {
         $reservation = $this->creerReservationComplete();
-        $creneau     = $reservation->getCreneau();
+        $creneau = $reservation->getCreneau();
 
         $emailCapture = null;
         $this->mailer->expects($this->once())
@@ -670,7 +669,7 @@ final class NotificationServiceTest extends TestCase
         self::assertInstanceOf(\DateTimeInterface::class, $context['creneau_fin']);
     }
 
-    public function test_notifierAuditeurRappel_ne_fait_rien_si_reservation_non_active(): void
+    public function test_notifier_auditeur_rappel_ne_fait_rien_si_reservation_non_active(): void
     {
         // Réservation annulée → garde-fou refuse (statut !== ACTIVE).
         $reservation = $this->creerReservationComplete();
@@ -685,7 +684,7 @@ final class NotificationServiceTest extends TestCase
         $this->service->notifierAuditeurRappel($reservation);
     }
 
-    public function test_notifierAuditeurRappel_capture_les_exceptions_sans_propager(): void
+    public function test_notifier_auditeur_rappel_capture_les_exceptions_sans_propager(): void
     {
         $reservation = $this->creerReservationComplete();
 
@@ -731,10 +730,10 @@ final class NotificationServiceTest extends TestCase
     // comportement antérieur (email + in-app). Base légale art. 6.1.b.
     // ─────────────────────────────────────────────────────────────────────────
 
-    public function test_notifierAuditeurCommentaireCreneau_pref_email_off_persiste_inapp_sans_email(): void
+    public function test_notifier_auditeur_commentaire_creneau_pref_email_off_persiste_inapp_sans_email(): void
     {
         $reservation = $this->creerReservationComplete();
-        $creneau     = $reservation->getCreneau();
+        $creneau = $reservation->getCreneau();
         $reservation->getUtilisateur()->setEmailModificationCommentaire(false);
 
         // Aucun email, mais la notification in-app est persistée (B2).
@@ -747,10 +746,10 @@ final class NotificationServiceTest extends TestCase
         $this->service->notifierAuditeurCommentaireCreneau($creneau, 'Ancien commentaire');
     }
 
-    public function test_notifierAuditeurCommentaireCreneau_pref_email_on_envoie_email_et_persiste(): void
+    public function test_notifier_auditeur_commentaire_creneau_pref_email_on_envoie_email_et_persiste(): void
     {
         $reservation = $this->creerReservationComplete();
-        $creneau     = $reservation->getCreneau();
+        $creneau = $reservation->getCreneau();
         $reservation->getUtilisateur()->setEmailModificationCommentaire(true);
 
         $this->mailer->expects(self::once())->method('send');
@@ -762,7 +761,7 @@ final class NotificationServiceTest extends TestCase
         $this->service->notifierAuditeurCommentaireCreneau($creneau, 'Ancien commentaire');
     }
 
-    public function test_notifierAuditeurRappel_pref_email_off_persiste_inapp_sans_email(): void
+    public function test_notifier_auditeur_rappel_pref_email_off_persiste_inapp_sans_email(): void
     {
         $reservation = $this->creerReservationComplete();
         $reservation->getUtilisateur()->setEmailRappelJ1(false);
@@ -776,7 +775,7 @@ final class NotificationServiceTest extends TestCase
         $this->service->notifierAuditeurRappel($reservation);
     }
 
-    public function test_notifierAuditeurRappel_pref_email_on_envoie_email_et_persiste(): void
+    public function test_notifier_auditeur_rappel_pref_email_on_envoie_email_et_persiste(): void
     {
         $reservation = $this->creerReservationComplete();
         $reservation->getUtilisateur()->setEmailRappelJ1(true);
@@ -801,36 +800,36 @@ final class NotificationServiceTest extends TestCase
 
     private function creerReservationComplete(?string $commentaire = null): Reservation
     {
-        $service   = $this->creerService('Service Commercial');
+        $service = $this->creerService('Service Commercial');
         $personnel = $this->creerUtilisateur(
-            id:      1,
-            role:    RoleUtilisateur::PERSONNEL,
-            prenom:  'Marie',
-            nom:     'Dupont',
-            email:   'marie@test.local',
+            id: 1,
+            role: RoleUtilisateur::PERSONNEL,
+            prenom: 'Marie',
+            nom: 'Dupont',
+            email: 'marie@test.local',
             service: $service,
         );
         $auditeur = $this->creerUtilisateur(
-            id:     2,
-            role:   RoleUtilisateur::AUDITEUR,
+            id: 2,
+            role: RoleUtilisateur::AUDITEUR,
             prenom: 'Xavier',
-            nom:    'Dijoux',
-            email:  'xavier@test.local',
+            nom: 'Dijoux',
+            email: 'xavier@test.local',
         );
 
         $typeRdv = $this->creerTypeRdv('Présentiel');
         $creneau = $this->creerCreneau(
-            id:        10,
+            id: 10,
             personnel: $personnel,
-            type:      $typeRdv,
-            debut:     '2026-06-15 14:00',
-            fin:       '2026-06-15 15:00',
+            type: $typeRdv,
+            debut: '2026-06-15 14:00',
+            fin: '2026-06-15 15:00',
         );
 
         return $this->creerReservation(
-            id:          42,
-            creneau:     $creneau,
-            auditeur:    $auditeur,
+            id: 42,
+            creneau: $creneau,
+            auditeur: $auditeur,
             commentaire: $commentaire,
         );
     }
@@ -896,8 +895,8 @@ final class NotificationServiceTest extends TestCase
         $c = new Creneau();
         $c->setUtilisateur($personnel);
         $c->setTypeRdv($type);
-        $c->setDateDebut(new DateTimeImmutable($debut));
-        $c->setDateFin(new DateTimeImmutable($fin));
+        $c->setDateDebut(new \DateTimeImmutable($debut));
+        $c->setDateFin(new \DateTimeImmutable($fin));
 
         $p = new \ReflectionProperty(Creneau::class, 'id');
         $p->setValue($c, $id);

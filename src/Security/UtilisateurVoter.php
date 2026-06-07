@@ -63,10 +63,10 @@ final class UtilisateurVoter extends Voter
             return false;
         }
 
-        /** @var Utilisateur $subject */
+        /* @var Utilisateur $subject */
         return match ($attribute) {
-            self::VIEW       => $this->peutVoir($subject, $utilisateur),
-            self::EDIT       => $this->peutModifier($subject, $utilisateur),
+            self::VIEW        => $this->peutVoir($subject, $utilisateur),
+            self::EDIT        => $this->peutModifier($subject, $utilisateur),
             self::DELETE      => $utilisateur->getRole() === RoleUtilisateur::SUPER_ADMIN,
             self::DEACTIVATE  => $this->peutDesactiver($subject, $utilisateur),
             self::CHANGE_ROLE => $this->peutChangerRole($subject, $utilisateur),

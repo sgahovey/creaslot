@@ -25,7 +25,7 @@ final class DateFormatterServiceTest extends TestCase
         $this->service = new DateFormatterService();
     }
 
-    public function test_pourSujetEmail_convertit_correctement_UTC_en_heure_reunion(): void
+    public function test_pour_sujet_email_convertit_correctement_ut_c_en_heure_reunion(): void
     {
         // 26/05/2026 10:00 UTC = 26/05/2026 14:00 Réunion (UTC+4)
         $date = new \DateTimeImmutable('2026-05-26 10:00:00', new \DateTimeZone('UTC'));
@@ -35,7 +35,7 @@ final class DateFormatterServiceTest extends TestCase
         self::assertSame('26/05/2026 à 14h00', $result);
     }
 
-    public function test_pourSujetEmail_inchange_si_date_deja_en_heure_reunion(): void
+    public function test_pour_sujet_email_inchange_si_date_deja_en_heure_reunion(): void
     {
         // 19/05/2026 09:30 Réunion → format direct sans conversion
         $date = new \DateTimeImmutable('2026-05-19 09:30:00', new \DateTimeZone('Indian/Reunion'));
@@ -45,7 +45,7 @@ final class DateFormatterServiceTest extends TestCase
         self::assertSame('19/05/2026 à 09h30', $result);
     }
 
-    public function test_pourSujetEmail_formate_correctement_minutes_a_zero(): void
+    public function test_pour_sujet_email_formate_correctement_minutes_a_zero(): void
     {
         $date = new \DateTimeImmutable('2026-12-31 23:00:00', new \DateTimeZone('Indian/Reunion'));
 
@@ -54,7 +54,7 @@ final class DateFormatterServiceTest extends TestCase
         self::assertSame('31/12/2026 à 23h00', $result);
     }
 
-    public function test_pourSujetEmail_compatible_avec_DateTime_mutable(): void
+    public function test_pour_sujet_email_compatible_avec_date_time_mutable(): void
     {
         // Test défensif : le service accepte \DateTimeInterface (donc compatible
         // avec \DateTime mutable ET \DateTimeImmutable). Dans les fixtures et

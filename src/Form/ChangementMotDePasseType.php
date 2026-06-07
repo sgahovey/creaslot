@@ -37,15 +37,15 @@ class ChangementMotDePasseType extends AbstractType
                 ],
             ])
             ->add('nouveauMotDePasse', RepeatedType::class, [
-                'type'            => PasswordType::class,
-                'first_options'   => [
+                'type'          => PasswordType::class,
+                'first_options' => [
                     'label' => 'Nouveau mot de passe',
                     'attr'  => ['autocomplete' => 'new-password', 'minlength' => '12'],
                     'help'  => ContraintesMotDePasse::AIDE,
                     // Source unique de la politique de mot de passe (DT-18).
                     'constraints' => ContraintesMotDePasse::regles(),
                 ],
-                'second_options'  => [
+                'second_options' => [
                     'label' => 'Confirmer le nouveau mot de passe',
                     'attr'  => ['autocomplete' => 'new-password', 'minlength' => '12'],
                 ],

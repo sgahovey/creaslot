@@ -21,8 +21,8 @@ use Symfony\Component\HttpFoundation\Response;
 final class StatistiquesControllerTest extends WebTestCase
 {
     private const EMAIL_SUPER_ADMIN = 'creaslotdemo+admin@gmail.com';
-    private const EMAIL_PERSONNEL   = 'creaslotdemo+marie@gmail.com';
-    private const EMAIL_AUDITEUR    = 'creaslotdemo+xavier@gmail.com';
+    private const EMAIL_PERSONNEL = 'creaslotdemo+marie@gmail.com';
+    private const EMAIL_AUDITEUR = 'creaslotdemo+xavier@gmail.com';
 
     private KernelBrowser $client;
     private UtilisateurRepository $utilisateurRepository;

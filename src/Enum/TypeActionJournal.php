@@ -9,12 +9,12 @@ namespace App\Enum;
  */
 enum TypeActionJournal: string
 {
-    case COMPTE_CREATION        = 'COMPTE_CREATION';
-    case COMPTE_MODIFICATION    = 'COMPTE_MODIFICATION';
+    case COMPTE_CREATION = 'COMPTE_CREATION';
+    case COMPTE_MODIFICATION = 'COMPTE_MODIFICATION';
     case COMPTE_CHANGEMENT_ROLE = 'COMPTE_CHANGEMENT_ROLE';
-    case COMPTE_ACTIVATION      = 'COMPTE_ACTIVATION';
-    case COMPTE_DESACTIVATION   = 'COMPTE_DESACTIVATION';
-    case COMPTE_EXPORT          = 'COMPTE_EXPORT';
+    case COMPTE_ACTIVATION = 'COMPTE_ACTIVATION';
+    case COMPTE_DESACTIVATION = 'COMPTE_DESACTIVATION';
+    case COMPTE_EXPORT = 'COMPTE_EXPORT';
 
     /**
      * Libellé français de l'action, pour l'affichage (badges, filtre).

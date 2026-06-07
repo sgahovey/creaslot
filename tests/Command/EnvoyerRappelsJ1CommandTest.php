@@ -43,15 +43,15 @@ final class EnvoyerRappelsJ1CommandTest extends TestCase
     protected function setUp(): void
     {
         $this->reservationRepository = $this->createMock(ReservationRepository::class);
-        $this->notificationService   = $this->createMock(NotificationService::class);
-        $this->entityManager         = $this->createMock(EntityManagerInterface::class);
-        $this->logger                = $this->createMock(LoggerInterface::class);
+        $this->notificationService = $this->createMock(NotificationService::class);
+        $this->entityManager = $this->createMock(EntityManagerInterface::class);
+        $this->logger = $this->createMock(LoggerInterface::class);
 
         $command = new EnvoyerRappelsJ1Command(
             reservationRepository: $this->reservationRepository,
-            notificationService:   $this->notificationService,
-            entityManager:         $this->entityManager,
-            logger:                $this->logger,
+            notificationService: $this->notificationService,
+            entityManager: $this->entityManager,
+            logger: $this->logger,
         );
 
         $application = new Application();

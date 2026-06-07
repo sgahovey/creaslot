@@ -24,7 +24,8 @@ final class NotificationExtension extends AbstractExtension
     public function __construct(
         private readonly Security $security,
         private readonly NotificationRepository $notificationRepository,
-    ) {}
+    ) {
+    }
 
     public function getFunctions(): array
     {

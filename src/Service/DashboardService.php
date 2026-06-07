@@ -27,16 +27,17 @@ final readonly class DashboardService
     public function __construct(
         private ReservationRepository $reservationRepository,
         private CreneauRepository $creneauRepository,
-    ) {}
+    ) {
+    }
 
     public function calculerKpis(): TableauBordKpis
     {
-        $maintenant   = new \DateTimeImmutable();
+        $maintenant = new \DateTimeImmutable();
         $debutFenetre = $maintenant->modify('-' . self::JOURS_FENETRE_OCCUPATION . ' days');
 
         $reservationsActives = $this->reservationRepository->countActivesAVenir($maintenant);
 
-        $creneauxOffre    = $this->creneauRepository->countActifsDansFenetre($debutFenetre, $maintenant);
+        $creneauxOffre = $this->creneauRepository->countActifsDansFenetre($debutFenetre, $maintenant);
         $creneauxReserves = $this->creneauRepository->countReservesActifsDansFenetre($debutFenetre, $maintenant);
 
         return new TableauBordKpis(
@@ -61,7 +62,7 @@ final readonly class DashboardService
      */
     public function getOccupationParJour(): array
     {
-        $maintenant  = new \DateTimeImmutable();
+        $maintenant = new \DateTimeImmutable();
         $premierJour = $maintenant->modify('-' . (self::JOURS_FENETRE_OCCUPATION - 1) . ' days');
 
         $statistiques = $this->creneauRepository->statistiquesOccupationParJour(
@@ -70,8 +71,8 @@ final readonly class DashboardService
         );
 
         $serie = [];
-        for ($decalage = 0; $decalage < self::JOURS_FENETRE_OCCUPATION; $decalage++) {
-            $jour      = $premierJour->modify('+' . $decalage . ' days')->format('Y-m-d');
+        for ($decalage = 0; $decalage < self::JOURS_FENETRE_OCCUPATION; ++$decalage) {
+            $jour = $premierJour->modify('+' . $decalage . ' days')->format('Y-m-d');
             $compteurs = $statistiques[$jour] ?? ['offre' => 0, 'reserves' => 0];
 
             $serie[] = new OccupationJournaliere($jour, $compteurs['offre'], $compteurs['reserves']);

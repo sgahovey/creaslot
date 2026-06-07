@@ -14,7 +14,8 @@ final class LogoutListener
 {
     public function __construct(
         private readonly LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     public function __invoke(LogoutEvent $event): void
     {

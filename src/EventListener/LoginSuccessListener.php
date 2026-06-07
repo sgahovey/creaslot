@@ -16,7 +16,8 @@ final class LoginSuccessListener
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     public function __invoke(LoginSuccessEvent $event): void
     {

@@ -42,7 +42,8 @@ final class ResetPasswordController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly NotificationService $notificationService,
         private readonly LoggerInterface $logger,
-    ) {}
+    ) {
+    }
 
     /**
      * Affiche et traite le formulaire de demande de réinitialisation.

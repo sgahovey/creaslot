@@ -27,8 +27,8 @@ use PHPUnit\Framework\TestCase;
  */
 final class ExportDonneesPersonnellesServiceTest extends TestCase
 {
-    private const HASH_SECRET      = 'HASH_SECRET_NE_DOIT_PAS_FUITER';
-    private const EMAIL_PERSONNEL  = 'personnel-secret@cnam.re';
+    private const HASH_SECRET = 'HASH_SECRET_NE_DOIT_PAS_FUITER';
+    private const EMAIL_PERSONNEL = 'personnel-secret@cnam.re';
 
     public function test_export_auditeur_minimise_et_n_expose_ni_hash_ni_email_personnel(): void
     {

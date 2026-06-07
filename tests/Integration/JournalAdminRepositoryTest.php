@@ -29,18 +29,18 @@ final class JournalAdminRepositoryTest extends KernelTestCase
         self::bootKernel(['environment' => 'test']);
         $container = static::getContainer();
 
-        $this->entityManager     = $container->get(EntityManagerInterface::class);
+        $this->entityManager = $container->get(EntityManagerInterface::class);
         $this->journalRepository = $container->get(JournalAdminRepository::class);
-        $this->maintenant        = new \DateTimeImmutable();
+        $this->maintenant = new \DateTimeImmutable();
 
         $this->entityManager->beginTransaction();
         // Jeu contrôlé : on part d'une table vide (rollback en tearDown).
         $this->entityManager->createQuery('DELETE FROM App\Entity\JournalAdmin j')->execute();
 
         // E1 (la plus ancienne) … E3 (la plus récente).
-        $this->creerEntree(TypeActionJournal::COMPTE_CREATION,     'e1', $this->maintenant->modify('-2 days'));
+        $this->creerEntree(TypeActionJournal::COMPTE_CREATION, 'e1', $this->maintenant->modify('-2 days'));
         $this->creerEntree(TypeActionJournal::COMPTE_MODIFICATION, 'e2', $this->maintenant->modify('-1 day'));
-        $this->creerEntree(TypeActionJournal::COMPTE_CREATION,     'e3', $this->maintenant);
+        $this->creerEntree(TypeActionJournal::COMPTE_CREATION, 'e3', $this->maintenant);
         $this->entityManager->flush();
     }
 
@@ -54,7 +54,7 @@ final class JournalAdminRepositoryTest extends KernelTestCase
         parent::tearDown();
     }
 
-    public function test_findPourAdmin_trie_du_plus_recent_au_plus_ancien(): void
+    public function test_find_pour_admin_trie_du_plus_recent_au_plus_ancien(): void
     {
         $paginator = $this->journalRepository->findPourAdmin(1);
 
@@ -62,13 +62,13 @@ final class JournalAdminRepositoryTest extends KernelTestCase
         self::assertSame(['e3', 'e2', 'e1'], $this->marqueurs($paginator));
     }
 
-    public function test_findPourAdmin_pagine(): void
+    public function test_find_pour_admin_pagine(): void
     {
         self::assertSame(['e3', 'e2'], $this->marqueurs($this->journalRepository->findPourAdmin(1, 2)));
         self::assertSame(['e1'], $this->marqueurs($this->journalRepository->findPourAdmin(2, 2)));
     }
 
-    public function test_findPourAdmin_filtre_par_type(): void
+    public function test_find_pour_admin_filtre_par_type(): void
     {
         $paginator = $this->journalRepository->findPourAdmin(1, 25, TypeActionJournal::COMPTE_CREATION);
 
@@ -78,6 +78,7 @@ final class JournalAdminRepositoryTest extends KernelTestCase
 
     /**
      * @param iterable<JournalAdmin> $paginator
+     *
      * @return list<string>
      */
     private function marqueurs(iterable $paginator): array

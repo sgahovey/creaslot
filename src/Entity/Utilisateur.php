@@ -87,7 +87,7 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function __construct()
     {
-        $this->creneaux     = new ArrayCollection();
+        $this->creneaux = new ArrayCollection();
         $this->reservations = new ArrayCollection();
         $this->dateCreation = new \DateTimeImmutable();
     }
@@ -196,7 +196,7 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
      * où l'identité complète est requise (templates emails US-4.2,
      * agenda Personnel, futur dashboard Super-admin).
      *
-     * @return string Le prénom et le nom concaténés par un espace simple.
+     * @return string le prénom et le nom concaténés par un espace simple
      */
     public function getNomComplet(): string
     {

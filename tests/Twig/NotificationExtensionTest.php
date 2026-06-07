@@ -36,7 +36,7 @@ final class NotificationExtensionTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->security               = $this->createStub(Security::class);
+        $this->security = $this->createStub(Security::class);
         $this->notificationRepository = $this->createMock(NotificationRepository::class);
 
         $this->extension = new NotificationExtension(
@@ -45,7 +45,7 @@ final class NotificationExtensionTest extends TestCase
         );
     }
 
-    public function test_compterNonLues_retourne_zero_si_aucun_utilisateur_connecte(): void
+    public function test_compter_non_lues_retourne_zero_si_aucun_utilisateur_connecte(): void
     {
         $this->security->method('getUser')->willReturn(null);
 
@@ -54,7 +54,7 @@ final class NotificationExtensionTest extends TestCase
         self::assertSame(0, $this->extension->compterNonLues());
     }
 
-    public function test_compterNonLues_retourne_zero_si_utilisateur_n_est_pas_un_Utilisateur(): void
+    public function test_compter_non_lues_retourne_zero_si_utilisateur_n_est_pas_un_utilisateur(): void
     {
         // Un UserInterface qui n'est PAS App\Entity\Utilisateur.
         $this->security->method('getUser')->willReturn($this->createStub(UserInterface::class));
@@ -64,7 +64,7 @@ final class NotificationExtensionTest extends TestCase
         self::assertSame(0, $this->extension->compterNonLues());
     }
 
-    public function test_compterNonLues_retourne_le_count_du_repository_si_Utilisateur(): void
+    public function test_compter_non_lues_retourne_le_count_du_repository_si_utilisateur(): void
     {
         $utilisateur = $this->createStub(Utilisateur::class);
         $this->security->method('getUser')->willReturn($utilisateur);

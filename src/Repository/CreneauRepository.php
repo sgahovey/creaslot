@@ -139,7 +139,7 @@ class CreneauRepository extends ServiceEntityRepository
             $qb->andWhere('c.id != :excludeId')->setParameter('excludeId', $excludeId);
         }
 
-        /** @var list<Creneau> */
+        /* @var list<Creneau> */
         return $qb->getQuery()->getResult();
     }
 
@@ -217,7 +217,7 @@ class CreneauRepository extends ServiceEntityRepository
                     FROM App\Entity\Reservation r_active
                     WHERE r_active.creneau = c
                         AND r_active.statut = :statutActif
-                )'
+                )',
             )
             ->setParameter('now', new \DateTimeImmutable())
             ->setParameter('statutActif', StatutReservation::ACTIVE)
@@ -313,7 +313,7 @@ class CreneauRepository extends ServiceEntityRepository
                     FROM App\Entity\Reservation r_active
                     WHERE r_active.creneau = c
                         AND r_active.statut = :statutActif
-                )'
+                )',
             )
             ->setParameter('debut', $debut)
             ->setParameter('fin', $fin)
@@ -327,9 +327,9 @@ class CreneauRepository extends ServiceEntityRepository
      * pour le graphique du tableau de bord Super-admin (US-5.2).
      *
      * @return array<string, array{offre: int, reserves: int}> indexé par jour
-     *         'YYYY-MM-DD' (ex. ['2026-05-30' => ['offre' => 4, 'reserves' => 2]]).
-     *         Seuls les jours ayant au moins un créneau actif sont présents ; les
-     *         jours vides sont comblés à 0 par le DashboardService (pas ici).
+     *                                                         'YYYY-MM-DD' (ex. ['2026-05-30' => ['offre' => 4, 'reserves' => 2]]).
+     *                                                         Seuls les jours ayant au moins un créneau actif sont présents ; les
+     *                                                         jours vides sont comblés à 0 par le DashboardService (pas ici).
      *
      * Deux requêtes plutôt qu'une : le comptage conditionnel en une passe
      * (`COUNT(DISTINCT CASE WHEN ... THEN c.id ELSE NULL END)`) est rejeté par la
@@ -378,6 +378,7 @@ class CreneauRepository extends ServiceEntityRepository
      *
      * @param list<array{jour: string, offre: int|string}>    $offreParJour
      * @param list<array{jour: string, reserves: int|string}> $reservesParJour
+     *
      * @return array<string, array{offre: int, reserves: int}>
      */
     private function fusionnerOccupationParJour(array $offreParJour, array $reservesParJour): array
@@ -421,7 +422,7 @@ class CreneauRepository extends ServiceEntityRepository
      * d'un créneau ayant plusieurs réservations (ex. ACTIVE + ANNULEE) [[DT-1]].
      *
      * @return array<int, array{serviceId: int|null, nom: string|null, offre: int, reserves: int}>
-     *         indexé par (serviceId ?? 0).
+     *                                                                                             indexé par (serviceId ?? 0)
      */
     public function statistiquesParService(\DateTimeImmutable $debut, \DateTimeImmutable $fin): array
     {
@@ -465,7 +466,7 @@ class CreneauRepository extends ServiceEntityRepository
      * sur `TypeRdv::estActif` (regroupement sur les données présentes).
      *
      * @return array<int, array{typeId: int, libelle: string, couleurHex: string, offre: int, reserves: int}>
-     *         indexé par typeId.
+     *                                                                                                        indexé par typeId
      */
     public function statistiquesParType(\DateTimeImmutable $debut, \DateTimeImmutable $fin): array
     {
@@ -509,8 +510,9 @@ class CreneauRepository extends ServiceEntityRepository
      * toujours actif, chaque clé de $reservesParService figure aussi dans
      * $offreParService : on indexe sur l'offre et on greffe les réservés (0 sinon).
      *
-     * @param list<array{serviceId: int|string|null, nom: string|null, offre: int|string}>  $offreParService
-     * @param list<array{serviceId: int|string|null, reserves: int|string}>                  $reservesParService
+     * @param list<array{serviceId: int|string|null, nom: string|null, offre: int|string}> $offreParService
+     * @param list<array{serviceId: int|string|null, reserves: int|string}>                $reservesParService
+     *
      * @return array<int, array{serviceId: int|null, nom: string|null, offre: int, reserves: int}>
      */
     private function fusionnerStatistiquesParService(array $offreParService, array $reservesParService): array
@@ -523,7 +525,7 @@ class CreneauRepository extends ServiceEntityRepository
         $statistiques = [];
         foreach ($offreParService as $ligne) {
             $serviceId = $ligne['serviceId'] !== null ? (int) $ligne['serviceId'] : null;
-            $cle       = $serviceId ?? 0;
+            $cle = $serviceId ?? 0;
 
             $statistiques[$cle] = [
                 'serviceId' => $serviceId,
@@ -541,7 +543,8 @@ class CreneauRepository extends ServiceEntityRepository
      * invariant que par service : tout type réservé figure dans l'offre.
      *
      * @param list<array{typeId: int|string, libelle: string, couleurHex: string, offre: int|string}> $offreParType
-     * @param list<array{typeId: int|string, reserves: int|string}>                                    $reservesParType
+     * @param list<array{typeId: int|string, reserves: int|string}>                                   $reservesParType
+     *
      * @return array<int, array{typeId: int, libelle: string, couleurHex: string, offre: int, reserves: int}>
      */
     private function fusionnerStatistiquesParType(array $offreParType, array $reservesParType): array

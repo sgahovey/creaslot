@@ -28,8 +28,8 @@ final class ReservationVoterTest extends TestCase
 
     public function test_auditeur_peut_voir_sa_propre_reservation(): void
     {
-        $auditeur    = $this->creerUtilisateur(5, RoleUtilisateur::AUDITEUR);
-        $personnel   = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
+        $auditeur = $this->creerUtilisateur(5, RoleUtilisateur::AUDITEUR);
+        $personnel = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
         $reservation = $this->creerReservation(20, $personnel, $auditeur);
 
         $this->assertSame(
@@ -40,10 +40,10 @@ final class ReservationVoterTest extends TestCase
 
     public function test_auditeur_ne_peut_pas_voir_reservation_dun_autre(): void
     {
-        $auditeur      = $this->creerUtilisateur(5, RoleUtilisateur::AUDITEUR);
+        $auditeur = $this->creerUtilisateur(5, RoleUtilisateur::AUDITEUR);
         $autreAuditeur = $this->creerUtilisateur(6, RoleUtilisateur::AUDITEUR);
-        $personnel     = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
-        $reservation   = $this->creerReservation(20, $personnel, $autreAuditeur);
+        $personnel = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
+        $reservation = $this->creerReservation(20, $personnel, $autreAuditeur);
 
         $this->assertSame(
             VoterInterface::ACCESS_DENIED,
@@ -53,8 +53,8 @@ final class ReservationVoterTest extends TestCase
 
     public function test_personnel_peut_voir_reservation_sur_son_creneau(): void
     {
-        $personnel   = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
-        $auditeur    = $this->creerUtilisateur(5, RoleUtilisateur::AUDITEUR);
+        $personnel = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
+        $auditeur = $this->creerUtilisateur(5, RoleUtilisateur::AUDITEUR);
         $reservation = $this->creerReservation(20, $personnel, $auditeur);
 
         $this->assertSame(
@@ -65,10 +65,10 @@ final class ReservationVoterTest extends TestCase
 
     public function test_personnel_ne_peut_pas_voir_reservation_sur_creneau_dun_autre(): void
     {
-        $personnel      = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
+        $personnel = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
         $autrePersonnel = $this->creerUtilisateur(2, RoleUtilisateur::PERSONNEL);
-        $auditeur       = $this->creerUtilisateur(5, RoleUtilisateur::AUDITEUR);
-        $reservation    = $this->creerReservation(20, $autrePersonnel, $auditeur);
+        $auditeur = $this->creerUtilisateur(5, RoleUtilisateur::AUDITEUR);
+        $reservation = $this->creerReservation(20, $autrePersonnel, $auditeur);
 
         $this->assertSame(
             VoterInterface::ACCESS_DENIED,
@@ -78,9 +78,9 @@ final class ReservationVoterTest extends TestCase
 
     public function test_super_admin_peut_voir_toutes_les_reservations(): void
     {
-        $superAdmin  = $this->creerUtilisateur(99, RoleUtilisateur::SUPER_ADMIN);
-        $personnel   = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
-        $auditeur    = $this->creerUtilisateur(5, RoleUtilisateur::AUDITEUR);
+        $superAdmin = $this->creerUtilisateur(99, RoleUtilisateur::SUPER_ADMIN);
+        $personnel = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
+        $auditeur = $this->creerUtilisateur(5, RoleUtilisateur::AUDITEUR);
         $reservation = $this->creerReservation(20, $personnel, $auditeur);
 
         $this->assertSame(
@@ -95,8 +95,8 @@ final class ReservationVoterTest extends TestCase
 
     public function test_auditeur_peut_annuler_sa_propre_reservation(): void
     {
-        $auditeur    = $this->creerUtilisateur(5, RoleUtilisateur::AUDITEUR);
-        $personnel   = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
+        $auditeur = $this->creerUtilisateur(5, RoleUtilisateur::AUDITEUR);
+        $personnel = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
         $reservation = $this->creerReservation(20, $personnel, $auditeur);
 
         $this->assertSame(
@@ -107,10 +107,10 @@ final class ReservationVoterTest extends TestCase
 
     public function test_auditeur_ne_peut_pas_annuler_reservation_dun_autre(): void
     {
-        $auditeur      = $this->creerUtilisateur(5, RoleUtilisateur::AUDITEUR);
+        $auditeur = $this->creerUtilisateur(5, RoleUtilisateur::AUDITEUR);
         $autreAuditeur = $this->creerUtilisateur(6, RoleUtilisateur::AUDITEUR);
-        $personnel     = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
-        $reservation   = $this->creerReservation(20, $personnel, $autreAuditeur);
+        $personnel = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
+        $reservation = $this->creerReservation(20, $personnel, $autreAuditeur);
 
         $this->assertSame(
             VoterInterface::ACCESS_DENIED,
@@ -120,8 +120,8 @@ final class ReservationVoterTest extends TestCase
 
     public function test_personnel_ne_peut_pas_annuler_une_reservation(): void
     {
-        $personnel   = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
-        $auditeur    = $this->creerUtilisateur(5, RoleUtilisateur::AUDITEUR);
+        $personnel = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
+        $auditeur = $this->creerUtilisateur(5, RoleUtilisateur::AUDITEUR);
         $reservation = $this->creerReservation(20, $personnel, $auditeur);
 
         $this->assertSame(
@@ -132,9 +132,9 @@ final class ReservationVoterTest extends TestCase
 
     public function test_super_admin_peut_annuler_toutes_les_reservations(): void
     {
-        $superAdmin  = $this->creerUtilisateur(99, RoleUtilisateur::SUPER_ADMIN);
-        $personnel   = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
-        $auditeur    = $this->creerUtilisateur(5, RoleUtilisateur::AUDITEUR);
+        $superAdmin = $this->creerUtilisateur(99, RoleUtilisateur::SUPER_ADMIN);
+        $personnel = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
+        $auditeur = $this->creerUtilisateur(5, RoleUtilisateur::AUDITEUR);
         $reservation = $this->creerReservation(20, $personnel, $auditeur);
 
         $this->assertSame(

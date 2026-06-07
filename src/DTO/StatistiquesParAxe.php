@@ -19,5 +19,6 @@ final readonly class StatistiquesParAxe
         public array $lignes,
         public int $totalOffre,
         public int $totalReserves,
-    ) {}
+    ) {
+    }
 }

@@ -21,7 +21,8 @@ class SecurityController extends AbstractController
     public function __construct(
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly EntityManagerInterface $entityManager,
-    ) {}
+    ) {
+    }
 
     #[Route('/connexion', name: 'app_login', methods: ['GET', 'POST'])]
     public function login(AuthenticationUtils $authenticationUtils): Response
@@ -47,7 +48,7 @@ class SecurityController extends AbstractController
     public function inscription(Request $request): Response
     {
         $utilisateur = new Utilisateur();
-        $formulaire  = $this->createForm(InscriptionType::class, $utilisateur);
+        $formulaire = $this->createForm(InscriptionType::class, $utilisateur);
         $formulaire->handleRequest($request);
 
         if ($formulaire->isSubmitted() && $formulaire->isValid()) {
@@ -69,7 +70,7 @@ class SecurityController extends AbstractController
             ->setRole(RoleUtilisateur::AUDITEUR)
             ->setEstActif(true)
             ->setMotDePasseHash(
-                $this->passwordHasher->hashPassword($utilisateur, $motDePasseEnClair)
+                $this->passwordHasher->hashPassword($utilisateur, $motDePasseEnClair),
             );
 
         try {

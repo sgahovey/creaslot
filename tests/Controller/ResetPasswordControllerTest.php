@@ -39,7 +39,7 @@ final class ResetPasswordControllerTest extends WebTestCase
     /** Suffixe d'email des comptes créés par les tests (nettoyés en tearDown). */
     private const string MARQUEUR_TEST = '@reset-test.local';
 
-    private const string MOT_DE_PASSE_ACTUEL  = 'MotDePasseActuel!2024';
+    private const string MOT_DE_PASSE_ACTUEL = 'MotDePasseActuel!2024';
     private const string NOUVEAU_MOT_DE_PASSE = 'NouveauPass!2024xyz';
 
     private KernelBrowser $client;
@@ -130,7 +130,7 @@ final class ResetPasswordControllerTest extends WebTestCase
 
     public function test_jeton_reutilise_apres_succes_est_refuse(): void
     {
-        $jeton   = $this->genererJeton($this->utilisateurEnBase($this->emailTest));
+        $jeton = $this->genererJeton($this->utilisateurEnBase($this->emailTest));
 
         // 1er usage : réinitialisation réussie (consomme le jeton).
         $this->client->request('GET', '/mot-de-passe-oublie/reinitialiser/' . $jeton);
@@ -224,7 +224,7 @@ final class ResetPasswordControllerTest extends WebTestCase
     private function soumettreNouveauMotDePasse(\Symfony\Component\DomCrawler\Crawler $crawler, string $motDePasse): void
     {
         $form = $crawler->selectButton('Réinitialiser mon mot de passe')->form();
-        $form['change_password_form[plainPassword][first]']  = $motDePasse;
+        $form['change_password_form[plainPassword][first]'] = $motDePasse;
         $form['change_password_form[plainPassword][second]'] = $motDePasse;
         $this->client->submit($form);
     }
@@ -232,7 +232,7 @@ final class ResetPasswordControllerTest extends WebTestCase
     private function creerCompte(string $email, string $motDePasseEnClair, bool $estActif): void
     {
         $entityManager = static::getContainer()->get(EntityManagerInterface::class);
-        $hasher        = static::getContainer()->get(UserPasswordHasherInterface::class);
+        $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
 
         $utilisateur = (new Utilisateur())
             ->setEmail($email)

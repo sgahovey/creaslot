@@ -33,28 +33,29 @@ final class OccupationController extends AbstractController
         private readonly OccupationCalendarSerializer $serializer,
         private readonly TypeRdvRepository $typeRdvRepository,
         private readonly ServiceRepository $serviceRepository,
-    ) {}
+    ) {
+    }
 
     #[Route('/admin/occupation', name: 'app_admin_occupation', methods: ['GET'])]
     public function page(Request $request): Response
     {
         $serviceId = $this->idFiltre($request, 'service');
-        $typeId    = $this->idFiltre($request, 'type');
+        $typeId = $this->idFiltre($request, 'type');
 
         [$debutSemaine, $finSemaine] = $this->semaineDeReference();
 
-        $creneaux   = $this->creneauRepository->findDansPlageGlobale($debutSemaine, $finSemaine, $serviceId, $typeId);
+        $creneaux = $this->creneauRepository->findDansPlageGlobale($debutSemaine, $finSemaine, $serviceId, $typeId);
         $idsOccupes = $this->creneauRepository->findIdsCreneauxOccupesDansPlage($debutSemaine, $finSemaine, $serviceId, $typeId);
 
         return $this->render('admin/occupation/index.html.twig', [
-            'creneaux'      => $creneaux,
-            'idsOccupes'    => $idsOccupes,
-            'typesRdv'      => $this->typeRdvRepository->findAll(),
-            'services'      => $this->serviceRepository->findBy([], ['nom' => 'ASC']),
-            'serviceActif'  => $serviceId,
-            'typeActif'     => $typeId,
-            'debutSemaine'  => $debutSemaine,
-            'finSemaine'    => $finSemaine,
+            'creneaux'     => $creneaux,
+            'idsOccupes'   => $idsOccupes,
+            'typesRdv'     => $this->typeRdvRepository->findAll(),
+            'services'     => $this->serviceRepository->findBy([], ['nom' => 'ASC']),
+            'serviceActif' => $serviceId,
+            'typeActif'    => $typeId,
+            'debutSemaine' => $debutSemaine,
+            'finSemaine'   => $finSemaine,
         ]);
     }
 
@@ -62,23 +63,23 @@ final class OccupationController extends AbstractController
     public function evenements(Request $request): JsonResponse
     {
         $debutRaw = $request->query->getString('start');
-        $finRaw   = $request->query->getString('end');
+        $finRaw = $request->query->getString('end');
 
         if ($debutRaw === '' || $finRaw === '') {
             return $this->repondreSansCache([]);
         }
 
         $debutPlage = $this->analyserDateIso($debutRaw);
-        $finPlage   = $this->analyserDateIso($finRaw);
+        $finPlage = $this->analyserDateIso($finRaw);
 
         if ($debutPlage === null || $finPlage === null) {
             return $this->repondreSansCache([], Response::HTTP_BAD_REQUEST);
         }
 
         $serviceId = $this->idFiltre($request, 'service');
-        $typeId    = $this->idFiltre($request, 'type');
+        $typeId = $this->idFiltre($request, 'type');
 
-        $creneaux   = $this->creneauRepository->findDansPlageGlobale($debutPlage, $finPlage, $serviceId, $typeId);
+        $creneaux = $this->creneauRepository->findDansPlageGlobale($debutPlage, $finPlage, $serviceId, $typeId);
         $idsOccupes = $this->creneauRepository->findIdsCreneauxOccupesDansPlage($debutPlage, $finPlage, $serviceId, $typeId);
 
         return $this->repondreSansCache($this->serializer->toCalendarEvents($creneaux, $idsOccupes));
@@ -138,7 +139,7 @@ final class OccupationController extends AbstractController
         $maintenant = new \DateTimeImmutable('now', new \DateTimeZone(self::FUSEAU_REUNION));
 
         $debut = $maintenant->modify('monday this week')->setTime(0, 0);
-        $fin   = $maintenant->modify('friday this week')->setTime(23, 59, 59);
+        $fin = $maintenant->modify('friday this week')->setTime(23, 59, 59);
 
         return [$debut, $fin];
     }

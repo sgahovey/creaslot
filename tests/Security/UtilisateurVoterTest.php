@@ -37,7 +37,7 @@ final class UtilisateurVoterTest extends TestCase
     public function test_utilisateur_ne_peut_pas_voir_profil_dautrui(): void
     {
         $utilisateur = $this->creerUtilisateur(1, RoleUtilisateur::AUDITEUR);
-        $cible       = $this->creerUtilisateur(2, RoleUtilisateur::AUDITEUR);
+        $cible = $this->creerUtilisateur(2, RoleUtilisateur::AUDITEUR);
 
         $this->assertSame(
             VoterInterface::ACCESS_DENIED,
@@ -48,7 +48,7 @@ final class UtilisateurVoterTest extends TestCase
     public function test_super_admin_peut_voir_tous_les_profils(): void
     {
         $superAdmin = $this->creerUtilisateur(99, RoleUtilisateur::SUPER_ADMIN);
-        $auditeur   = $this->creerUtilisateur(1, RoleUtilisateur::AUDITEUR);
+        $auditeur = $this->creerUtilisateur(1, RoleUtilisateur::AUDITEUR);
 
         $this->assertSame(
             VoterInterface::ACCESS_GRANTED,
@@ -73,7 +73,7 @@ final class UtilisateurVoterTest extends TestCase
     public function test_utilisateur_ne_peut_pas_modifier_profil_dautrui(): void
     {
         $utilisateur = $this->creerUtilisateur(1, RoleUtilisateur::AUDITEUR);
-        $cible       = $this->creerUtilisateur(2, RoleUtilisateur::AUDITEUR);
+        $cible = $this->creerUtilisateur(2, RoleUtilisateur::AUDITEUR);
 
         $this->assertSame(
             VoterInterface::ACCESS_DENIED,
@@ -88,7 +88,7 @@ final class UtilisateurVoterTest extends TestCase
     public function test_super_admin_peut_supprimer_un_utilisateur(): void
     {
         $superAdmin = $this->creerUtilisateur(99, RoleUtilisateur::SUPER_ADMIN);
-        $auditeur   = $this->creerUtilisateur(1, RoleUtilisateur::AUDITEUR);
+        $auditeur = $this->creerUtilisateur(1, RoleUtilisateur::AUDITEUR);
 
         $this->assertSame(
             VoterInterface::ACCESS_GRANTED,
@@ -99,7 +99,7 @@ final class UtilisateurVoterTest extends TestCase
     public function test_non_super_admin_ne_peut_pas_supprimer(): void
     {
         $personnel = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
-        $auditeur  = $this->creerUtilisateur(2, RoleUtilisateur::AUDITEUR);
+        $auditeur = $this->creerUtilisateur(2, RoleUtilisateur::AUDITEUR);
 
         $this->assertSame(
             VoterInterface::ACCESS_DENIED,
@@ -114,7 +114,7 @@ final class UtilisateurVoterTest extends TestCase
     public function test_super_admin_peut_desactiver_un_autre_utilisateur(): void
     {
         $superAdmin = $this->creerUtilisateur(99, RoleUtilisateur::SUPER_ADMIN);
-        $auditeur   = $this->creerUtilisateur(1, RoleUtilisateur::AUDITEUR);
+        $auditeur = $this->creerUtilisateur(1, RoleUtilisateur::AUDITEUR);
 
         $this->assertSame(
             VoterInterface::ACCESS_GRANTED,
@@ -135,7 +135,7 @@ final class UtilisateurVoterTest extends TestCase
     public function test_non_super_admin_ne_peut_pas_desactiver(): void
     {
         $personnel = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
-        $auditeur  = $this->creerUtilisateur(2, RoleUtilisateur::AUDITEUR);
+        $auditeur = $this->creerUtilisateur(2, RoleUtilisateur::AUDITEUR);
 
         $this->assertSame(
             VoterInterface::ACCESS_DENIED,
@@ -150,7 +150,7 @@ final class UtilisateurVoterTest extends TestCase
     public function test_super_admin_peut_changer_le_role_dun_autre(): void
     {
         $superAdmin = $this->creerUtilisateur(99, RoleUtilisateur::SUPER_ADMIN);
-        $auditeur   = $this->creerUtilisateur(1, RoleUtilisateur::AUDITEUR);
+        $auditeur = $this->creerUtilisateur(1, RoleUtilisateur::AUDITEUR);
 
         $this->assertSame(
             VoterInterface::ACCESS_GRANTED,
@@ -171,7 +171,7 @@ final class UtilisateurVoterTest extends TestCase
     public function test_non_super_admin_ne_peut_pas_changer_de_role(): void
     {
         $personnel = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
-        $auditeur  = $this->creerUtilisateur(2, RoleUtilisateur::AUDITEUR);
+        $auditeur = $this->creerUtilisateur(2, RoleUtilisateur::AUDITEUR);
 
         $this->assertSame(
             VoterInterface::ACCESS_DENIED,
@@ -186,7 +186,7 @@ final class UtilisateurVoterTest extends TestCase
     public function test_super_admin_peut_activer_un_compte(): void
     {
         $superAdmin = $this->creerUtilisateur(99, RoleUtilisateur::SUPER_ADMIN);
-        $cible      = $this->creerUtilisateur(1, RoleUtilisateur::AUDITEUR);
+        $cible = $this->creerUtilisateur(1, RoleUtilisateur::AUDITEUR);
 
         $this->assertSame(
             VoterInterface::ACCESS_GRANTED,
@@ -197,7 +197,7 @@ final class UtilisateurVoterTest extends TestCase
     public function test_personnel_ne_peut_pas_activer(): void
     {
         $personnel = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
-        $cible     = $this->creerUtilisateur(2, RoleUtilisateur::AUDITEUR);
+        $cible = $this->creerUtilisateur(2, RoleUtilisateur::AUDITEUR);
 
         $this->assertSame(
             VoterInterface::ACCESS_DENIED,
@@ -208,7 +208,7 @@ final class UtilisateurVoterTest extends TestCase
     public function test_auditeur_ne_peut_pas_activer(): void
     {
         $auditeur = $this->creerUtilisateur(1, RoleUtilisateur::AUDITEUR);
-        $cible    = $this->creerUtilisateur(2, RoleUtilisateur::AUDITEUR);
+        $cible = $this->creerUtilisateur(2, RoleUtilisateur::AUDITEUR);
 
         $this->assertSame(
             VoterInterface::ACCESS_DENIED,

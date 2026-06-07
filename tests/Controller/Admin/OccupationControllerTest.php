@@ -28,8 +28,8 @@ use Symfony\Component\HttpFoundation\Response;
 final class OccupationControllerTest extends WebTestCase
 {
     private const EMAIL_SUPER_ADMIN = 'creaslotdemo+admin@gmail.com';
-    private const EMAIL_PERSONNEL   = 'creaslotdemo+marie@gmail.com';
-    private const EMAIL_AUDITEUR    = 'creaslotdemo+xavier@gmail.com';
+    private const EMAIL_PERSONNEL = 'creaslotdemo+marie@gmail.com';
+    private const EMAIL_AUDITEUR = 'creaslotdemo+xavier@gmail.com';
 
     private KernelBrowser $client;
     private UtilisateurRepository $utilisateurRepository;
@@ -216,20 +216,20 @@ final class OccupationControllerTest extends WebTestCase
     private function creerJeuSemaineCourante(): array
     {
         $entityManager = static::getContainer()->get(EntityManagerInterface::class);
-        $fuseau        = new \DateTimeZone('Indian/Reunion');
+        $fuseau = new \DateTimeZone('Indian/Reunion');
 
-        $lundi   = (new \DateTimeImmutable('monday this week', $fuseau))->setTime(0, 0);
-        $debutC  = $lundi->setTime(10, 0);
+        $lundi = (new \DateTimeImmutable('monday this week', $fuseau))->setTime(0, 0);
+        $debutC = $lundi->setTime(10, 0);
 
-        $type      = $this->creerTypeRdv($entityManager);
-        $serviceA  = $this->creerService($entityManager);
-        $serviceB  = $this->creerService($entityManager);
-        $suffixe   = strtoupper(substr(uniqid(), -6));
-        $prenomA   = 'ZzOccA' . $suffixe;
-        $prenomB   = 'ZzOccB' . $suffixe;
+        $type = $this->creerTypeRdv($entityManager);
+        $serviceA = $this->creerService($entityManager);
+        $serviceB = $this->creerService($entityManager);
+        $suffixe = strtoupper(substr(uniqid(), -6));
+        $prenomA = 'ZzOccA' . $suffixe;
+        $prenomB = 'ZzOccB' . $suffixe;
         $personnelA = $this->creerUtilisateur($entityManager, RoleUtilisateur::PERSONNEL, $prenomA, $serviceA);
         $personnelB = $this->creerUtilisateur($entityManager, RoleUtilisateur::PERSONNEL, $prenomB, $serviceB);
-        $auditeur   = $this->creerUtilisateur($entityManager, RoleUtilisateur::AUDITEUR, 'ZzOccAud' . $suffixe, null);
+        $auditeur = $this->creerUtilisateur($entityManager, RoleUtilisateur::AUDITEUR, 'ZzOccAud' . $suffixe, null);
 
         $creneauA = $this->creerCreneau($entityManager, $personnelA, $type, $debutC);
         $this->creerCreneau($entityManager, $personnelB, $type, $debutC);
@@ -237,9 +237,9 @@ final class OccupationControllerTest extends WebTestCase
 
         $entityManager->flush();
 
-        $this->idsTypeRdv[]     = (int) $type->getId();
-        $this->idsService[]     = (int) $serviceA->getId();
-        $this->idsService[]     = (int) $serviceB->getId();
+        $this->idsTypeRdv[] = (int) $type->getId();
+        $this->idsService[] = (int) $serviceA->getId();
+        $this->idsService[] = (int) $serviceB->getId();
 
         return [
             'serviceAId'    => (int) $serviceA->getId(),
@@ -344,7 +344,7 @@ final class OccupationControllerTest extends WebTestCase
         }
 
         $entityManager->createQuery(
-            sprintf('DELETE FROM %s e WHERE e.id IN (:ids)', $classe)
+            sprintf('DELETE FROM %s e WHERE e.id IN (:ids)', $classe),
         )->setParameter('ids', $ids)->execute();
     }
 

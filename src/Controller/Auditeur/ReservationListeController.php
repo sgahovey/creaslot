@@ -19,7 +19,8 @@ class ReservationListeController extends AbstractController
 
     public function __construct(
         private readonly ReservationRepository $reservationRepository,
-    ) {}
+    ) {
+    }
 
     #[Route('/mes-reservations', name: 'app_mes_reservations', methods: ['GET'])]
     public function liste(Request $request): Response
@@ -35,7 +36,7 @@ class ReservationListeController extends AbstractController
         $auditeur = $this->getUser();
 
         $paginator = $this->reservationRepository->findByAuditeurWithFilters($auditeur, $filtre, $page);
-        $total     = count($paginator);
+        $total = count($paginator);
 
         return $this->render('auditeur/reservation/liste.html.twig', [
             'reservations' => $paginator,

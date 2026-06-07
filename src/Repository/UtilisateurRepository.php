@@ -56,7 +56,7 @@ class UtilisateurRepository extends ServiceEntityRepository
             $qb->andWhere('s.id = :serviceId')->setParameter('serviceId', $serviceId);
         }
 
-        /** @var Utilisateur[] */
+        /* @var Utilisateur[] */
         return $qb->getQuery()->getResult();
     }
 

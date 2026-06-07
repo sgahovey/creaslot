@@ -30,7 +30,7 @@ final class UtilisateurRepositoryAdminTest extends KernelTestCase
         self::bootKernel(['environment' => 'test']);
         $container = static::getContainer();
 
-        $this->entityManager         = $container->get(EntityManagerInterface::class);
+        $this->entityManager = $container->get(EntityManagerInterface::class);
         $this->utilisateurRepository = $container->get(UtilisateurRepository::class);
 
         $this->entityManager->beginTransaction();
@@ -46,7 +46,7 @@ final class UtilisateurRepositoryAdminTest extends KernelTestCase
         parent::tearDown();
     }
 
-    public function test_findAllPourAdmin_inclut_les_comptes_inactifs_et_trie_par_nom(): void
+    public function test_find_all_pour_admin_inclut_les_comptes_inactifs_et_trie_par_nom(): void
     {
         $totalAvant = count($this->utilisateurRepository->findAllPourAdmin(1));
 
@@ -66,7 +66,7 @@ final class UtilisateurRepositoryAdminTest extends KernelTestCase
         self::assertFalse($page[0]->isEstActif());
     }
 
-    public function test_countSuperAdmins_compte_les_comptes_super_admin(): void
+    public function test_count_super_admins_compte_les_comptes_super_admin(): void
     {
         $baseline = $this->utilisateurRepository->countSuperAdmins();
 
@@ -76,7 +76,7 @@ final class UtilisateurRepositoryAdminTest extends KernelTestCase
         self::assertSame($baseline + 1, $this->utilisateurRepository->countSuperAdmins());
     }
 
-    public function test_countSuperAdminsActifs_ignore_les_super_admins_inactifs(): void
+    public function test_count_super_admins_actifs_ignore_les_super_admins_inactifs(): void
     {
         $baseline = $this->utilisateurRepository->countSuperAdminsActifs();
 
@@ -93,9 +93,9 @@ final class UtilisateurRepositoryAdminTest extends KernelTestCase
 
     public function test_recherche_par_nom_prenom_ou_email(): void
     {
-        $parNom    = $this->creerUtilisateur('ZzRechercheNom', 'Alice', RoleUtilisateur::AUDITEUR, true);
+        $parNom = $this->creerUtilisateur('ZzRechercheNom', 'Alice', RoleUtilisateur::AUDITEUR, true);
         $parPrenom = $this->creerUtilisateur('Martin', 'ZzRecherchePrenom', RoleUtilisateur::AUDITEUR, true);
-        $parEmail  = $this->creerUtilisateurAvecEmail('Durand', 'Bob', 'zzrecherche-email@test.local');
+        $parEmail = $this->creerUtilisateurAvecEmail('Durand', 'Bob', 'zzrecherche-email@test.local');
         $this->entityManager->flush();
 
         self::assertSame([$parNom->getEmail()], $this->emails($this->rechercher('ZzRechercheNom')));
@@ -122,15 +122,16 @@ final class UtilisateurRepositoryAdminTest extends KernelTestCase
     }
 
     /**
-     * @return \Doctrine\ORM\Tools\Pagination\Paginator<Utilisateur>
+     * @return Paginator<Utilisateur>
      */
-    private function rechercher(string $terme): \Doctrine\ORM\Tools\Pagination\Paginator
+    private function rechercher(string $terme): Paginator
     {
         return $this->utilisateurRepository->findAllPourAdmin(1, 50, $terme);
     }
 
     /**
      * @param iterable<Utilisateur> $paginator
+     *
      * @return list<string>
      */
     private function emails(iterable $paginator): array

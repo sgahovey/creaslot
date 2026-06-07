@@ -17,15 +17,16 @@ class CollegueController extends AbstractController
 {
     public function __construct(
         private readonly CollegueService $collegueService,
-    ) {}
+    ) {
+    }
 
     #[Route('/collegues', name: 'app_collegues_liste', methods: ['GET'])]
     public function liste(Request $request): Response
     {
         /** @var Utilisateur $utilisateur */
-        $utilisateur       = $this->getUser();
-        $monServiceId      = $utilisateur->getService()?->getId();
-        $disponibles      = $request->query->getString('disponibles', '0') === '1';
+        $utilisateur = $this->getUser();
+        $monServiceId = $utilisateur->getService()?->getId();
+        $disponibles = $request->query->getString('disponibles', '0') === '1';
         $filtreMonService = $request->query->getString('mon-service', '0') === '1';
 
         // Le seul filtre par service autorisé est le propre service de l'utilisateur.

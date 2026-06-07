@@ -149,8 +149,8 @@ class Reservation
      */
     public function annuler(?string $motif): void
     {
-        $this->statut          = StatutReservation::ANNULEE;
-        $this->dateAnnulation  = new \DateTimeImmutable();
+        $this->statut = StatutReservation::ANNULEE;
+        $this->dateAnnulation = new \DateTimeImmutable();
         $this->motifAnnulation = $motif;
     }
 

@@ -25,10 +25,11 @@ class ReservationController extends AbstractController
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly ReservationRepository  $reservationRepository,
-        private readonly LoggerInterface        $logger,
-        private readonly NotificationService    $notificationService,
-    ) {}
+        private readonly ReservationRepository $reservationRepository,
+        private readonly LoggerInterface $logger,
+        private readonly NotificationService $notificationService,
+    ) {
+    }
 
     #[Route('/creneau/{id}/reserver', name: 'app_reservation_nouvelle', methods: ['GET', 'POST'])]
     public function nouveau(Creneau $creneau, Request $request): Response
@@ -65,21 +66,25 @@ class ReservationController extends AbstractController
     {
         if (!$creneau->isEstActif() || $creneau->isPasse()) {
             $this->addFlash('error', 'Ce créneau n\'est plus disponible.');
+
             return $this->redirectToRoute('app_creneaux_disponibles');
         }
 
         if ($creneau->isReserve()) {
             $this->addFlash('error', 'Ce créneau a déjà été réservé.');
+
             return $this->redirectToRoute('app_creneaux_disponibles');
         }
 
         if (!$creneau->getUtilisateur()->isEstActif()) {
             $this->addFlash('error', 'Ce créneau n\'est plus disponible.');
+
             return $this->redirectToRoute('app_creneaux_disponibles');
         }
 
         if ($creneau->getUtilisateur() === $utilisateur) {
             $this->addFlash('error', 'Vous ne pouvez pas réserver votre propre créneau.');
+
             return $this->redirectToRoute('app_creneaux_disponibles');
         }
 
@@ -109,6 +114,7 @@ class ReservationController extends AbstractController
             if (!$this->creneauEstEncoreDisponible($creneau)) {
                 $this->entityManager->rollback();
                 $this->addFlash('error', 'Ce créneau vient d\'être réservé par quelqu\'un d\'autre.');
+
                 return $this->redirectToRoute('app_creneaux_disponibles');
             }
 
@@ -135,6 +141,7 @@ class ReservationController extends AbstractController
         $this->notificationService->notifierPersonnelReservation($reservation);
 
         $this->addFlash('success', 'Votre réservation a été confirmée. Un email de confirmation vous est envoyé.');
+
         return $this->redirectToRoute('app_mes_reservations');
     }
 
