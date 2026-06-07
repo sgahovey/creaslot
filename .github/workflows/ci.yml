@@ -1,0 +1,160 @@
+name: CI
+
+# Intégration continue (US-7.3). Trois portes qualité indépendantes :
+#   - cs-fixer : style PER/@Symfony (US-7.1) ;
+#   - phpstan  : analyse statique niveau 8 (US-7.2) ;
+#   - phpunit  : suite de tests sur MySQL 8 (migrations + fixtures).
+# cs-fixer et phpstan ne touchent pas la base → pas de service MySQL, exécution
+# rapide en parallèle de phpunit (le seul à provisionner une base).
+
+on:
+  push:
+    branches: [develop, preprod, main]
+  pull_request:
+    branches: [develop, preprod, main]
+
+# Annule un run en cours si un nouveau commit arrive sur la même réf (économie CI).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Style de code — PHP-CS-Fixer (aucune base)
+  # ---------------------------------------------------------------------------
+  cs-fixer:
+    name: Style (PHP-CS-Fixer)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurer PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, intl, zip, ctype, iconv
+          tools: composer:v2
+          coverage: none
+
+      - name: Répertoire de cache Composer
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache des dépendances Composer
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Installer les dépendances
+        run: composer install --no-scripts --no-interaction --prefer-dist --no-progress
+
+      - name: Vérifier le style (dry-run)
+        run: vendor/bin/php-cs-fixer fix --dry-run --diff --verbose
+
+  # ---------------------------------------------------------------------------
+  # Analyse statique — PHPStan niveau 8 (aucune base vivante)
+  # ---------------------------------------------------------------------------
+  phpstan:
+    name: Analyse statique (PHPStan)
+    runs-on: ubuntu-latest
+    env:
+      # DATABASE_URL bidon : le kernel doit booter pour fournir le conteneur compilé
+      # et l'EntityManager (objectManagerLoader). Aucune connexion n'est ouverte —
+      # PHPStan ne lit que les métadonnées de mapping.
+      DATABASE_URL: "mysql://u:p@127.0.0.1:3306/app?serverVersion=8.0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurer PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, intl, zip, ctype, iconv
+          tools: composer:v2
+          coverage: none
+
+      - name: Répertoire de cache Composer
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache des dépendances Composer
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Installer les dépendances
+        run: composer install --no-scripts --no-interaction --prefer-dist --no-progress
+
+      - name: Compiler le conteneur (env dev)
+        # Génère var/cache/dev/App_KernelDevDebugContainer.xml, requis par
+        # containerXmlPath dans phpstan.dist.neon.
+        run: php bin/console cache:warmup
+
+      - name: Analyser (niveau 8, via la config)
+        run: vendor/bin/phpstan analyse --no-progress
+
+  # ---------------------------------------------------------------------------
+  # Tests — PHPUnit sur MySQL 8 (migrations + fixtures)
+  # ---------------------------------------------------------------------------
+  phpunit:
+    name: Tests (PHPUnit)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      # Connexion root (création de la base) ; l'env test ajoute le suffixe _test
+      # (dbname_suffix dans config/packages/doctrine.yaml) → base réelle creaslot_test.
+      DATABASE_URL: "mysql://root:root@127.0.0.1:3306/creaslot?serverVersion=8.0"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurer PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, intl, zip, ctype, iconv
+          tools: composer:v2
+          coverage: none
+
+      - name: Répertoire de cache Composer
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache des dépendances Composer
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - name: Installer les dépendances
+        run: composer install --no-scripts --no-interaction --prefer-dist --no-progress
+
+      - name: Créer la base de test
+        run: php bin/console doctrine:database:create --env=test --if-not-exists --no-interaction
+
+      - name: Appliquer les migrations
+        run: php bin/console doctrine:migrations:migrate --env=test --no-interaction
+
+      - name: Charger les fixtures
+        # 8 WebTests s'appuient sur les comptes de fixtures (creaslotdemo+…).
+        run: php bin/console doctrine:fixtures:load --env=test --no-interaction
+
+      - name: Lancer la suite
+        # failOnDeprecation/Notice/Warning="true" (phpunit.dist.xml) : strict, voulu.
+        # Mailer en transport Doctrine (async) → emails mis en file, pas de worker.
+        run: php bin/phpunit
