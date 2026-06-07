@@ -130,6 +130,9 @@ final class MonProfilController extends AbstractController
     /**
      * Rendu unique de la page (les deux sections partagent le même écran), pour
      * éviter de dupliquer l'appel render dans chaque action.
+     *
+     * @param FormInterface<Utilisateur>          $informations
+     * @param FormInterface<ChangementMotDePasse> $motDePasse
      */
     private function afficherPage(FormInterface $informations, FormInterface $motDePasse): Response
     {

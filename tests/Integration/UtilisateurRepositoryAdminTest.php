@@ -57,7 +57,7 @@ final class UtilisateurRepositoryAdminTest extends KernelTestCase
         $paginator = $this->utilisateurRepository->findAllPourAdmin(1);
 
         // Le compteur global a augmenté d'exactement 1 (compte inactif inclus).
-        self::assertSame($totalAvant + 1, count($paginator));
+        self::assertCount($totalAvant + 1, $paginator);
 
         // Trié par nom : l'inséré 'AAAA-…' arrive en première position de la page 1.
         $page = iterator_to_array($paginator);
@@ -118,7 +118,7 @@ final class UtilisateurRepositoryAdminTest extends KernelTestCase
 
     public function test_recherche_sans_correspondance_renvoie_vide(): void
     {
-        self::assertSame(0, count($this->rechercher('zzz-introuvable-' . uniqid())));
+        self::assertCount(0, $this->rechercher('zzz-introuvable-' . uniqid()));
     }
 
     /**
@@ -136,7 +136,7 @@ final class UtilisateurRepositoryAdminTest extends KernelTestCase
      */
     private function emails(iterable $paginator): array
     {
-        return array_map(static fn (Utilisateur $u): string => $u->getEmail(), iterator_to_array($paginator));
+        return array_values(array_map(static fn (Utilisateur $u): string => $u->getEmail(), iterator_to_array($paginator)));
     }
 
     private function creerUtilisateur(string $nom, string $prenom, RoleUtilisateur $role, bool $estActif): Utilisateur

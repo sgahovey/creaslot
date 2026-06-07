@@ -107,7 +107,7 @@ final class NotificationServiceTest extends TestCase
             'emails/reservation_confirmation_auditeur.html.twig',
             $emailCapture->getHtmlTemplate(),
         );
-        self::assertStringContainsString('Rendez-vous confirmé', $emailCapture->getSubject());
+        self::assertStringContainsString('Rendez-vous confirmé', $this->sujet($emailCapture));
         self::assertSame('xavier@test.local', $emailCapture->getTo()[0]->getAddress());
 
         $context = $emailCapture->getContext();
@@ -139,7 +139,7 @@ final class NotificationServiceTest extends TestCase
             'emails/reservation_confirmation_personnel.html.twig',
             $emailCapture->getHtmlTemplate(),
         );
-        self::assertStringContainsString('Nouveau rendez-vous', $emailCapture->getSubject());
+        self::assertStringContainsString('Nouveau rendez-vous', $this->sujet($emailCapture));
         self::assertSame('marie@test.local', $emailCapture->getTo()[0]->getAddress());
 
         $context = $emailCapture->getContext();
@@ -246,7 +246,7 @@ final class NotificationServiceTest extends TestCase
             'emails/reservation_annulation_auditeur.html.twig',
             $emailCapture->getHtmlTemplate(),
         );
-        self::assertStringContainsString('Votre rendez-vous a été annulé', $emailCapture->getSubject());
+        self::assertStringContainsString('Votre rendez-vous a été annulé', $this->sujet($emailCapture));
         self::assertSame('xavier@test.local', $emailCapture->getTo()[0]->getAddress());
 
         $context = $emailCapture->getContext();
@@ -281,7 +281,7 @@ final class NotificationServiceTest extends TestCase
             'emails/reservation_annulation_personnel.html.twig',
             $emailCapture->getHtmlTemplate(),
         );
-        self::assertStringContainsString('Annulation par Xavier Dijoux', $emailCapture->getSubject());
+        self::assertStringContainsString('Annulation par Xavier Dijoux', $this->sujet($emailCapture));
         self::assertSame('marie@test.local', $emailCapture->getTo()[0]->getAddress());
 
         $context = $emailCapture->getContext();
@@ -441,7 +441,7 @@ final class NotificationServiceTest extends TestCase
         self::assertSame('xavier@test.local', $to[0]->getAddress());
 
         // Subject + template.
-        self::assertStringContainsString('Mise à jour de votre rendez-vous', $emailCapture->getSubject());
+        self::assertStringContainsString('Mise à jour de votre rendez-vous', $this->sujet($emailCapture));
         self::assertSame(
             'emails/reservation_modification_auditeur.html.twig',
             $emailCapture->getHtmlTemplate(),
@@ -556,7 +556,7 @@ final class NotificationServiceTest extends TestCase
         self::assertSame('xavier@test.local', $to[0]->getAddress());
 
         // Subject + template.
-        self::assertStringContainsString('Votre créneau a été supprimé par le Personnel', $emailCapture->getSubject());
+        self::assertStringContainsString('Votre créneau a été supprimé par le Personnel', $this->sujet($emailCapture));
         self::assertSame(
             'emails/creneau_suppression_auditeur.html.twig',
             $emailCapture->getHtmlTemplate(),
@@ -653,7 +653,7 @@ final class NotificationServiceTest extends TestCase
         self::assertSame('xavier@test.local', $to[0]->getAddress());
 
         // Subject + template.
-        self::assertStringContainsString('Rappel : votre rendez-vous le', $emailCapture->getSubject());
+        self::assertStringContainsString('Rappel : votre rendez-vous le', $this->sujet($emailCapture));
         self::assertSame(
             'emails/reservation_rappel_auditeur.html.twig',
             $emailCapture->getHtmlTemplate(),
@@ -873,6 +873,15 @@ final class NotificationServiceTest extends TestCase
         $s->setEstActif(true);
 
         return $s;
+    }
+
+    /** Sujet de l'email, en garantissant qu'il est bien renseigné (getSubject() est nullable). */
+    private function sujet(TemplatedEmail $email): string
+    {
+        $sujet = $email->getSubject();
+        self::assertNotNull($sujet);
+
+        return $sujet;
     }
 
     private function creerTypeRdv(string $libelle): TypeRdv

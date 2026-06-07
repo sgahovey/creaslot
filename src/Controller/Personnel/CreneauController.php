@@ -275,6 +275,9 @@ class CreneauController extends AbstractController
             ->setMotifAnnulation('Créneau supprimé par le Personnel');
     }
 
+    /**
+     * @param FormInterface<Creneau> $formulaire
+     */
     private function mettreAJourHoraires(FormInterface $formulaire, Creneau $creneau): void
     {
         $dateDebut = $this->construireDateDebut(
@@ -291,6 +294,9 @@ class CreneauController extends AbstractController
             ));
     }
 
+    /**
+     * @param FormInterface<Creneau> $formulaire
+     */
     private function preremplirChampsNonMappes(FormInterface $formulaire, Creneau $creneau): void
     {
         $dateDebut = $creneau->getDateDebut();
@@ -311,10 +317,16 @@ class CreneauController extends AbstractController
         \DateTimeImmutable $date,
         \DateTimeImmutable $heure,
     ): \DateTimeImmutable {
-        return \DateTimeImmutable::createFromFormat(
+        $dateDebut = \DateTimeImmutable::createFromFormat(
             'Y-m-d H:i',
             $date->format('Y-m-d') . ' ' . $heure->format('H:i'),
         );
+
+        if (false === $dateDebut) {
+            throw new \RuntimeException('Construction de la date de début du créneau impossible.');
+        }
+
+        return $dateDebut;
     }
 
     private function calculerDateFin(
@@ -323,10 +335,16 @@ class CreneauController extends AbstractController
         ?\DateTimeImmutable $heureFinPersonnalisee,
     ): \DateTimeImmutable {
         if ($duree === 'custom' && $heureFinPersonnalisee !== null) {
-            return \DateTimeImmutable::createFromFormat(
+            $dateFin = \DateTimeImmutable::createFromFormat(
                 'Y-m-d H:i',
                 $dateDebut->format('Y-m-d') . ' ' . $heureFinPersonnalisee->format('H:i'),
             );
+
+            if (false === $dateFin) {
+                throw new \RuntimeException('Calcul de la date de fin du créneau impossible.');
+            }
+
+            return $dateFin;
         }
 
         $minutes = is_numeric($duree) ? (int) $duree : 60;

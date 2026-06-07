@@ -26,6 +26,8 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  *
  * Pas de SubmitType ici : le bouton est rendu dans le template (convention projet,
  * cf. InscriptionType / CreneauType).
+ *
+ * @extends AbstractType<Utilisateur>
  */
 final class PreferencesNotificationType extends AbstractType
 {

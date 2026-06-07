@@ -60,6 +60,9 @@ class SecurityController extends AbstractController
         ]);
     }
 
+    /**
+     * @param \Symfony\Component\Form\FormInterface<Utilisateur> $formulaire
+     */
     private function inscrireAuditeur(
         \Symfony\Component\Form\FormInterface $formulaire,
         Utilisateur $utilisateur,

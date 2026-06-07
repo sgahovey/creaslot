@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Admin;
 
+use App\Entity\JournalAdmin;
 use App\Entity\Utilisateur;
 use App\Enum\TypeActionJournal;
 use App\Repository\JournalAdminRepository;
@@ -159,7 +160,7 @@ final class ExportControllerTest extends WebTestCase
             ->getSingleScalarResult();
     }
 
-    private function dernierExportPour(int $cibleId): ?object
+    private function dernierExportPour(int $cibleId): ?JournalAdmin
     {
         $entrees = static::getContainer()->get(JournalAdminRepository::class)
             ->findPourAdmin(1, 25, TypeActionJournal::COMPTE_EXPORT);

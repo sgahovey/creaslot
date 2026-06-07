@@ -27,6 +27,8 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  * (true à la création, false en édition) conditionne la présence du champ
  * mot de passe. Distinct de `InscriptionType` (auto-inscription publique) :
  * pas de CGU, et un champ rôle géré par l'admin.
+ *
+ * @extends AbstractType<Utilisateur>
  */
 class UtilisateurAdminType extends AbstractType
 {
@@ -84,6 +86,9 @@ class UtilisateurAdminType extends AbstractType
         }
     }
 
+    /**
+     * @param FormBuilderInterface<Utilisateur|null> $builder
+     */
     private function ajouterChampMotDePasse(FormBuilderInterface $builder): void
     {
         $builder->add('motDePasse', RepeatedType::class, [

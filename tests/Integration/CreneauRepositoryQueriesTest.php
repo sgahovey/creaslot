@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
-use App\Entity\Creneau;
 use App\Entity\Service;
 use App\Entity\Utilisateur;
 use App\Enum\RoleUtilisateur;
 use App\Repository\CreneauRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\Pagination\Paginator;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 /**
@@ -67,64 +65,70 @@ final class CreneauRepositoryQueriesTest extends KernelTestCase
 
     public function test_find_by_personnel_with_filters_executes_sans_erreur_dql(): void
     {
+        // Smoke test DQL : la query doit s'exécuter (le bug DT-2 levait un HTTP 500 ici).
         // CRITIQUE : query exacte qui a déclenché le HTTP 500 en E2E DT-2.
         foreach (['tous', 'a_venir', 'passes', 'annules'] as $filtre) {
             $paginator = $this->creneauRepository->findByPersonnelWithFilters($this->personnel, $filtre, 1);
 
-            self::assertInstanceOf(Paginator::class, $paginator);
-            // count() déclenche la query COUNT, iterator_to_array() la query data :
-            // les deux portent les JOIN → le bug DQL serait levé ici si présent.
-            self::assertIsInt(count($paginator));
-            self::assertIsArray(iterator_to_array($paginator));
+            // assertCount sur le Paginator déclenche la query COUNT, sur le tableau la
+            // query data : les deux portent les JOIN → un bug DQL serait levé ici. Le
+            // personnel vient d'être créé sans créneau → ensemble vide attendu.
+            self::assertCount(0, $paginator);
+            self::assertCount(0, iterator_to_array($paginator));
         }
     }
 
     public function test_find_by_personnel_in_date_range_executes_sans_erreur_dql(): void
     {
+        $this->expectNotToPerformAssertions();
+
         $debut = new \DateTimeImmutable('2026-01-01');
         $fin = new \DateTimeImmutable('2027-12-31');
 
-        self::assertIsArray($this->creneauRepository->findByPersonnelInDateRange($this->personnel, $debut, $fin, false));
-        self::assertIsArray($this->creneauRepository->findByPersonnelInDateRange($this->personnel, $debut, $fin, true));
+        $this->creneauRepository->findByPersonnelInDateRange($this->personnel, $debut, $fin, false);
+        $this->creneauRepository->findByPersonnelInDateRange($this->personnel, $debut, $fin, true);
     }
 
     public function test_find_chevauchements_executes_sans_erreur_dql(): void
     {
+        $this->expectNotToPerformAssertions();
+
         $debut = new \DateTimeImmutable('2026-06-01 10:00');
         $fin = new \DateTimeImmutable('2026-06-01 11:00');
 
-        self::assertIsArray($this->creneauRepository->findChevauchements($this->personnel, $debut, $fin));
-        self::assertIsArray($this->creneauRepository->findChevauchements($this->personnel, $debut, $fin, 999));
+        $this->creneauRepository->findChevauchements($this->personnel, $debut, $fin);
+        $this->creneauRepository->findChevauchements($this->personnel, $debut, $fin, 999);
     }
 
     public function test_find_next_reserved_creneau_executes_sans_erreur_dql(): void
     {
-        $result = $this->creneauRepository->findNextReservedCreneau($this->personnel);
+        $this->expectNotToPerformAssertions();
 
-        self::assertTrue($result === null || $result instanceof Creneau);
+        $this->creneauRepository->findNextReservedCreneau($this->personnel);
     }
 
     public function test_find_creneau_en_cours_avec_rdv_executes_sans_erreur_dql(): void
     {
-        $result = $this->creneauRepository->findCreneauEnCoursAvecRdv($this->personnel, new \DateTimeImmutable());
+        $this->expectNotToPerformAssertions();
 
-        self::assertTrue($result === null || $result instanceof Creneau);
+        $this->creneauRepository->findCreneauEnCoursAvecRdv($this->personnel, new \DateTimeImmutable());
     }
 
     public function test_find_disponibles_executes_sans_erreur_dql(): void
     {
         $paginator = $this->creneauRepository->findDisponibles(null, null, null, 1);
 
-        self::assertInstanceOf(Paginator::class, $paginator);
-        self::assertIsInt(count($paginator));
-        self::assertIsArray(iterator_to_array($paginator));
+        // Non scopé au personnel de test → le total dépend des fixtures, on ne fige
+        // donc pas de valeur. count() déclenche la query COUNT, iterator_to_array() la
+        // query data ; invariant vérifié : la page (limite 1) ne dépasse pas le total.
+        self::assertLessThanOrEqual(count($paginator), count(iterator_to_array($paginator)));
     }
 
     public function test_existe_creneau_actif_futur_ou_en_cours_executes_sans_erreur_dql(): void
     {
-        $result = $this->creneauRepository->existeCreneauActifFuturOuEnCours($this->personnel, new \DateTimeImmutable());
+        $this->expectNotToPerformAssertions();
 
-        self::assertIsBool($result);
+        $this->creneauRepository->existeCreneauActifFuturOuEnCours($this->personnel, new \DateTimeImmutable());
     }
 
     // ---------------------------------------------------------------------

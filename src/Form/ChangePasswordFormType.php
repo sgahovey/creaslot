@@ -18,6 +18,8 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  * contrôleur. Les contraintes proviennent de la source unique
  * `ContraintesMotDePasse` (DT-18), partagée avec l'inscription, l'administration
  * des comptes et le changement self-service.
+ *
+ * @extends AbstractType<mixed>
  */
 class ChangePasswordFormType extends AbstractType
 {

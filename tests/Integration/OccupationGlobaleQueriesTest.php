@@ -278,7 +278,7 @@ final class OccupationGlobaleQueriesTest extends KernelTestCase
      */
     private function idsCreneaux(array $creneaux): array
     {
-        return array_map(static fn (Creneau $c): int => (int) $c->getId(), $creneaux);
+        return array_values(array_map(static fn (Creneau $c): int => (int) $c->getId(), $creneaux));
     }
 
     private function creerCreneau(

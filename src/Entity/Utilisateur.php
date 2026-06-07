@@ -111,9 +111,17 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
 
     /**
      * Identifiant utilisé par Symfony Security pour authentifier l'utilisateur.
+     *
+     * @return non-empty-string
      */
     public function getUserIdentifier(): string
     {
+        // Invariant : l'identifiant Security ne peut pas être vide. Garanti par les
+        // contraintes NotBlank/Email, vérifié ici explicitement (défense en profondeur).
+        if ('' === $this->email) {
+            throw new \LogicException('Adresse email manquante : identifiant utilisateur invalide.');
+        }
+
         return $this->email;
     }
 
@@ -125,7 +133,7 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function getRoles(): array
     {
-        return array_unique([$this->role->value, 'ROLE_USER']);
+        return array_values(array_unique([$this->role->value, 'ROLE_USER']));
     }
 
     public function getRole(): RoleUtilisateur

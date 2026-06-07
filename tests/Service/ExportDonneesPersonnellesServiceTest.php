@@ -54,6 +54,7 @@ final class ExportDonneesPersonnellesServiceTest extends TestCase
 
         // Le JSON encodé ne contient NI le hash NI l'email du Personnel.
         $json = json_encode($donnees, JSON_UNESCAPED_UNICODE);
+        self::assertIsString($json, 'Le profil exporté doit être sérialisable en JSON.');
         self::assertStringNotContainsString(self::HASH_SECRET, $json);
         self::assertStringNotContainsString(self::EMAIL_PERSONNEL, $json);
         self::assertStringContainsString('Paul Personnel', $json);

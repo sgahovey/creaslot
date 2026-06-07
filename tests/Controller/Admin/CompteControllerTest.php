@@ -390,7 +390,7 @@ final class CompteControllerTest extends WebTestCase
         $cible = $this->creerCompte(RoleUtilisateur::AUDITEUR);
 
         $this->client->loginUser($this->recupererUtilisateur(self::EMAIL_SUPER_ADMIN));
-        $this->soumettreBasculeDepuisListe($cible->getId());
+        $this->soumettreBasculeDepuisListe($this->id($cible));
 
         self::assertResponseRedirects('/admin/comptes');
         self::assertFalse($this->estActifEnBase($cible->getEmail()));
@@ -401,7 +401,7 @@ final class CompteControllerTest extends WebTestCase
         $cible = $this->creerCompte(RoleUtilisateur::AUDITEUR, null, false);
 
         $this->client->loginUser($this->recupererUtilisateur(self::EMAIL_SUPER_ADMIN));
-        $this->soumettreBasculeDepuisListe($cible->getId());
+        $this->soumettreBasculeDepuisListe($this->id($cible));
 
         self::assertResponseRedirects('/admin/comptes');
         self::assertTrue($this->estActifEnBase($cible->getEmail()));
@@ -418,7 +418,7 @@ final class CompteControllerTest extends WebTestCase
         $this->client->request('GET', '/admin/comptes');
 
         $this->client->request('POST', '/admin/comptes/' . $admin->getId() . '/activation', [
-            '_token' => $this->jetonActivation($admin->getId()),
+            '_token' => $this->jetonActivation($this->id($admin)),
         ]);
 
         self::assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
@@ -433,7 +433,7 @@ final class CompteControllerTest extends WebTestCase
         $this->client->request('GET', '/admin/comptes');
 
         $this->client->request('POST', '/admin/comptes/' . $admin->getId() . '/activation', [
-            '_token' => $this->jetonActivation($admin->getId()),
+            '_token' => $this->jetonActivation($this->id($admin)),
         ]);
 
         self::assertResponseRedirects('/admin/comptes');
@@ -506,6 +506,15 @@ final class CompteControllerTest extends WebTestCase
         self::assertInstanceOf(Service::class, $service, 'Aucun service actif en fixtures.');
 
         return $service;
+    }
+
+    /** Identifiant d'un compte persisté, en garantissant qu'il est bien attribué. */
+    private function id(Utilisateur $utilisateur): int
+    {
+        $id = $utilisateur->getId();
+        self::assertNotNull($id);
+
+        return $id;
     }
 
     private function creerCompte(RoleUtilisateur $role, ?Service $service = null, bool $estActif = true): Utilisateur

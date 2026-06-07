@@ -7,6 +7,7 @@ namespace App\EventListener;
 use App\Entity\Utilisateur;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
+use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
 use Symfony\Component\Security\Http\Event\LogoutEvent;
 
 #[AsEventListener(event: LogoutEvent::class)]
@@ -25,9 +26,11 @@ final class LogoutListener
             $this->logger->info('Déconnexion', ['user_id' => $utilisateur->getId()]);
         }
 
-        $event->getRequest()->getSession()->getFlashBag()->add(
-            'info',
-            'Vous avez été déconnecté.',
-        );
+        // getFlashBag() n'est pas déclaré par SessionInterface (Symfony 8) : on
+        // restreint à la session porteuse de flash bag (la session concrète l'est).
+        $session = $event->getRequest()->getSession();
+        if ($session instanceof FlashBagAwareSessionInterface) {
+            $session->getFlashBag()->add('info', 'Vous avez été déconnecté.');
+        }
     }
 }

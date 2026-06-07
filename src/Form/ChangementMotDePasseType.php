@@ -23,6 +23,8 @@ use Symfony\Component\Validator\Constraints\NotBlank;
  * Les contraintes du nouveau mot de passe proviennent de la source unique
  * `ContraintesMotDePasse` (DT-18 résolue), partagée avec l'inscription et
  * l'administration des comptes.
+ *
+ * @extends AbstractType<ChangementMotDePasse>
  */
 class ChangementMotDePasseType extends AbstractType
 {

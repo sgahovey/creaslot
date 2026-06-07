@@ -97,7 +97,7 @@ final readonly class ExportDonneesPersonnellesService
      */
     private function construireReservations(Utilisateur $utilisateur): array
     {
-        return array_map(
+        return array_values(array_map(
             fn (Reservation $reservation): array => [
                 'date_reservation' => $this->formaterDate($reservation->getDateReservation()),
                 'statut'           => $reservation->getStatut()->value,
@@ -112,7 +112,7 @@ final readonly class ExportDonneesPersonnellesService
                 ],
             ],
             $this->reservationRepository->findAllPourExport($utilisateur),
-        );
+        ));
     }
 
     /**
@@ -120,7 +120,7 @@ final readonly class ExportDonneesPersonnellesService
      */
     private function construireNotifications(Utilisateur $utilisateur): array
     {
-        return array_map(
+        return array_values(array_map(
             fn (Notification $notification): array => [
                 'date'    => $this->formaterDate($notification->getDateCreation()),
                 'type'    => $notification->getType()->libelle(),
@@ -129,7 +129,7 @@ final readonly class ExportDonneesPersonnellesService
                 'lu'      => $notification->isLu(),
             ],
             $this->notificationRepository->findAllPourExport($utilisateur),
-        );
+        ));
     }
 
     /**
@@ -137,7 +137,7 @@ final readonly class ExportDonneesPersonnellesService
      */
     private function construireCreneaux(Utilisateur $utilisateur): array
     {
-        return array_map(
+        return array_values(array_map(
             fn (Creneau $creneau): array => [
                 'debut' => $this->formaterDate($creneau->getDateDebut()),
                 'fin'   => $this->formaterDate($creneau->getDateFin()),
@@ -145,7 +145,7 @@ final readonly class ExportDonneesPersonnellesService
                 'actif' => $creneau->isEstActif(),
             ],
             $this->creneauRepository->findAllParProprietairePourExport($utilisateur),
-        );
+        ));
     }
 
     /**

@@ -654,10 +654,10 @@ class CreneauRepository extends ServiceEntityRepository
 
         $this->appliquerFiltresOccupationGlobale($qb, $serviceId, $typeId);
 
-        return array_map(
+        return array_values(array_map(
             static fn (mixed $id): int => (int) $id,
             $qb->getQuery()->getSingleColumnResult(),
-        );
+        ));
     }
 
     /**
