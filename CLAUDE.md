@@ -62,15 +62,18 @@ docker compose down -v && docker compose up -d
 
 ## Architecture
 
-### Modèle de données (5 entités, src/Entity/)
+### Modèle de données (8 entités, src/Entity/)
 
 - `Utilisateur` (table `utilisateur`) — implémente `UserInterface` ; champ `role` (enum `RoleUtilisateur`), pas d'héritage Doctrine. Mot de passe hashé en argon2id (`mot_de_passe_hash`).
 - `Service` — rattachement organisationnel du Personnel.
 - `TypeRdv` — présentiel / visio / téléphone, avec `couleur_hex` stockée en BDD et lue dynamiquement par Twig.
 - `Creneau` — appartient à un Utilisateur (Personnel), caractérisé par un TypeRdv.
 - `Reservation` — un Auditeur réserve un Creneau ; statut enum `StatutReservation` (ACTIVE / ANNULEE).
+- `Notification` (table `notification`) — notification in-app destinée à un `Utilisateur` (`id_destinataire`), typée par l'enum `TypeNotification`, avec drapeau `lu` (US-4.7).
+- `JournalAdmin` (table `journal_admin`) — trace immuable des actions d'administration sur les comptes (enum `TypeActionJournal`) ; acteur et cible figés en scalaires (`acteur_id`/`cible_id` + libellés), pas de FK, pour survivre à la suppression des comptes (US-5.5, RGPD).
+- `ResetPasswordRequest` (table `reset_password_request`) — demande de réinitialisation de mot de passe (SymfonyCasts ResetPasswordBundle) ; jeton haché, `id_utilisateur` non nullable, usage unique (US-6.2).
 
-Conventions BDD : tables `snake_case` singulier, foreign keys toujours `id_<entité>` (`id_utilisateur`, `id_creneau`), clés primaires `BIGINT UNSIGNED AUTO_INCREMENT`.
+Conventions BDD : tables `snake_case` singulier, foreign keys toujours `id_<entité>` (`id_utilisateur`, `id_creneau`), clés primaires `INT AUTO_INCREMENT` (cf. migrations).
 
 ### Rôles et autorisations
 
@@ -118,7 +121,7 @@ Pour les créneaux côté Personnel, `SlotService::detecteChevauchements()` inte
 ## Conventions de code (PHP / Symfony)
 
 - `declare(strict_types=1);` en tête de chaque fichier PHP.
-- Style : **PER Coding Style** (successeur de PSR-12) ; autoloading **PSR-4** sur le namespace `App\`. Indentation 4 espaces, fins de ligne LF (cf. `.editorconfig`).
+- Style : **PER Coding Style** (successeur de PSR-12) ; autoloading **PSR-4** sur le namespace `App\`. Indentation 4 espaces, fins de ligne LF (cf. `.editorconfig`). Le style est désormais **outillé** : PHP-CS-Fixer (`@PSR12` + `@Symfony`, `setRiskyAllowed(false)`) avec 4 surcharges maison assumées (tests en `snake_case`, concaténation espacée, pas de Yoda, alignement des `=>` conservé), et l'analyse statique **PHPStan niveau 8 sans baseline** (cf. section « Outils qualité & CI »).
 - Attributs PHP 8 partout (`#[ORM\Entity]`, `#[Route]`, `#[IsGranted]`) — jamais d'annotations ni de mapping YAML.
 - Typage strict : tout paramètre, retour et propriété est typé. Pas de type `mixed` sans raison.
 - Injection par constructor (`readonly`, promoted properties). Pas d'accès statique à un service.
@@ -212,6 +215,8 @@ Pour les créneaux côté Personnel, `SlotService::detecteChevauchements()` inte
 ## Definition of Done (avant de fusionner une PR)
 
 - La suite PHPUnit passe, sans aucune deprecation/notice/warning.
+- PHP-CS-Fixer `--dry-run` ne signale aucun écart de style.
+- PHPStan niveau 8 ne remonte aucune erreur (sans baseline).
 - Les tests unitaires couvrent la logique métier ajoutée ; les chemins de sécurité (Voters) sont testés.
 - Migration Doctrine incluse si le schéma a changé.
 - Le code respecte les conventions ci-dessus (nommage, sécurité, accessibilité, Clean Code).
@@ -263,16 +268,17 @@ Avant de générer ou modifier du code sur un sujet technique, se référer à l
 - Trello — carte modèle réutilisable : https://support.atlassian.com/trello/docs/create-a-template-card/
 - Atlassian — Definition of Done : https://www.atlassian.com/agile/project-management/definition-of-done
 
-## Outils qualité & CI — recommandés, NON encore en place
+## Outils qualité & CI
 
-Ces éléments ne sont pas installés à ce jour. Ne pas exécuter de commande les concernant tant qu'ils n'ont pas été ajoutés. Ils sont listés comme axes d'amélioration (ils objectivent les critères « qualité de code » et « démarche DevOps ») :
+Mis en place à l'itération 7 (ils objectivent les critères « qualité de code » et « démarche DevOps »).
 
-- **PHP-CS-Fixer** (applique le PER Coding Style) — https://cs.symfony.com/
-- **PHPStan** (analyse statique) — https://phpstan.org/
+- **PHP-CS-Fixer** — en place. Config `.php-cs-fixer.dist.php` : `@PSR12` + `@Symfony`, `setRiskyAllowed(false)`, finder sur `src/` + `tests/`, plus 4 surcharges maison assumées (`php_unit_method_casing` = `snake_case`, `concat_space` = `one`, `yoda_style` = `false`, alignement des `=>` conservé via `binary_operator_spaces`). Commande : `docker compose exec app vendor/bin/php-cs-fixer fix` (ajouter `--dry-run --diff` pour vérifier sans modifier). — https://cs.symfony.com/
+- **PHPStan** — en place. Config `phpstan.dist.neon` : **niveau 8**, paths `src/` + `tests/`, **AUCUNE baseline**, extensions `phpstan-symfony` (containerXmlPath) + `phpstan-doctrine` (objectManagerLoader) + `phpstan-phpunit`. Commande : `docker compose exec app vendor/bin/phpstan analyse`. — https://phpstan.org/
+- **GitHub Actions** — en place. `.github/workflows/ci.yml` : **3 jobs** (`cs-fixer`, `phpstan`, `phpunit`) sur `push` et `pull_request` des branches `develop` / `preprod` / `main`. Le job `phpunit` provisionne un service MySQL 8 (création base de test + migrations + fixtures + `importmap:install` pour le rendu des WebTests) ; `cs-fixer` et `phpstan` tournent sans base. — https://docs.github.com/en/actions
+
+Axe futur, **NON encore en place** (ne pas exécuter de commande le concernant ni l'installer sans le proposer d'abord) :
+
 - **Rector** (modernisation automatisée) — https://getrector.com/
-- **GitHub Actions** (pipeline CI : `checkout` → `setup-php` 8.4 → `composer install` → CS-Fixer `--dry-run` → PHPStan → PHPUnit, sur `push` et `pull_request`) — https://docs.github.com/en/actions
-
-Si l'un d'eux doit être mis en place, le proposer explicitement avant d'ajouter dépendances et fichiers de configuration.
 
 ## Fin de tâche — fiche de résolution de problème
 
@@ -294,7 +300,7 @@ Format :
 
 ### Référence des étiquettes et colonnes (board CreaSlot)
 
-- **Itération** (une seule) : `Itération 1` … `Itération 6`.
+- **Itération** (une seule) : `Itération 1` … `Itération 9`.
 - **Catégorie** (une ou plusieurs) : `Conception`, `Base de données`, `Back-end`, `Front-end`, `Sécurité`, `Tests`, `DevOps / Déploiement`.
 - **Difficulté / points** (une seule, suite de Fibonacci) : `1` (trivial) · `2` (simple) · `3` (moyen) · `5` (complexe) · `8` (très complexe / risqué).
 - **Colonne** (statut) : `Backlog` → `À faire` → `En cours` → `En test` → `Terminé`.
