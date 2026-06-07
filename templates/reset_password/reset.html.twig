@@ -1,0 +1,50 @@
+{#
+ # Saisie du nouveau mot de passe via le lien de réinitialisation (US-6.2).
+ #
+ # Le thème `form/champ_mot_de_passe.html.twig` ajoute le bouton « œil »
+ # afficher/masquer (US-6.1) aux deux sous-champs. Variable : resetForm.
+ #}
+{% extends 'base.html.twig' %}
+
+{% form_theme resetForm 'bootstrap_5_layout.html.twig' 'form/champ_mot_de_passe.html.twig' %}
+
+{% block title %}Nouveau mot de passe{% endblock %}
+
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block flash_messages %}{% endblock %}
+
+{% block body %}
+<div class="cs-auth-wrapper">
+    <div class="cs-auth-card">
+
+        <div class="d-flex align-items-center gap-2 mb-4">
+            <i class="bi bi-calendar-check-fill" style="font-size: 1.5rem; color: var(--cs-blue-primary);" aria-hidden="true"></i>
+            <span class="cs-auth-logo">CreaSlot</span>
+        </div>
+
+        <h1 class="cs-auth-title">Nouveau mot de passe</h1>
+        <p class="cs-auth-subtitle">Choisissez un nouveau mot de passe pour votre compte.</p>
+
+        {{ form_start(resetForm) }}
+            {{ form_errors(resetForm) }}
+            {# Erreurs portées par le champ composé (ex. « différent de l'actuel ») #}
+            {{ form_errors(resetForm.plainPassword) }}
+            {{ form_row(resetForm.plainPassword.first) }}
+            {{ form_row(resetForm.plainPassword.second) }}
+
+            <div class="d-grid mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-shield-lock" aria-hidden="true"></i>
+                    Réinitialiser mon mot de passe
+                </button>
+            </div>
+        {{ form_end(resetForm) }}
+
+        <div class="cs-auth-footer">
+            <a href="{{ path('app_login') }}">Retour à la connexion</a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

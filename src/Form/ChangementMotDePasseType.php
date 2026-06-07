@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace App\Form;
 
 use App\DTO\ChangementMotDePasse;
+use App\Validator\ContraintesMotDePasse;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
-use Symfony\Component\Validator\Constraints\Regex;
 
 /**
  * Changement de mot de passe self-service par l'utilisateur connecté (US-6.1).
@@ -21,9 +20,9 @@ use Symfony\Component\Validator\Constraints\Regex;
  * actuel est exigé : le contrôleur le vérifie via UserPasswordHasher::isPasswordValid
  * avant tout re-hachage (défense contre un détournement de session).
  *
- * Les contraintes du nouveau mot de passe sont recopiées à l'identique
- * d'InscriptionType (mêmes règles, mêmes messages). Cette triple réplication
- * (Inscription / Admin / Profil) est une dette assumée tracée en DT-18.
+ * Les contraintes du nouveau mot de passe proviennent de la source unique
+ * `ContraintesMotDePasse` (DT-18 résolue), partagée avec l'inscription et
+ * l'administration des comptes.
  */
 class ChangementMotDePasseType extends AbstractType
 {
@@ -42,19 +41,9 @@ class ChangementMotDePasseType extends AbstractType
                 'first_options'   => [
                     'label' => 'Nouveau mot de passe',
                     'attr'  => ['autocomplete' => 'new-password', 'minlength' => '12'],
-                    'help'  => 'Minimum 12 caractères, avec au moins 1 majuscule, 1 minuscule, 1 chiffre et 1 caractère spécial (@ ! ? # _ - etc.).',
-                    // Contraintes répliquées d'InscriptionType (mêmes règles, mêmes messages).
-                    'constraints' => [
-                        new NotBlank(message: 'Le mot de passe est obligatoire.'),
-                        new Length(
-                            min: 12,
-                            minMessage: 'Le mot de passe doit contenir au moins {{ limit }} caractères.',
-                        ),
-                        new Regex(
-                            pattern: '/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@!?#_\-%&*+=.,;:()\[\]{}\/\\\\|])/',
-                            message: 'Le mot de passe doit contenir au moins 1 majuscule, 1 minuscule, 1 chiffre et 1 caractère spécial (@ ! ? # _ - etc.).',
-                        ),
-                    ],
+                    'help'  => ContraintesMotDePasse::AIDE,
+                    // Source unique de la politique de mot de passe (DT-18).
+                    'constraints' => ContraintesMotDePasse::regles(),
                 ],
                 'second_options'  => [
                     'label' => 'Confirmer le nouveau mot de passe',

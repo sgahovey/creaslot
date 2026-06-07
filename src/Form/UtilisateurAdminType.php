@@ -7,6 +7,7 @@ namespace App\Form;
 use App\Entity\Service;
 use App\Entity\Utilisateur;
 use App\Enum\RoleUtilisateur;
+use App\Validator\ContraintesMotDePasse;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
@@ -18,9 +19,6 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
-use Symfony\Component\Validator\Constraints\Length;
-use Symfony\Component\Validator\Constraints\NotBlank;
-use Symfony\Component\Validator\Constraints\Regex;
 
 /**
  * Formulaire d'administration d'un compte (US-5.3), côté Super-admin.
@@ -94,19 +92,9 @@ class UtilisateurAdminType extends AbstractType
             'first_options'   => [
                 'label' => 'Mot de passe',
                 'attr'  => ['autocomplete' => 'new-password', 'minlength' => '12'],
-                'help'  => 'Minimum 12 caractères, avec au moins 1 majuscule, 1 minuscule, 1 chiffre et 1 caractère spécial (@ ! ? # _ - etc.).',
-                // Contraintes répliquées d'InscriptionType (sans réutiliser ce type).
-                'constraints' => [
-                    new NotBlank(message: 'Le mot de passe est obligatoire.'),
-                    new Length(
-                        min: 12,
-                        minMessage: 'Le mot de passe doit contenir au moins {{ limit }} caractères.',
-                    ),
-                    new Regex(
-                        pattern: '/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@!?#_\-%&*+=.,;:()\[\]{}\/\\\\|])/',
-                        message: 'Le mot de passe doit contenir au moins 1 majuscule, 1 minuscule, 1 chiffre et 1 caractère spécial (@ ! ? # _ - etc.).',
-                    ),
-                ],
+                'help'  => ContraintesMotDePasse::AIDE,
+                // Source unique de la politique de mot de passe (DT-18).
+                'constraints' => ContraintesMotDePasse::regles(),
             ],
             'second_options'  => [
                 'label' => 'Confirmer le mot de passe',

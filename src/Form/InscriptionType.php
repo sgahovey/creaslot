@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Form;
 
 use App\Entity\Utilisateur;
+use App\Validator\ContraintesMotDePasse;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
@@ -14,9 +15,6 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\IsTrue;
-use Symfony\Component\Validator\Constraints\Length;
-use Symfony\Component\Validator\Constraints\NotBlank;
-use Symfony\Component\Validator\Constraints\Regex;
 
 class InscriptionType extends AbstractType
 {
@@ -48,19 +46,9 @@ class InscriptionType extends AbstractType
                         'autocomplete' => 'new-password',
                         'minlength'    => '12',
                     ],
-                    'help'        => 'Minimum 12 caractères, avec au moins 1 majuscule, 1 minuscule, 1 chiffre et 1 caractère spécial (@ ! ? # _ - etc.).',
-                    // Contraintes sur le premier champ : c'est là qu'elles sont évaluées
-                    'constraints' => [
-                        new NotBlank(message: 'Le mot de passe est obligatoire.'),
-                        new Length(
-                            min: 12,
-                            minMessage: 'Le mot de passe doit contenir au moins {{ limit }} caractères.',
-                        ),
-                        new Regex(
-                            pattern: '/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@!?#_\-%&*+=.,;:()\[\]{}\/\\\\|])/',
-                            message: 'Le mot de passe doit contenir au moins 1 majuscule, 1 minuscule, 1 chiffre et 1 caractère spécial (@ ! ? # _ - etc.).',
-                        ),
-                    ],
+                    'help'        => ContraintesMotDePasse::AIDE,
+                    // Contraintes sur le premier champ : c'est là qu'elles sont évaluées (source unique, DT-18).
+                    'constraints' => ContraintesMotDePasse::regles(),
                 ],
                 'second_options'  => [
                     'label' => 'Confirmer le mot de passe',
