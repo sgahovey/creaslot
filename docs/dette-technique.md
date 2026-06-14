@@ -286,7 +286,25 @@ FullCalendar de `CLAUDE.md`.
 
 ---
 
-## DT-10 — CollegueService : requêtes en boucle (~3N+1) (🟡 MOYEN) — 🟠 OUVERTE
+## DT-10 — CollegueService : requêtes en boucle (~3N+1) (🟡 MOYEN) — ✅ RÉSOLUE (14/06/2026)
+
+> **✅ RÉSOLUE le 14/06/2026** sur branche `feature/DT-10-collegue-service-nplus1`.
+>
+> **Résumé fix** : le `~3N+1` est remplacé par **1 requête de chargement** (`findOtherPersonnel`, inchangée — tri et filtres préservés) **+ 3 agrégats par lot** sur `CreneauRepository`, assemblés par lookup. Nombre de requêtes désormais **constant, indépendant de N**.
+> - **Agrégats par lot** (DQL paramétré, `IN (:ids)`, garde `IN` vide → aucune requête) : `findIdsAvecCreneauActifFuturOuEnCours` (visibilité, `DISTINCT IDENTITY`), `findFinsRdvEnCoursParUtilisateur` (statut + heure de fin, `EXISTS` résa ACTIVE), `findProchainsRdvParUtilisateur` (`MIN(dateDebut)` + `GROUP BY`, `EXISTS` résa ACTIVE).
+> - **Prédicats répliqués à l'identique** des trois méthodes par ligne d'origine → comportement strictement inchangé (verrouillé par le test de caractérisation).
+> - **`EXISTS` sans JOIN** sur `reservations` : aucun fan-out OneToMany [[DT-1]] et **aucune `Reservation` hydratée** (minimisation RGPD préservée).
+> - **Code mort supprimé** : `CollegueService::aAuMoinsUnCreneauActif` et `construireDTO` (orphelins après refacto).
+>
+> **Observation (sans action)** : `creneau.date_fin` n'est pas indexé ; acceptable au volume Cnam (l'index `idx_creneau_utilisateur_debut` couvre déjà le préfixe `id_utilisateur`). Un index sur `date_fin` serait à envisager **si la volumétrie augmente** — pas de migration à ce stade.
+>
+> **Validations** : test de caractérisation vert **à l'identique** (comportement inchangé) + test compteur de requêtes (nombre **constant** pour N=2 et N=5, data collector Doctrine) ; suite complète verte (268 tests, 0 deprecation/notice/warning), PHPStan 8 = 0, CS-Fixer 0. **Trou de couverture de `CollegueService` fermé** (aucun test ne le couvrait auparavant).
+>
+> **Commits** : `a68c2f4` (Morceau 1 — test de caractérisation) · `b8c86c6` (Morceau 2 — perf : agrégats par lot + compteur de requêtes) · doc & clôture (Morceau 3).
+
+---
+
+### Contenu historique original (préservé pour traçabilité MSP3)
 
 **Détecté** : 01/06/2026, lors d'une revue qualité en lecture seule (éco-conception / performance).
 
@@ -296,7 +314,7 @@ FullCalendar de `CLAUDE.md`.
 
 **Action proposée** : remplacer les requêtes par ligne par **une seule requête agrégée** (JOIN + `GROUP BY` sur le Personnel) ramenant statut courant + prochain RDV en un aller-retour, hydratée vers les `CollegueDTO`.
 
-**Priorité** : 🟡 moyenne, à traiter quand la liste des collègues s'allonge OU dans une passe éco-conception (itération 6).
+**Priorité** : 🟡 moyenne, à traiter quand la liste des collègues s'allonge OU dans une passe éco-conception (itération 6) — close.
 
 ---
 
