@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Security\Core\User\EquatableInterface;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -18,7 +19,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: 'utilisateur')]
 #[ORM\UniqueConstraint(name: 'UNIQ_utilisateur_email', columns: ['email'])]
 #[UniqueEntity(fields: ['email'], message: 'Une erreur est survenue, veuillez réessayer.')]
-class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
+class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface, EquatableInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -171,6 +172,39 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface
     public function eraseCredentials(): void
     {
         // Aucun mot de passe en clair stocké — rien à effacer.
+    }
+
+    /**
+     * Compare l'utilisateur du token (état figé en session) à l'utilisateur rechargé
+     * depuis la BDD à chaque requête (firewall stateful). Si l'un des attributs
+     * sécuritaires diverge, Symfony dé-authentifie le token → l'utilisateur est
+     * rejeté vers la connexion à la requête suivante (DT-14).
+     *
+     * On compare l'identifiant, l'état actif/inactif et les rôles : une désactivation
+     * ou une rétrogradation prend ainsi effet sans attendre l'expiration de la session.
+     * Le mot de passe est VOLONTAIREMENT exclu : un changement de mot de passe ne doit
+     * pas déconnecter l'utilisateur courant.
+     */
+    public function isEqualTo(UserInterface $user): bool
+    {
+        if (!$user instanceof self) {
+            return false;
+        }
+
+        if ($this->getUserIdentifier() !== $user->getUserIdentifier()) {
+            return false;
+        }
+
+        if ($this->estActif !== $user->isEstActif()) {
+            return false;
+        }
+
+        $rolesCourants = $this->getRoles();
+        $rolesCompares = $user->getRoles();
+        sort($rolesCourants);
+        sort($rolesCompares);
+
+        return $rolesCourants === $rolesCompares;
     }
 
     public function getNom(): string

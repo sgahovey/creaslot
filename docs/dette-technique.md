@@ -342,7 +342,24 @@ FullCalendar de `CLAUDE.md`.
 
 ---
 
-## DT-14 — Invalidation immédiate de session à la désactivation (🟡 MOYEN) — 🟠 OUVERTE
+## DT-14 — Invalidation immédiate de session à la désactivation (🟡 MOYEN) — ✅ RÉSOLUE (14/06/2026)
+
+> **✅ RÉSOLUE le 14/06/2026** sur branche `feature/DT-14-invalidation-session`.
+>
+> **Résumé fix** : la désactivation d'un compte **déjà connecté** prend désormais effet à la requête suivante (rejet à la requête suivante — le périmètre exact demandé par la dette).
+> - **`Utilisateur` implémente `EquatableInterface`** : `isEqualTo()` compare l'identifiant (email) + `estActif` + les rôles (comparaison stable, triée) — **pas le mot de passe**. Au refresh du token sur le firewall stateful, un état divergent (compte désactivé ou rétrogradé) dé-authentifie le token → **302 vers `/connexion`** à la requête suivante.
+> - **`UserChecker` conservé** (défense en profondeur) : `checkPreAuth` continue de bloquer les comptes inactifs **au login** ; son PHPDoc documente le partage de responsabilité login (UserChecker) / en-cours-de-session (`isEqualTo`).
+> - **Mot de passe exclu de `isEqualTo`** à dessein : un changement de mot de passe ne doit pas déconnecter l'utilisateur courant (préserve `MonProfilControllerTest`).
+> - **Option kill server-side immédiat écartée** : sessions en **fichiers natifs** sans index par utilisateur → cibler/supprimer la session d'un utilisateur exigerait une migration vers des sessions en BDD (table + config infra + étape de déploiement) pour un risque qualifié faible → **sur-ingénierie** au volume Cnam.
+> - **Aucun changement de schéma ni d'infra** : pure logique applicative, rien à planifier au déploiement.
+>
+> **Validations** : suite complète verte (258 tests, 0 deprecation/notice/warning), PHPStan 8 = 0, CS-Fixer 0. Tests dédiés : `tests/Controller/DesactivationSessionTest.php` (session active → désactivation → 302 ; utilisateur actif → 200/200) + `tests/Entity/UtilisateurIsEqualToTest.php` (égalité email/rôle/actif, divergences, non-`Utilisateur`). Non-régression `MonProfilControllerTest` verte (changement de mot de passe → reste connecté).
+>
+> **Commit** : `d196bd5` (Morceau 1 — `EquatableInterface` + `isEqualTo` + PHPDoc UserChecker + tests) · doc & clôture (Morceau 2).
+
+---
+
+### Contenu historique original (préservé pour traçabilité MSP3)
 
 **Détecté** : 03/06/2026, lors de l'implémentation d'US-5.4 (activation / désactivation des comptes).
 
@@ -354,7 +371,7 @@ FullCalendar de `CLAUDE.md`.
 
 **Action proposée** : re-vérifier `estActif` à **chaque requête** — soit (a) en faisant **échouer `refreshUser`** quand le compte est inactif (provider décorant `app_user_provider`, ou `Utilisateur` implémentant `EquatableInterface`/contrôle au refresh), soit (b) via un **listener `kernel.request`** qui invalide la session d'un utilisateur devenu inactif. Tâche **dédiée**, avec test fonctionnel : **session active → désactivation du compte → 302 vers login à la requête suivante**.
 
-**Priorité** : 🟡 moyenne (sécurité ; risque faible au volume Cnam), à planifier en tâche dédiée.
+**Priorité** : 🟡 moyenne (sécurité ; risque faible au volume Cnam) — close.
 
 ---
 
