@@ -61,4 +61,19 @@ class JournalAdminRepository extends ServiceEntityRepository
             ->getQuery()
             ->execute();
     }
+
+    /**
+     * Compte les entrées antérieures au seuil de conservation, sans rien supprimer.
+     * Même borne que {@see self::purgerAvant()} : permet d'annoncer le volume qui
+     * serait purgé (mode dry-run de `app:purger-journal`).
+     */
+    public function compterAvant(\DateTimeImmutable $seuil): int
+    {
+        return (int) $this->createQueryBuilder('j')
+            ->select('COUNT(j.id)')
+            ->where('j.dateAction < :seuil')
+            ->setParameter('seuil', $seuil)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }
