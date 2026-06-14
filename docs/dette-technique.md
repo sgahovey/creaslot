@@ -358,7 +358,23 @@ FullCalendar de `CLAUDE.md`.
 
 ---
 
-## DT-15 — Purge automatisée du journal RGPD au-delà de la durée de conservation (🟡 MOYEN) — 🟠 OUVERTE
+## DT-15 — Purge automatisée du journal RGPD au-delà de la durée de conservation (🟡 MOYEN) — ✅ RÉSOLUE (14/06/2026)
+
+> **✅ RÉSOLUE le 14/06/2026** sur branche `feature/DT-15-purge-journal-rgpd`.
+>
+> **Résumé fix** : la durée de conservation est désormais **appliquée** par une purge automatisée, en trois couches :
+> - **Source unique** : constante `JournalAdmin::DUREE_CONSERVATION_MOIS = 12` (le PHPDoc de l'entité y renvoie au lieu de « purge reportée »).
+> - **Repository** : `JournalAdminRepository::purgerAvant(\DateTimeImmutable $seuil): int` (DELETE DQL paramétré, **borné par la seule date** `dateAction < :seuil` → append-only préservé) et `compterAvant(\DateTimeImmutable $seuil): int` (COUNT pour le dry-run).
+> - **Commande** : `app:purger-journal` (`--mois=N` défaut 12 avec garde-fou `>= 1` → `INVALID` sinon, `--dry-run`), seuil calculé en `Indian/Reunion`, log Monolog `info` (mode + count + date seuil), sans auto-journalisation dans `journal_admin`.
+> - **Planification cron** (mensuelle `0 3 1 * *`) **renvoyée au déploiement (itération 9)** — documentée dans `docs/cron-purger-journal.md`, non activée à ce stade.
+>
+> **Validations** : suite complète verte (252 tests, 0 deprecation/notice/warning), PHPStan 8 = 0, CS-Fixer 0. Tests dédiés : `tests/Integration/JournalAdminPurgeTest.php` (purge bornée) + `tests/Command/PurgerJournalCommandTest.php` (dry-run inerte, purge réelle, option `--mois`, `--mois=0` → INVALID).
+>
+> **Commits** : `7811fb7` (Morceau 1 — couche données : constante + `purgerAvant` + test d'intégration) · `30b00d8` (Morceau 2 — commande `app:purger-journal` + `compterAvant` + test de commande) · doc & clôture (Morceau 3).
+
+---
+
+### Contenu historique original (préservé pour traçabilité MSP3)
 
 **Détecté** : 03/06/2026, lors de l'implémentation d'US-5.5 (journal RGPD).
 
@@ -370,7 +386,7 @@ FullCalendar de `CLAUDE.md`.
 
 **Action proposée** : **commande console** (ex. `app:purger-journal`) supprimant en DQL paramétré les entrées `date_action < now - 12 mois`, **planifiée par cron** (comme le rappel J-1). Avec **test** : insertion d'entrées anciennes + récentes → seules les anciennes sont purgées. Durée de conservation portée par une **constante nommée** (source unique).
 
-**Priorité** : 🟡 moyenne (conformité RGPD ; croissance lente au volume Cnam), à planifier en tâche dédiée.
+**Priorité** : 🟡 moyenne (conformité RGPD ; croissance lente au volume Cnam) — close.
 
 ---
 

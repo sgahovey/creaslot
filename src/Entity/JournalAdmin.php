@@ -19,13 +19,21 @@ use Doctrine\ORM\Mapping as ORM;
  *
  * RGPD : contient du nominatif (libellés) → finalité sécurité / accountability,
  * minimisation (aucune donnée sensible : ni mot de passe, ni motif), conservation
- * 12 mois (purge automatisée reportée, cf. DT-15).
+ * limitée à {@see self::DUREE_CONSERVATION_MOIS} mois, appliquée par la purge
+ * automatisée `app:purger-journal` (cf. DT-15).
  */
 #[ORM\Entity(repositoryClass: JournalAdminRepository::class)]
 #[ORM\Table(name: 'journal_admin')]
 #[ORM\Index(columns: ['date_action'], name: 'idx_journal_admin_date')]
 class JournalAdmin
 {
+    /**
+     * Durée de conservation des entrées du journal, en mois (RGPD, limitation de
+     * la conservation — art. 5.1.e). Source unique : la purge automatisée et toute
+     * référence à cette durée s'appuient sur cette constante.
+     */
+    public const int DUREE_CONSERVATION_MOIS = 12;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
