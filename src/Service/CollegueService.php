@@ -38,12 +38,31 @@ class CollegueService
         $collegues = $this->utilisateurRepository->findOtherPersonnel($current, $serviceId);
         $maintenant = new \DateTimeImmutable();
 
+        // Trois agrégats par lot (DT-10) : statut, prochain RDV et visibilité de TOUS
+        // les collègues en un nombre de requêtes constant, au lieu de ~3 requêtes par
+        // collègue. L'ordre de findOtherPersonnel (service puis nom) est préservé : on
+        // ne fait que consulter ces tables par identifiant.
+        $ids = array_values(array_map(static fn (Utilisateur $collegue): int => (int) $collegue->getId(), $collegues));
+        $idsVisibles = array_flip($this->creneauRepository->findIdsAvecCreneauActifFuturOuEnCours($ids, $maintenant));
+        $finsRdvEnCours = $this->creneauRepository->findFinsRdvEnCoursParUtilisateur($ids, $maintenant);
+        $prochainsRdv = $this->creneauRepository->findProchainsRdvParUtilisateur($ids, $maintenant);
+
         $dtos = [];
         foreach ($collegues as $collegue) {
-            if (!$this->aAuMoinsUnCreneauActif($collegue, $maintenant)) {
+            $id = (int) $collegue->getId();
+            if (!isset($idsVisibles[$id])) {
                 continue;
             }
-            $dtos[] = $this->construireDTO($collegue, $maintenant);
+
+            $finRdvEnCours = $finsRdvEnCours[$id] ?? null;
+            $statut = $finRdvEnCours !== null ? self::STATUT_EN_RDV : self::STATUT_LIBRE;
+
+            $dtos[] = new CollegueDTO(
+                $collegue,
+                $statut,
+                $finRdvEnCours?->format('H\hi'),
+                $prochainsRdv[$id] ?? null,
+            );
         }
 
         if ($disponiblesOnly) {
@@ -65,30 +84,5 @@ class CollegueService
         $creneauEnCours = $this->creneauRepository->findCreneauEnCoursAvecRdv($utilisateur, $maintenant);
 
         return $creneauEnCours !== null ? self::STATUT_EN_RDV : self::STATUT_LIBRE;
-    }
-
-    /**
-     * Vérifie qu'un utilisateur possède au moins un créneau actif futur ou en cours.
-     * Permet de masquer les collègues sans disponibilité visible.
-     */
-    public function aAuMoinsUnCreneauActif(Utilisateur $utilisateur, \DateTimeImmutable $maintenant): bool
-    {
-        return $this->creneauRepository->existeCreneauActifFuturOuEnCours($utilisateur, $maintenant);
-    }
-
-    /**
-     * Construit le DTO d'un collègue en exposant uniquement la date du prochain RDV
-     * (pas l'entité Reservation) — minimisation RGPD pour ne jamais exposer
-     * l'identité de l'Auditeur côté autres Personnels.
-     */
-    private function construireDTO(Utilisateur $collegue, \DateTimeImmutable $maintenant): CollegueDTO
-    {
-        $creneauEnCours = $this->creneauRepository->findCreneauEnCoursAvecRdv($collegue, $maintenant);
-        $statut = $creneauEnCours !== null ? self::STATUT_EN_RDV : self::STATUT_LIBRE;
-        $heureFinRdv = $creneauEnCours?->getDateFin()->format('H\hi');
-        $prochainCreneau = $this->creneauRepository->findNextReservedCreneau($collegue);
-        $prochainRdvDate = $prochainCreneau?->getDateDebut();
-
-        return new CollegueDTO($collegue, $statut, $heureFinRdv, $prochainRdvDate);
     }
 }
