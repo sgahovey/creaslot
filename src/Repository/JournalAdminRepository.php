@@ -42,4 +42,23 @@ class JournalAdminRepository extends ServiceEntityRepository
 
         return new Paginator($qb->getQuery(), false);
     }
+
+    /**
+     * Supprime les entrées antérieures au seuil de conservation (RGPD, limitation
+     * de la conservation — art. 5.1.e). La suppression est bornée par la SEULE date
+     * (`dateAction < :seuil`) : jamais par id ni par acteur, afin de préserver le
+     * caractère append-only du journal — on n'efface que ce qui a dépassé la durée
+     * de conservation documentée, pas une entrée choisie.
+     *
+     * @return int nombre d'entrées supprimées
+     */
+    public function purgerAvant(\DateTimeImmutable $seuil): int
+    {
+        return (int) $this->createQueryBuilder('j')
+            ->delete()
+            ->where('j.dateAction < :seuil')
+            ->setParameter('seuil', $seuil)
+            ->getQuery()
+            ->execute();
+    }
 }
