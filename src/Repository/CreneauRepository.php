@@ -274,6 +274,152 @@ class CreneauRepository extends ServiceEntityRepository
     }
 
     /**
+     * Identifiants des utilisateurs (parmi $ids) ayant au moins un créneau actif
+     * futur ou en cours (`dateFin >= :maintenant`), réservé ou non. Version par LOT
+     * de {@see self::existeCreneauActifFuturOuEnCours()} pour la liste des collègues
+     * (DT-10) : un seul aller-retour au lieu d'une requête par collègue.
+     *
+     * @param list<int> $ids
+     *
+     * @return list<int>
+     */
+    public function findIdsAvecCreneauActifFuturOuEnCours(array $ids, \DateTimeImmutable $maintenant): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        return array_values(array_map(
+            static fn (mixed $id): int => (int) $id,
+            $this->createQueryBuilder('c')
+                ->select('DISTINCT IDENTITY(c.utilisateur)')
+                ->andWhere('c.utilisateur IN (:ids)')
+                ->andWhere('c.estActif = true')
+                ->andWhere('c.dateFin >= :maintenant')
+                ->setParameter('ids', $ids)
+                ->setParameter('maintenant', $maintenant)
+                ->getQuery()
+                ->getSingleColumnResult(),
+        ));
+    }
+
+    /**
+     * Heure de fin du créneau « en cours réservé » de chaque utilisateur (parmi
+     * $ids), indexée par identifiant d'utilisateur. Version par LOT de
+     * {@see self::findCreneauEnCoursAvecRdv()} (DT-10), mêmes prédicats : créneau
+     * actif, `dateDebut <= :maintenant < dateFin`, ≥1 réservation ACTIVE.
+     *
+     * `EXISTS` plutôt qu'un JOIN sur `reservations` : aucun fan-out OneToMany [[DT-1]]
+     * et aucune Reservation hydratée (RGPD). L'invariant de non-chevauchement
+     * (SlotService) garantit au plus un créneau en cours par utilisateur.
+     *
+     * @param list<int> $ids
+     *
+     * @return array<int, \DateTimeImmutable> uid => dateFin
+     */
+    public function findFinsRdvEnCoursParUtilisateur(array $ids, \DateTimeImmutable $maintenant): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        /** @var list<array{uid: int|string, dateFin: mixed}> $lignes */
+        $lignes = $this->createQueryBuilder('c')
+            ->select('IDENTITY(c.utilisateur) AS uid', 'c.dateFin AS dateFin')
+            ->andWhere('c.utilisateur IN (:ids)')
+            ->andWhere('c.estActif = true')
+            ->andWhere('c.dateDebut <= :maintenant')
+            ->andWhere('c.dateFin > :maintenant')
+            ->andWhere(
+                'EXISTS (
+                    SELECT 1
+                    FROM App\Entity\Reservation r_active
+                    WHERE r_active.creneau = c
+                        AND r_active.statut = :statutActif
+                )',
+            )
+            ->setParameter('ids', $ids)
+            ->setParameter('maintenant', $maintenant)
+            ->setParameter('statutActif', StatutReservation::ACTIVE)
+            ->getQuery()
+            ->getResult();
+
+        $finsParUtilisateur = [];
+        foreach ($lignes as $ligne) {
+            $finsParUtilisateur[(int) $ligne['uid']] = $this->versDateImmutable($ligne['dateFin']);
+        }
+
+        return $finsParUtilisateur;
+    }
+
+    /**
+     * Date du prochain RDV réservé (le plus proche) de chaque utilisateur (parmi
+     * $ids), indexée par identifiant d'utilisateur. Version par LOT de
+     * {@see self::findNextReservedCreneau()} (DT-10), mêmes prédicats : créneau
+     * actif, `dateDebut > :maintenant`, ≥1 réservation ACTIVE ; `MIN(dateDebut)` par
+     * utilisateur équivaut au plus proche futur réservé.
+     *
+     * @param list<int> $ids
+     *
+     * @return array<int, \DateTimeImmutable> uid => MIN(dateDebut)
+     */
+    public function findProchainsRdvParUtilisateur(array $ids, \DateTimeImmutable $maintenant): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        /** @var list<array{uid: int|string, prochaine: mixed}> $lignes */
+        $lignes = $this->createQueryBuilder('c')
+            ->select('IDENTITY(c.utilisateur) AS uid', 'MIN(c.dateDebut) AS prochaine')
+            ->andWhere('c.utilisateur IN (:ids)')
+            ->andWhere('c.estActif = true')
+            ->andWhere('c.dateDebut > :maintenant')
+            ->andWhere(
+                'EXISTS (
+                    SELECT 1
+                    FROM App\Entity\Reservation r_active
+                    WHERE r_active.creneau = c
+                        AND r_active.statut = :statutActif
+                )',
+            )
+            ->setParameter('ids', $ids)
+            ->setParameter('maintenant', $maintenant)
+            ->setParameter('statutActif', StatutReservation::ACTIVE)
+            ->groupBy('uid')
+            ->getQuery()
+            ->getResult();
+
+        $prochainsParUtilisateur = [];
+        foreach ($lignes as $ligne) {
+            $prochainsParUtilisateur[(int) $ligne['uid']] = $this->versDateImmutable($ligne['prochaine']);
+        }
+
+        return $prochainsParUtilisateur;
+    }
+
+    /**
+     * Normalise une valeur de date issue d'un agrégat DQL (objet date ou chaîne
+     * `MIN()`) en \DateTimeImmutable, pour une heure d'affichage cohérente.
+     */
+    private function versDateImmutable(mixed $valeur): \DateTimeImmutable
+    {
+        if ($valeur instanceof \DateTimeImmutable) {
+            return $valeur;
+        }
+
+        if ($valeur instanceof \DateTimeInterface) {
+            return \DateTimeImmutable::createFromInterface($valeur);
+        }
+
+        if (is_string($valeur)) {
+            return new \DateTimeImmutable($valeur);
+        }
+
+        throw new \UnexpectedValueException('Valeur de date inattendue dans un agrégat de créneaux.');
+    }
+
+    /**
      * Compte les créneaux actifs dont le début tombe dans la fenêtre [debut, fin].
      * Dénominateur du taux d'occupation du tableau de bord Super-admin (US-5.1) :
      * l'offre totale de créneaux sur la période.
