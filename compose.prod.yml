@@ -1,0 +1,51 @@
+# compose.prod.yml — base de test de l'image de prod (US-9.1, provisoire).
+# Prouve que creaslot:prod rend une page 200 avec les assets compilés servis.
+# HTTPS/Caddy, multi-env preprod/prod et choix définitif du service des assets = US-9.2.
+# Valeurs ci-dessous = TEST uniquement ; en prod réelle elles viendront de l'env
+# d'exécution (US-9.2/9.3), jamais du dépôt.
+services:
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: test_root
+      MYSQL_DATABASE: creaslot_test
+      MYSQL_USER: creaslot
+      MYSQL_PASSWORD: test_pwd
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-ptest_root"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    image: creaslot:prod
+    build:
+      context: .
+      target: runtime
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: "0"
+      APP_SECRET: test_secret_not_real
+      DATABASE_URL: "mysql://creaslot:test_pwd@db:3306/creaslot_test?serverVersion=8.0.0"
+      MAILER_DSN: "null://null"
+      MESSENGER_TRANSPORT_DSN: "sync://"
+    volumes:
+      # Volume nommé initialisé avec public/ de l'image app (assets compilés),
+      # partagé en lecture seule avec nginx.
+      - public_assets:/var/www/html/public
+    depends_on:
+      db:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - public_assets:/var/www/html/public:ro
+    ports:
+      - "8001:80"
+    depends_on:
+      - app
+
+volumes:
+  public_assets:
