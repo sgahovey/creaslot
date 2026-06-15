@@ -356,7 +356,24 @@ FullCalendar de `CLAUDE.md`.
 
 ---
 
-## DT-13 — Self-host Bootstrap + Bootstrap Icons + Google Fonts (🟡 MOYEN) — 🟠 OUVERTE
+## DT-13 — Self-host Bootstrap + Bootstrap Icons + Google Fonts (🟡 MOYEN) — ✅ RÉSOLUE (15/06/2026)
+
+> **✅ RÉSOLUE le 15/06/2026** sur branche `feature/US-9.2-environnements`.
+>
+> **Résumé fix** : les **4 ressources** chargées depuis des CDN tiers (Bootstrap **CSS/JS 5.3.8**, Bootstrap **Icons 1.11.3**, police **Inter**) sont désormais **self-hostées via AssetMapper, sans Node** :
+> - **Bootstrap JS** via `importmap:require bootstrap` (+ **`@popperjs/core`**), importé dans `assets/app.js` ; re-téléchargé au build par `importmap:install` (ignoré de Git, reproductible).
+> - **Bootstrap CSS**, **Bootstrap Icons** (CSS + polices woff2/woff) **vendorisés à la main** sous `assets/vendor/` (pattern FullCalendar/Chart.js [[DT-8]]), `url()` des polices réécrits par AssetMapper (query string `?hash` retiré du `@font-face` Icons).
+> - **Inter** en **variable font latin** (48 Ko, graisses 400-700 couvertes par `font-weight: 100 900`), `@font-face` local, suppression des `<link>` Google (preconnect ×2 + css2).
+> - **Plus aucun appel CDN actif** : `grep -rinE 'jsdelivr|googleapis|gstatic|unpkg' templates/ assets/` = **0** hors commentaires (en-têtes de provenance dans les JS vendorisés). **Cascade préservée** (`<link>` self-hostés placés avant `creaslot.css`).
+> - **Prérequis d'une CSP stricte (OWASP A05) levé** (objet d'un Morceau ultérieur d'US-9.2).
+>
+> **Validations** : page rendue à l'identique (police Inter, icônes `bi-*`, composants JS data-api), polices/CSS servis depuis `/assets/...`, **0 appel** jsdelivr/googleapis/gstatic (onglet réseau) ; suite complète verte (268 tests), PHPStan 8 = 0, CS-Fixer 0.
+>
+> **Commit** : `b352308`.
+
+---
+
+### Contenu historique original (préservé pour traçabilité MSP3)
 
 **Détecté** : 01/06/2026, lors d'une revue qualité en lecture seule (sécurité supply-chain / éco-conception / robustesse).
 
@@ -366,7 +383,7 @@ FullCalendar de `CLAUDE.md`.
 
 **Action proposée** : vendoriser ces dépendances via AssetMapper (même approche que FullCalendar en [[DT-8]]) — self-host CSS/JS/police, versions tracées. **À batcher avec US-5.2** (qui introduira le self-host de Chart.js pour les graphiques du dashboard), pour traiter tout le front CDN en une passe cohérente.
 
-**Priorité** : 🟡 moyenne (supply-chain + CSP + RGESN), à planifier avec US-5.2.
+**Priorité** : 🟡 moyenne (supply-chain + CSP + RGESN), à planifier avec US-5.2 — close.
 
 ---
 
