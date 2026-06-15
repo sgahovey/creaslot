@@ -7,4 +7,6 @@ import './stimulus_bootstrap.js';
  */
 import './styles/app.css';
 
-console.log('This log comes from assets/app.js - welcome to AssetMapper! 🎉');
+// Bootstrap JS self-hosté via importmap (DT-13) : l'import enregistre le data-api
+// (data-bs-* : dropdowns, navbar collapse, modales…). Remplace le <script> CDN.
+import 'bootstrap';
