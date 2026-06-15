@@ -25,8 +25,9 @@
 		Permissions-Policy "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=()"
 		# Ne pas divulguer le serveur.
 		-Server
-		# CSP — RÉSERVÉ pour le bout G (DT-13 self-host fait). NE PAS activer ici.
-		# Content-Security-Policy "default-src 'self'; ..."
+		# Content-Security-Policy : posée par l'application (nonce dynamique par requête,
+		# cf. CspResponseListener). Caddy n'en pose AUCUNE, sinon le listener early-return
+		# (en-tête déjà présent) et le nonce ne correspondrait à rien.
 	}
 
 	# Cache long et immuable sur les assets versionnés (digérés par AssetMapper).

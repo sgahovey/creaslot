@@ -29,7 +29,7 @@
     {% endfor %}
 </div>
 
-<script>
+<script nonce="{{ csp_nonce('script') }}">
     (function () {
         document.querySelectorAll('[data-cs-autodismiss]').forEach(function (el) {
             var delay = parseInt(el.dataset.csAutodismiss, 10) || 5000;
