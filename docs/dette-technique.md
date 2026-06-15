@@ -141,7 +141,17 @@ Recommandation : appliquer les 3 niveaux (defense in depth, best practice Symfon
 
 ---
 
-## DT-4 — Dockerfile USER non-root (🟢 BAS)
+## DT-4 — Dockerfile USER non-root (🟢 BAS) — ✅ RÉSOLUE (15/06/2026)
+
+> **✅ RÉSOLUE le 15/06/2026** sur branche `feature/US-9.1-image-production`.
+>
+> **Résumé fix** : DT-4 résolu **à la source**. Le conteneur **DEV** tourne désormais en **uid 1000 (user `app`)** aligné sur l'utilisateur hôte WSL2 → les fichiers créés via bind-mount appartiennent à l'hôte, **plus de fichiers root**, le workaround `chown` disparaît. L'image de **PROD** (`runtime`) tourne **aussi** en non-root (uid 1000). Résolu par le refactor du Dockerfile en **4 stages** (`base`/`build`/`runtime`/`dev`) dans US-9.1 — le stage `base` crée l'utilisateur `app` 1000:1000 (commun à `runtime` et `dev`) et rend `var/cache`/`var/log` accessibles en écriture par `app` (ownership héritée par les volumes nommés du dev). **Commit `46d60c6`**.
+>
+> **Validations** : `docker compose exec app id` → `uid=1000(app)` ; preuve déterministe → un fichier créé depuis le conteneur via bind-mount appartient à l'utilisateur hôte (1000), pas à root ; dev fonctionnel (`/connexion` 200, composer + phpunit présents, `opcache.validate_timestamps=On`) ; non-régression prod (image `runtime` : `/connexion` 200, exécution non-root, sans NOTICE).
+
+---
+
+### Contenu historique original (préservé pour traçabilité MSP3)
 
 **Détecté** : 18/05/2026, incident permissions Git WSL2.
 
@@ -151,7 +161,7 @@ Recommandation : appliquer les 3 niveaux (defense in depth, best practice Symfon
 
 **Stratégie de fix** : Dockerfile `USER 1000:1000` pour aligner UID avec WSL2.
 
-**Priorité** : 🟢 basse, à faire avant déploiement prod (itération 6).
+**Priorité** : 🟢 basse, à faire avant déploiement prod (itération 6) — close.
 
 ---
 
