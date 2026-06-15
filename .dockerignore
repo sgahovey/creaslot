@@ -1,0 +1,43 @@
+# Contexte de build de l'image de production (US-9.1).
+# Empêche d'embarquer secrets, historique Git et fichiers de dev dans l'image.
+# Le Dockerfile fait `COPY . .` : tout ce qui n'est pas exclu ici entre dans l'image.
+
+# --- Historique et métadonnées Git ---
+.git
+.gitignore
+.gitattributes
+.github/
+
+# --- Secrets (NE PAS exclure .env : il porte les valeurs par défaut non sensibles) ---
+.env.local
+.env.*.local
+.env.production
+
+# --- Cache / logs de dev (le cache prod est régénéré au build via cache:warmup) ---
+var/
+
+# --- Code et docs non nécessaires à l'exécution ---
+tests/
+docs/
+
+# --- Dépendances PHP : reconstruites au build depuis composer.lock (jamais copiées de l'hôte) ---
+vendor/
+
+# --- Dépendances JS (projet sans Node : ne devrait pas exister, exclu par sécurité) ---
+node_modules/
+
+# --- Assets compilés : régénérés au build par asset-map:compile ---
+public/assets/
+
+# --- Orchestration : inutile dans l'image ---
+docker-compose*.yml
+compose*.yml
+
+# --- Réglages d'éditeurs ---
+.idea/
+.vscode/
+
+# --- Caches des outils qualité ---
+.php-cs-fixer.cache
+.phpunit.result.cache
+.phpunit.cache/
