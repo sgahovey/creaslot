@@ -7,7 +7,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: production
+      target: dev
     volumes:
       # Bind mount pour le rechargement à chaud du code en développement
       - .:/var/www/html
