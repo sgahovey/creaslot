@@ -511,3 +511,59 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 **Résolution** (04/06/2026, US-6.2 Morceau 1) : création de `src/Validator/ContraintesMotDePasse.php` — constante `AIDE` (texte d'aide) + méthode statique `regles(): array` (NotBlank + Length(min: 12) + Regex, mêmes messages). `InscriptionType`, `UtilisateurAdminType` et `ChangementMotDePasseType` consomment désormais cette source unique ; le futur `ChangePasswordFormType` (réinitialisation US-6.2) en sera le 4ᵉ consommateur. Comportement inchangé, validé par les WebTests existants (inscription / admin compte / mon profil).
 
 **Priorité** : 🟡 moyenne (qualité de code ; aucun impact fonctionnel) — close.
+
+---
+
+## DT-19 — Logique de réservation dans le contrôleur au lieu d'un ReservationService (🟡 MOYEN) — 🟠 OUVERTE
+
+**Détecté** : 07/06/2026, lors de l'audit de sécurité OWASP (US-8.3, A04 — Insecure Design).
+
+**Constat** : la logique métier de réservation (transaction explicite + `lock(PESSIMISTIC_WRITE)` + `refresh` + re-vérification de disponibilité + `persist`/`flush`/`commit` + notifications) vit directement dans `ReservationController::enregistrerReservation` (`src/Controller/Auditeur/ReservationController.php`, cf. `beginTransaction` L108), et l'annulation dans `ReservationAnnulationController`. Cela viole la convention d'architecture du projet (CLAUDE.md : « Logique métier dans des Services (`src/Service/`), pas dans les contrôleurs ; un contrôleur reste mince ») : il n'existe **pas** de `src/Service/ReservationService.php`.
+
+**Impact** : qualité/architecture, **sans impact sécuritaire ni fonctionnel** (comportement figé par 9 WebTests, `tests/Controller/Auditeur/ReservationParcoursControllerTest.php`). Contrôleur épais → testabilité unitaire moindre (couvert seulement par des WebTests, pas de test unitaire de service), réutilisabilité limitée (une API ou commande future devrait dupliquer le verrouillage).
+
+**Action proposée** : extraire un `ReservationService` portant l'enregistrement et l'annulation ; les contrôleurs se réduisent à recevoir → déléguer → répondre. **Préserver impérativement** le pattern transaction explicite + `PESSIMISTIC_WRITE` + re-vérification après `refresh` (cf. CLAUDE.md « Concurrence sur les réservations »). Refacto pur, sans changement de comportement, validé par les 9 WebTests existants.
+
+**Priorité** : 🟡 moyenne (qualité/architecture ; aucun impact sécuritaire ni fonctionnel), à traiter dans une passe d'alignement architectural.
+
+---
+
+## DT-20 — En-tête X-XSS-Protection déprécié dans le Caddyfile (🟢 BAS) — 🟠 OUVERTE
+
+**Détecté** : 15/06/2026, lors d'US-9.2 (revue des en-têtes derrière Caddy).
+
+**Constat** : le snippet `securite` de `docker/caddy/Caddyfile` pose encore `X-XSS-Protection "1; mode=block"` (hérité de l'ancienne conf nginx). Cet en-tête est **déprécié** et ignoré par les navigateurs modernes ; il peut même introduire des comportements indésirables sur de vieux moteurs.
+
+**Impact** : nul à négatif (faux signal de protection) ; le besoin est désormais couvert par la **CSP à nonce** (DT-13/US-9.2) qui neutralise le XSS bien plus efficacement.
+
+**Action proposée** : retirer la ligne `X-XSS-Protection` du snippet `securite` (`docker/caddy/Caddyfile`) ; aucune compensation nécessaire (CSP en place). Vérifier l'absence de l'en-tête en `curl -I`.
+
+**Priorité** : 🟢 basse (cosmétique sécurité ; aucun impact fonctionnel).
+
+---
+
+## DT-21 — Champ username caché absent du formulaire de changement de mot de passe (🟢 BAS) — 🟠 OUVERTE
+
+**Détecté** : 15/06/2026, lors d'US-9.2 (tour de validation navigateur, console DevTools).
+
+**Constat** : le formulaire de changement de mot de passe (`/mon-profil/mot-de-passe`) ne comporte pas de champ `username` caché (`autocomplete="username"`). Les navigateurs et gestionnaires de mots de passe émettent un avertissement DevTools (« password field is not contained in a form … missing username field ») et associent mal l'identifiant à la nouvelle entrée.
+
+**Impact** : mineur — accessibilité / UX des gestionnaires de mots de passe (mémorisation et remplissage moins fiables) ; aucune faille de sécurité.
+
+**Action proposée** : ajouter un `<input type="text" name="username" autocomplete="username" hidden>` (valeur = email de l'utilisateur connecté) dans le template du formulaire, et `autocomplete="new-password"` sur les champs concernés. Vérifier la disparition de l'avertissement DevTools.
+
+**Priorité** : 🟢 basse (a11y / confort gestionnaires de mots de passe).
+
+---
+
+## DT-22 — Latence d'un handler de clic (~1,6 s) sur une page d'administration (🟢 BAS) — 🟠 OUVERTE
+
+**Détecté** : 15/06/2026, lors d'US-9.2 (tour de validation navigateur, onglet Performance).
+
+**Constat** : un handler de clic d'environ **1,6 s** a été observé sur une page d'administration (interaction longue rapportée par les DevTools). La cause exacte n'est pas encore identifiée (rendu, requête synchrone, traitement JS d'un contrôleur Stimulus ?).
+
+**Impact** : mineur au volume actuel (interaction ponctuelle, pas de blocage fonctionnel), mais dégrade la réactivité perçue ; à surveiller si la volumétrie augmente.
+
+**Action proposée** : **profiler** l'interaction (onglet Performance / `console.time`) pour isoler le coût (DOM, réseau, JS), puis optimiser la cause identifiée (ex. requête déférée, allègement du rendu). Reproduire avant/après pour mesurer le gain.
+
+**Priorité** : 🟢 basse (perf perçue ; à profiler avant d'agir).
