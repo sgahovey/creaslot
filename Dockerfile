@@ -116,6 +116,12 @@ FROM base AS runtime
 # Configuration PHP de production (OPcache figé, erreurs masquées).
 COPY docker/php/php-prod.ini /usr/local/etc/php/conf.d/app.ini
 
+# Entrypoint : synchronise public/ vers /srv-assets au boot (servi par Caddy, US-9.2).
+# /srv-assets pré-créé et possédé par app pour rester écrivable en uid 1000 (avec ou
+# sans volume monté).
+COPY --chmod=755 docker/app/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN mkdir -p /srv-assets && chown app:app /srv-assets
+
 # Application complète depuis le stage build (code + vendor + public/assets + var/cache préchauffé).
 COPY --from=build --chown=app:app /var/www/html /var/www/html
 
@@ -124,6 +130,7 @@ USER app
 # PHP-FPM écoute sur le port 9000 (> 1024 : aucun privilège root requis).
 EXPOSE 9000
 
+ENTRYPOINT ["entrypoint.sh"]
 CMD ["php-fpm"]
 
 # ==============================================================================

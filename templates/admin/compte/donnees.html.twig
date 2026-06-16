@@ -24,7 +24,7 @@
             Données personnelles — {{ compte.prenom }} {{ compte.nom }}
         </h2>
         <div class="d-flex flex-wrap gap-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-2" onclick="window.print()">
+            <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-2" data-controller="print" data-action="print#now">
                 <i class="bi bi-printer" aria-hidden="true"></i>
                 Imprimer
             </button>

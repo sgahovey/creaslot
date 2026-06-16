@@ -1,0 +1,67 @@
+# Caddyfile — reverse-proxy HTTPS des 2 environnements CreaSlot (US-9.2).
+# Caddy seul : terminaison TLS + en-têtes de sécurité + service des assets statiques
+# (file_server) + délégation PHP (php_fastcgi) vers les conteneurs app-preprod/app-prod.
+#
+# TLS piloté par {$CADDY_TLS} :
+#   - LOCAL : CADDY_TLS=internal -> certificats auto-signés de la CA locale Caddy.
+#   - VPS   : CADDY_TLS=<email>  -> ACME Let's Encrypt (sslip.io résout vers l'IP).
+#
+# Dual-root : `root` du site = volume d'assets servi par Caddy (file_server) ; le
+# `root` de php_fastcgi = chemin RÉEL dans le conteneur app (/var/www/html/public),
+# utilisé pour SCRIPT_FILENAME — php-fpm résout le fichier chez lui, Caddy n'a pas
+# besoin que ce dossier existe de son côté.
+
+# --- Snippet en-têtes de sécurité, importé par les deux sites ---
+(securite) {
+	header {
+		# OWASP — en-têtes de base (portés depuis la conf nginx).
+		X-Frame-Options "SAMEORIGIN"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-XSS-Protection "1; mode=block"
+		# HSTS — forcer HTTPS pendant 1 an, sous-domaines inclus.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		# Permissions-Policy — désactive les API sensibles non utilisées.
+		Permissions-Policy "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=()"
+		# Ne pas divulguer le serveur.
+		-Server
+		# Content-Security-Policy : posée par l'application (nonce dynamique par requête,
+		# cf. CspResponseListener). Caddy n'en pose AUCUNE, sinon le listener early-return
+		# (en-tête déjà présent) et le nonce ne correspondrait à rien.
+	}
+
+	# Cache long et immuable sur les assets versionnés (digérés par AssetMapper).
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+}
+
+# --- Pré-production (accès restreint par basic_auth) ---
+{$PREPROD_HOST} {
+	tls {$CADDY_TLS}
+
+	root * /srv/preprod
+	import securite
+
+	# Authentification HTTP : la pré-prod n'est pas publique.
+	basic_auth {
+		{$PREPROD_BASICAUTH_USER} {$PREPROD_BASICAUTH_HASH}
+	}
+
+	php_fastcgi app-preprod:9000 {
+		root /var/www/html/public
+	}
+	file_server
+}
+
+# --- Production (publique) ---
+{$PROD_HOST} {
+	tls {$CADDY_TLS}
+
+	root * /srv/prod
+	import securite
+
+	php_fastcgi app-prod:9000 {
+		root /var/www/html/public
+	}
+	file_server
+}

@@ -1,0 +1,19 @@
+/*
+ * Police Inter self-hostée (DT-13) — remplace Google Fonts.
+ *
+ * Fichier variable (sous-ensemble latin) tel que servi par Google Fonts : un seul
+ * woff2 couvre toutes les graisses via l'axe `wght`. Le projet n'utilise que
+ * 400 / 500 / 600 / 700 (corps, fw-medium, fw-semibold, fw-bold) — tous couverts par
+ * la plage `font-weight: 100 900`. Sous-ensemble latin (U+0000-00FF, Œœ, €, ponctuation
+ * typographique U+2000-206F) : suffisant pour le français, footprint minimal (RGESN).
+ *
+ * Chemin relatif au CSS -> AssetMapper réécrit la source vers le fichier digéré.
+ * Famille « Inter » conforme au token --cs-font-family (public/css/creaslot.css).
+ */
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('./inter-latin.woff2') format('woff2');
+}

@@ -12,6 +12,13 @@
 .env.local
 .env.*.local
 .env.production
+# Fichiers d'env de déploiement (US-9.2) : consommés par compose `env_file:` au runtime,
+# jamais bakés (sinon Symfony chargerait .env.prod du disque dans le conteneur préprod).
+.env.preprod
+.env.prod
+.env.deploy.local.example
+.env.preprod.local.example
+.env.prod.local.example
 
 # --- Cache / logs de dev (le cache prod est régénéré au build via cache:warmup) ---
 var/

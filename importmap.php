@@ -25,6 +25,17 @@ return [
     '@hotwired/turbo' => [
         'version' => '8.0.23',
     ],
+    // Bootstrap JS (data-api : dropdowns, navbar collapse, modales…) self-hosté via
+    // AssetMapper (DT-13). @popperjs/core est sa dépendance (dropdowns/tooltips).
+    // Le CSS Bootstrap n'est PAS dans l'importmap : il est vendorisé à la main et
+    // chargé par <link> (cf. base.html.twig), pour maîtriser l'ordre de cascade
+    // vis-à-vis de creaslot.css.
+    'bootstrap' => [
+        'version' => '5.3.8',
+    ],
+    '@popperjs/core' => [
+        'version' => '2.11.8',
+    ],
     // NB : FullCalendar v6 n'est PAS dans l'importmap. Son bundle global officiel
     // (assets/vendor/fullcalendar/) déclare `var FullCalendar` au niveau global d'un
     // script classique : chargé en ESM ce `var` resterait local au module et

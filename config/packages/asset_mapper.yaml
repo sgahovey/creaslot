@@ -4,6 +4,10 @@ framework:
         paths:
             - assets/
         missing_import_mode: strict
+        # Polyfill es-module-shims désactivé (US-9.2/CSP) : cible = navigateurs modernes
+        # avec support natif des import maps. Évite le <script> de polyfill (data:/jspm.io)
+        # incompatible avec un script-src strict (sans data: ni hôte CDN).
+        importmap_polyfill: false
 
 when@prod:
     framework:

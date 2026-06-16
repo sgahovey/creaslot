@@ -60,6 +60,17 @@ compose.override.yml
 /assets/vendor/*
 !/assets/vendor/fullcalendar/
 !/assets/vendor/chartjs/
+# Bootstrap : le JS vient de l'importmap (régénéré par importmap:install, ignoré),
+# mais le CSS est vendorisé à la main (DT-13, hors importmap) → on versionne le SEUL
+# bootstrap.min.css (ré-inclusion du dossier puis ré-exclusion de son contenu JS).
+!/assets/vendor/bootstrap/
+/assets/vendor/bootstrap/*
+!/assets/vendor/bootstrap/bootstrap.min.css
+# Bootstrap Icons vendorisé à la main (DT-13, hors importmap) : CSS + polices
+# woff2/woff. Tout le dossier est versionné (aucune régénération automatique).
+!/assets/vendor/bootstrap-icons/
+# Police Inter self-hostée (DT-13, remplace Google Fonts) : CSS @font-face + woff2.
+!/assets/vendor/inter/
 ###< symfony/asset-mapper ###
 
 ###> friendsofphp/php-cs-fixer ###

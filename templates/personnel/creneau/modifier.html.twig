@@ -205,7 +205,7 @@
 {% endblock %}
 
 {% block javascripts %}
-<script>
+<script nonce="{{ csp_nonce('script') }}">
 (function () {
     'use strict';
 
