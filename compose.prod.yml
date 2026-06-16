@@ -28,6 +28,7 @@ services:
       PREPROD_HOST: ${PREPROD_HOST}
       PROD_HOST: ${PROD_HOST}
       CADDY_TLS: ${CADDY_TLS}
+      CADDY_ACME_CA: ${CADDY_ACME_CA:-https://acme-v02.api.letsencrypt.org/directory}
       PREPROD_BASICAUTH_USER: ${PREPROD_BASICAUTH_USER}
       PREPROD_BASICAUTH_HASH: ${PREPROD_BASICAUTH_HASH}
     volumes:
