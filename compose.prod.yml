@@ -7,11 +7,11 @@
 name: creaslot_prod
 
 # Base commune aux conteneurs applicatifs (app + worker), image identique.
+# Image prod construite par UN SEUL service (app-prod) puis partagee par les 4 services
+# via "image: creaslot:prod". Porter "build:" sur l'ancre declenchait 4 builds paralleles
+# du meme tag -> collision a l'export ("image already exists"). Cf US-9.3.
 x-app-base: &app-base
   image: creaslot:prod
-  build:
-    context: .
-    target: runtime
   restart: unless-stopped
   depends_on:
     db:
@@ -77,6 +77,9 @@ services:
 
   app-prod:
     <<: *app-base
+    build:
+      context: .
+      target: runtime
     env_file:
       - .env.prod
       - path: .env.prod.local
