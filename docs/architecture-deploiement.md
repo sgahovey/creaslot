@@ -170,15 +170,33 @@ l'image — secrets dans l'artefact, image non promouvable entre environnements.
 
 - **HTTPS détecté sans `trusted_proxies`** : `php_fastcgi` transmet `HTTPS=on`, donc
   `Request::isSecure()` est vrai et `session.cookie_secure: auto` (défaut Symfony) suffit
-  à émettre un cookie sécurisé. **`trusted_proxies`** reste nécessaire pour la **vraie IP
-  client** (`X-Forwarded-For`, utile au `login_throttling` A07) → **renvoyé US-9.3** (valeur
-  dépendant du réseau du VPS).
+  à émettre un cookie sécurisé.
+- **Vraie IP client sans `trusted_proxies`** : vérifié au déploiement (US-9.3), voir la note
+  ci-dessous.
 - **CSP à nonce (OWASP A05)** : posée **par l'application** (`CspResponseListener` +
   `csp_nonce()`), `script-src 'self' 'nonce-…'` strict, sans `unsafe-inline` ni
   `unsafe-eval`. **Pourquoi côté app et non dans Caddy** : le nonce change par requête, donc
   un en-tête **statique** Caddy ne peut pas le porter. Détails : `docs/audit-securite-owasp.md` §3 (A05).
 - En-têtes posés par Caddy (snippet `securite`) : HSTS, X-Frame-Options, X-Content-Type-Options,
   Referrer-Policy, X-XSS-Protection, Permissions-Policy, en-tête `Server` masqué.
+
+### trusted_proxies : vérifié non requis
+
+Caddy est le seul proxy de bordure (aucun proxy en amont). Vérifié empiriquement au
+premier déploiement (US-9.3) via une sonde temporaire : une requête externe arrive côté
+PHP avec REMOTE_ADDR = IP publique réelle du client, et non une adresse du réseau Docker
+(172.x). Caddy, en php_fastcgi, renseigne lui-même REMOTE_ADDR ; le NAT Docker (DNAT
+iptables) préserve l'IP source pour le trafic externe.
+
+Conséquence : `Request::getClientIp()` est correct sans configurer
+`framework.trusted_proxies`. C'est aussi le choix le plus sûr : déclarer un proxy de
+confiance là où il n'y en a pas ouvrirait une surface d'usurpation d'IP via X-Forwarded-For.
+Le throttling de connexion (A07) et la future journalisation des échecs (A09) reposent
+donc sur une IP client fiable.
+
+Condition de réactivation : si un proxy s'intercale un jour devant Caddy (CDN, load
+balancer), déclarer `framework.trusted_proxies` avec son sous-réseau et activer la lecture
+des en-têtes `X-Forwarded-*` (`trusted_headers`).
 
 ---
 
