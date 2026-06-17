@@ -42,40 +42,34 @@ Purge du journal d'administration
  [OK] 0 entrées SERAIENT purgées (antérieures au JJ/MM/AAAA).
 ```
 
-## Configuration cron Linux (PROD — VPS-2 OVH)
+## Configuration cron Linux (PROD — VPS OVH 51.178.25.175)
 
-### Étape 1 — Éditer la crontab du user `creaslot`
+En place depuis **US-9.3** (déploiement réel). Le VPS est en fuseau **`Etc/UTC`**
+(confirmé via `timedatectl`). La borne de rétention étant mensuelle, l'heure exacte
+n'est pas critique : `0 3 1 * *` (03h00 UTC le 1er du mois) convient.
+
+### Étape 1 — Éditer la crontab de l'utilisateur `ubuntu`
 
 ```bash
-ssh creaslot@vps-creaslot.ovh
+ssh ubuntu@51.178.25.175
 crontab -e
 ```
 
 ### Étape 2 — Ajouter la ligne suivante
 
 ```cron
-# CreaSlot — Purge du journal RGPD (rétention 12 mois — DT-15)
-# Exécution : le 1er de chaque mois à 03h00.
-# Note : le seuil de rétention est calculé EN INTERNE par la commande en heure
-# Réunion (Indian/Reunion). Pour une purge mensuelle, l'heure exacte du cron
-# n'est donc pas critique — un décalage UTC/Réunion de 4h est sans incidence
-# sur une borne exprimée en mois.
-
-0 3 1 * * cd /var/www/creaslot && docker compose exec -T app php bin/console app:purger-journal >> /var/log/creaslot/cron-purge-journal.log 2>&1
+# CreaSlot — Purge du journal RGPD (rétention 12 mois — DT-15 ; VPS en UTC)
+# Exécution : le 1er de chaque mois à 03h00 UTC. Le seuil de rétention est calculé
+# EN INTERNE par la commande en heure Réunion ; pour une borne mensuelle, le décalage
+# UTC/Réunion de 4h est sans incidence.
+0 3 1 * * cd /home/ubuntu/creaslot && /usr/bin/docker compose -f compose.prod.yml --env-file .env.deploy.local exec -T app-prod php bin/console app:purger-journal >> /home/ubuntu/cron-logs/purger-journal.log 2>&1
 ```
 
-ℹ️ **Conversion timezone (pour mémoire, non critique ici)** :
+Notes :
 
-- Si TZ serveur = UTC : `0 3 1 * *` s'exécute à 03h00 UTC = 07h00 Réunion.
-- Si TZ serveur = Indian/Reunion : `0 3 1 * *` s'exécute à 03h00 Réunion.
-
-Contrairement au rappel J-1 (où l'heure compte), la borne de rétention étant
-mensuelle, l'un ou l'autre convient. Vérification timezone serveur :
-
-```bash
-date
-timedatectl
-```
+- Chemin **absolu** de `docker` (`/usr/bin/docker`) : le cron a un PATH minimal.
+- `exec -T` : pas de TTY en contexte cron.
+- L'invocation cible le conteneur applicatif **prod** via `compose.prod.yml` + `--env-file .env.deploy.local`.
 
 ### Étape 3 — Vérifier que la cron est bien enregistrée
 
@@ -83,13 +77,13 @@ timedatectl
 crontab -l | grep purger-journal
 ```
 
-### Étape 4 — Dossier de logs (mutualisé avec les autres crons CreaSlot)
+### Étape 4 — Dossier de logs (propriétaire `ubuntu`, mutualisé avec les autres crons CreaSlot)
 
 ```bash
-sudo mkdir -p /var/log/creaslot
-sudo chown creaslot:creaslot /var/log/creaslot
-sudo chmod 755 /var/log/creaslot
+mkdir -p /home/ubuntu/cron-logs
 ```
+
+Aucun `sudo`/`chown` nécessaire : `/home/ubuntu/cron-logs` appartient déjà à `ubuntu`.
 
 ### Étape 5 — Test post-déploiement
 
@@ -97,10 +91,11 @@ Le 1er du mois suivant à 03h05, vérifier :
 
 ```bash
 # Vérifier que la commande s'est exécutée
-tail -20 /var/log/creaslot/cron-purge-journal.log
+tail -20 /home/ubuntu/cron-logs/purger-journal.log
 
 # Vérifier en BDD qu'il ne reste aucune entrée antérieure à 12 mois
-docker compose exec -T app php bin/console doctrine:query:sql \
+cd /home/ubuntu/creaslot && /usr/bin/docker compose -f compose.prod.yml --env-file .env.deploy.local exec -T app-prod \
+  php bin/console doctrine:query:sql \
   "SELECT COUNT(*) AS expirees FROM journal_admin WHERE date_action < (NOW() - INTERVAL 12 MONTH)"
 ```
 
@@ -131,11 +126,10 @@ nombre d'entrées et la date seuil (ISO). La purge **ne s'auto-journalise pas** 
 
 ## Périmètre — maintenant vs déploiement
 
-- **Maintenant (cette PR, DT-15)** : commande `app:purger-journal` + repository
+- **DT-15 (couche applicative)** : commande `app:purger-journal` + repository
   (`purgerAvant` / `compterAvant`) + constante de rétention + tests + cette doc.
-- **Déploiement (itération 9)** : **l'ajout de la ligne crontab ci-dessus sur le VPS
-  est renvoyé au déploiement**, comme le cron des rappels J-1. Aucune planification
-  n'est activée à ce stade.
+- **Déploiement (US-9.3)** : **la ligne crontab ci-dessus est en place sur le VPS**,
+  comme le cron des rappels J-1.
 
 ## Backup plan — Si cron Linux indisponible
 

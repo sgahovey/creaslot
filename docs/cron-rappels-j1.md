@@ -27,37 +27,32 @@ Recherche des réservations ACTIVE pour le JJ/MM/2026 (Réunion)...
  [OK] Rappels J-1 : 0 envoyés, 0 erreurs.
 ```
 
-## Configuration cron Linux (PROD — VPS-2 OVH)
+## Configuration cron Linux (PROD — VPS OVH 51.178.25.175)
 
-### Étape 1 — Éditer la crontab du user `creaslot`
+En place depuis **US-9.3** (déploiement réel). Le VPS est en fuseau **`Etc/UTC`**
+(confirmé via `timedatectl`) : l'heure Réunion étant UTC+4 sans changement d'heure,
+`0 14 * * *` (14h00 UTC) correspond à **18h00 heure Réunion**.
+
+### Étape 1 — Éditer la crontab de l'utilisateur `ubuntu`
 
 ```bash
-ssh creaslot@vps-creaslot.ovh
+ssh ubuntu@51.178.25.175
 crontab -e
 ```
 
 ### Étape 2 — Ajouter la ligne suivante
 
 ```cron
-# CreaSlot — Rappels J-1 (heure Réunion = UTC+4, pas de DST)
-# Exécution : tous les jours à 18h00 heure Réunion
-# Note : le serveur OVH étant en UTC, on schedule à 14h00 UTC pour atteindre 18h00 Réunion.
-# Si le serveur est configuré en TZ=Indian/Reunion, schedule à 18h00 directement.
-
-0 14 * * * cd /var/www/creaslot && docker compose exec -T app php bin/console app:envoyer-rappels-j1 >> /var/log/creaslot/cron.log 2>&1
+# CreaSlot — Rappels J-1 (heure Réunion = UTC+4, pas de DST ; VPS en UTC)
+# Exécution : tous les jours à 14h00 UTC = 18h00 heure Réunion.
+0 14 * * * cd /home/ubuntu/creaslot && /usr/bin/docker compose -f compose.prod.yml --env-file .env.deploy.local exec -T app-prod php bin/console app:envoyer-rappels-j1 >> /home/ubuntu/cron-logs/rappels-j1.log 2>&1
 ```
 
-⚠️ **Conversion timezone à confirmer côté VPS** :
+Notes :
 
-- Si TZ serveur = UTC : `0 14 * * *` (= 18h Réunion)
-- Si TZ serveur = Indian/Reunion : `0 18 * * *`
-
-Vérification timezone serveur :
-
-```bash
-date
-timedatectl
-```
+- Chemin **absolu** de `docker` (`/usr/bin/docker`) : le cron a un PATH minimal.
+- `exec -T` : pas de TTY en contexte cron.
+- L'invocation cible le conteneur applicatif **prod** via `compose.prod.yml` + `--env-file .env.deploy.local`.
 
 ### Étape 3 — Vérifier que la cron est bien enregistrée
 
@@ -65,13 +60,13 @@ timedatectl
 crontab -l | grep envoyer-rappels-j1
 ```
 
-### Étape 4 — Créer le dossier de logs
+### Étape 4 — Créer le dossier de logs (propriétaire `ubuntu`)
 
 ```bash
-sudo mkdir -p /var/log/creaslot
-sudo chown creaslot:creaslot /var/log/creaslot
-sudo chmod 755 /var/log/creaslot
+mkdir -p /home/ubuntu/cron-logs
 ```
+
+Aucun `sudo`/`chown` nécessaire : `/home/ubuntu/cron-logs` appartient déjà à `ubuntu`.
 
 ### Étape 5 — Test post-déploiement
 
@@ -79,10 +74,11 @@ Le lendemain à 18h01 (heure Réunion), vérifier :
 
 ```bash
 # Vérifier que la commande s'est exécutée
-tail -20 /var/log/creaslot/cron.log
+tail -20 /home/ubuntu/cron-logs/rappels-j1.log
 
 # Vérifier en BDD que les rappels sont marqués
-docker compose exec -T app php bin/console doctrine:query:sql \
+cd /home/ubuntu/creaslot && /usr/bin/docker compose -f compose.prod.yml --env-file .env.deploy.local exec -T app-prod \
+  php bin/console doctrine:query:sql \
   "SELECT id, rappel_envoye_at FROM reservation WHERE rappel_envoye_at IS NOT NULL ORDER BY id DESC LIMIT 5"
 ```
 
