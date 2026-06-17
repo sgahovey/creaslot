@@ -13,7 +13,7 @@ use Symfony\Component\Security\Http\Event\LoginFailureEvent;
 final class LoginFailureListener
 {
     public function __construct(
-        private readonly LoggerInterface $logger,
+        private readonly LoggerInterface $securityLogger,
     ) {
     }
 
@@ -24,7 +24,7 @@ final class LoginFailureListener
 
         if ($exception instanceof DisabledException) {
             // Compte existant mais désactivé — niveau NOTICE (non problématique)
-            $this->logger->notice(
+            $this->securityLogger->notice(
                 'Tentative de connexion sur compte désactivé',
                 ['email' => $email],
             );
@@ -33,7 +33,7 @@ final class LoginFailureListener
         }
 
         // Mauvais identifiants ou autre échec — niveau WARNING
-        $this->logger->warning(
+        $this->securityLogger->warning(
             'Tentative de connexion échouée',
             ['email' => $email],
         );

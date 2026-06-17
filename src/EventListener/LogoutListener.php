@@ -14,7 +14,7 @@ use Symfony\Component\Security\Http\Event\LogoutEvent;
 final class LogoutListener
 {
     public function __construct(
-        private readonly LoggerInterface $logger,
+        private readonly LoggerInterface $securityLogger,
     ) {
     }
 
@@ -23,7 +23,7 @@ final class LogoutListener
         $utilisateur = $event->getToken()?->getUser();
 
         if ($utilisateur instanceof Utilisateur) {
-            $this->logger->info('Déconnexion', ['user_id' => $utilisateur->getId()]);
+            $this->securityLogger->info('Déconnexion', ['user_id' => $utilisateur->getId()]);
         }
 
         // getFlashBag() n'est pas déclaré par SessionInterface (Symfony 8) : on
