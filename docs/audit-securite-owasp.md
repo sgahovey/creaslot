@@ -65,15 +65,15 @@ Les 33 avis restants (sévérités moyenne à basse : `cache`, `routing`, `http-
 | **A04 — Insecure Design** | Verrou **`PESSIMISTIC_WRITE`** + re-vérification après `refresh` ; invariant **« ≤ 1 réservation ACTIVE par créneau »** ; **suppression logique** (statut ANNULEE) ; jeton de réinitialisation à **usage unique** + `session->migrate(true)` | ✅ Couvert | Refactor `ReservationService` (qualité, non sécuritaire) → **DT-19** |
 | **A05 — Security Misconfiguration** | **CSP à nonce** posée par l'application (`CspResponseListener` + `csp_nonce()`) : `script-src 'self' 'nonce-…'` strict, sans `unsafe-inline`/`unsafe-eval` (US-9.2) ; en-têtes via Caddy : **HSTS**, **Permissions-Policy**, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, en-tête **`Server` masqué** (`docker/caddy/Caddyfile`) ; **`APP_ENV=prod` / `APP_DEBUG=0`** câblés (`.env.preprod`/`.env.prod`) ; web-profiler en `dev` uniquement ; bandeau d'environnement | ✅ Traité | Résiduel : **certificat TLS réel** → **US-9.3** |
 | **A06 — Vulnerable & Outdated Components** | Versions **pinnées** (`8.0.*`, `^3.0`) ; `composer.lock` versionné ; `composer audit` exécuté ; **remédiation `composer update`** (§2) | ✅ Corrigé | **0 avis** (était 38) |
-| **A07 — Identification & Authentication Failures** | Politique de mot de passe centralisée `ContraintesMotDePasse` (≥ 12 + jeu de caractères) ; reset à usage unique ; **CSRF** sur les formulaires ; **messages d'authentification neutres** ; **`login_throttling: max_attempts: 5`** (anti-brute-force, ajouté en US-8.3) | ✅ Corrigé | Throttling **testé** (`LoginThrottlingTest`, suite à 247 tests). Journalisation des échecs de login → itération 9 (mineur) |
+| **A07 — Identification & Authentication Failures** | Politique de mot de passe centralisée `ContraintesMotDePasse` (≥ 12 + jeu de caractères) ; reset à usage unique ; **CSRF** sur les formulaires ; **messages d'authentification neutres** ; **`login_throttling: max_attempts: 5`** (anti-brute-force, ajouté en US-8.3) | ✅ Corrigé | Throttling **testé** (`LoginThrottlingTest`, suite à 247 tests). Journalisation des échecs de login **traitée en US-9.5** (channel Monolog `security`, cf. A09) |
 | **A08 — Software & Data Integrity Failures** | **CI** GitHub Actions (3 jobs) sur `push`/`pull_request` ; `composer.lock` (intégrité des dépendances) ; aucune désérialisation de données non fiables dans le code applicatif | ✅ Couvert | — |
-| **A09 — Security Logging & Monitoring** | **`JournalAdmin`** (trace immuable des actions d'administration sur les comptes, RGPD) ; Monolog sur connexion réussie, déconnexion, réservation, annulation, profil, réinitialisation | ✅ Couvert | Journalisation explicite des **échecs** d'authentification + supervision → **US-9.4** (mineur) |
+| **A09 — Security Logging & Monitoring** | **`JournalAdmin`** (trace immuable des actions d'administration sur les comptes, RGPD) ; Monolog sur réservation, annulation, profil, réinitialisation ; **évènements d'authentification** (connexion réussie, **échec**, compte désactivé, déconnexion) journalisés via un **channel Monolog `security` dédié**, écrit systématiquement (handler `stream` **hors `fingers_crossed`** → non bufferisé), en complément du `login_throttling` A07 — **US-9.5** | ✅ Couvert | Alerting/supervision temps réel (SIEM) : évolution **hors périmètre projet** |
 | **A10 — Server-Side Request Forgery (SSRF)** | **Non applicable** : aucune requête sortante pilotée par l'utilisateur (l'unique sortie réseau est l'envoi d'email vers l'endpoint Brevo, fixe et configuré) | ✅ N/A | — |
 
 **Synthèse** : 8 catégories couvertes/traitées, 2 corrigées dans US-8.3 (**A06**, **A07**), **A05 traité
 en US-9.2** (CSP à nonce + en-têtes Caddy), **A02 partiel** (HSTS/TLS en place, certificat réel → US-9.3),
-1 non applicable (A10). Résiduels non bloquants : certificat ACME (US-9.3), journalisation des échecs de
-login (US-9.4).
+**A09 complété en US-9.5** (journalisation des échecs d'authentification via le channel `security`),
+1 non applicable (A10). Résiduel non bloquant : certificat ACME (US-9.3).
 
 ---
 
@@ -91,12 +91,11 @@ login (US-9.4).
 | Constat | Renvoi | Justification |
 |---|---|---|
 | **A02/A05** — **certificat TLS réel** (HTTPS/HSTS effectifs) | **US-9.3 (déploiement réel)** | HSTS et l'architecture TLS Caddy sont en place et validés en local (`tls internal`, US-9.2) ; seul le certificat **ACME Let's Encrypt** dépend du domaine/VPS cible. `trusted_proxies` (vraie IP client) dépend aussi du réseau du VPS |
-| **A09** — journalisation explicite des **échecs** de login + supervision | **US-9.4 (exploitation)** | Amélioration de la traçabilité ; non bloquante (le throttling A07 limite déjà l'exploitation, et les connexions réussies sont déjà tracées) |
 | **A04** — extraction d'un `ReservationService` | **DT-19** (registre de dette) | Amélioration de **qualité/architecture** (contrôleur mince), **sans impact sécuritaire** ; le comportement est figé par 9 WebTests, refactor sûr ultérieur |
 
-Tous les renvois sont **non bloquants** : ils relèvent du déploiement réel (A02/A05 → US-9.3), de
-l'exploitation (A09 → US-9.4) ou de la qualité de code (A04), et aucun n'expose une vulnérabilité active
-dans l'environnement applicatif audité.
+Tous les renvois sont **non bloquants** : ils relèvent du déploiement réel (A02/A05 → US-9.3) ou de la
+qualité de code (A04 → DT-19), et aucun n'expose une vulnérabilité active dans l'environnement applicatif
+audité.
 
 ### 4.3 Traité dans US-9.2
 
@@ -105,6 +104,12 @@ dans l'environnement applicatif audité.
 | **A05** — en-tête **CSP** absent | **CSP à nonce par requête** : `CspNonceProvider` + extension Twig `csp_nonce()` + `CspResponseListener` (HTML uniquement, hors `dev`, hors JSON). `script-src 'self' 'nonce-…'` strict (sans `unsafe-inline`/`unsafe-eval`) ; front adapté (nonce sur importmap/scripts inline, `onclick` → contrôleur Stimulus, polyfill es-module-shims désactivé, CSS d'entrypoint en `<link>`) | `tests/Controller/CspHeaderTest.php` : CSP présente, nonce en-tête = nonce des `<script>`, **JSON sans CSP** ; suite à **271 tests** verts |
 | **A05** — en-têtes durcis + masquage serveur | Via Caddy (`docker/caddy/Caddyfile`) : **HSTS**, **Permissions-Policy**, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, en-tête **`Server` masqué** | Vérifié en local (`curl -I`) sur les 2 sites |
 | **A05** — `APP_ENV=prod` / `APP_DEBUG=0` | Câblés par environnement (`.env.preprod`, `.env.prod`), injectés via `env_file` (cf. `docs/architecture-deploiement.md` §3.7) | Conteneurs prod : `APP_ENV=prod` confirmé |
+
+### 4.4 Traité dans US-9.5
+
+| Constat | Action | Vérification |
+|---|---|---|
+| **A09** — journalisation explicite des **échecs** d'authentification | Channel Monolog **`security`** déclaré au niveau racine ; les listeners `LoginSuccessListener` / `LoginFailureListener` / `LogoutListener` y journalisent connexion réussie, échec, compte désactivé et déconnexion. Handler `security` (`stream` → `php://stderr`, JSON) **hors `fingers_crossed`** → écrit systématiquement, jamais bufferisé | Suite verte (274 tests) ; `debug:container monolog.logger.security` présent ; en complément du `login_throttling` A07 |
 
 ---
 

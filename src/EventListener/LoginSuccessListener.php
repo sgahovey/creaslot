@@ -15,7 +15,7 @@ final class LoginSuccessListener
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly LoggerInterface $logger,
+        private readonly LoggerInterface $securityLogger,
     ) {
     }
 
@@ -30,6 +30,6 @@ final class LoginSuccessListener
         $utilisateur->setDerniereConnexion(new \DateTimeImmutable());
         $this->entityManager->flush();
 
-        $this->logger->info('Connexion réussie', ['user_id' => $utilisateur->getId()]);
+        $this->securityLogger->info('Connexion réussie', ['user_id' => $utilisateur->getId()]);
     }
 }
