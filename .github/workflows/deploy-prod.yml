@@ -1,0 +1,30 @@
+name: Deploiement prod
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    uses: ./.github/workflows/build-push.yml
+    permissions:
+      contents: read
+      packages: write
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Installer la cle SSH de deploiement
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Declencher le deploiement prod
+        run: |
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            "prod ${{ github.sha }}"
