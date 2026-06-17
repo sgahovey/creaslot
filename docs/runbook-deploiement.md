@@ -93,7 +93,54 @@ docker compose -f compose.prod.yml --env-file .env.deploy.local ps
 docker compose -f compose.prod.yml --env-file .env.deploy.local logs <service> --tail 50
 ```
 
-## 8. Rollback simple
+## 8. Sauvegarde et restauration de la base
+
+### Sauvegarde
+- Script versionné : `scripts/backup-db.sh`. Lancement **manuel** depuis le VPS :
+```bash
+  cd ~/creaslot && ./scripts/backup-db.sh
+```
+- Produit un dump **compressé et horodaté** dans `~/backups/creaslot/`
+  (`creaslot_creaslot_prod_AAAAMMJJ_HHMMSS.sql.gz`), en `chmod 600` (données nominatives → accès restreint).
+- `mysqldump --single-transaction` : dump cohérent des tables InnoDB sans verrou bloquant. Le mot de passe
+  n'apparaît jamais en clair : il est lu depuis l'environnement du conteneur `db`.
+- **Rétention** : à chaque exécution, les dumps de plus de **14 jours** sont purgés (variable `RETENTION_DAYS`).
+- Variante (variables surchargeables) — ex. base de préproduction : `DB_NAME=creaslot_preprod ./scripts/backup-db.sh`.
+
+### Restauration
+Toujours restaurer d'abord dans une **base jetable** pour vérifier le dump sans risque ; vers la production
+uniquement en cas d'incident réel. Préfixe commun :
+```bash
+PFX="docker compose -f compose.prod.yml --env-file .env.deploy.local"
+DUMP=~/backups/creaslot/creaslot_creaslot_prod_AAAAMMJJ_HHMMSS.sql.gz   # choisir le dump voulu
+```
+1. **Vérification dans une base jetable** (ne touche pas la prod) :
+```bash
+   $PFX exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS creaslot_restore_test; CREATE DATABASE creaslot_restore_test"'
+   zcat "$DUMP" | $PFX exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" creaslot_restore_test'
+```
+   Contrôle d'intégrité (comparer à la source) :
+```bash
+   $PFX exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=\"creaslot_restore_test\""'
+   $PFX exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -N -e "SELECT COUNT(*) FROM creaslot_restore_test.utilisateur"'
+```
+   Nettoyage : `$PFX exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS creaslot_restore_test"'`
+2. **Restauration réelle vers la production** (⚠️ écrase les données actuelles — uniquement en cas d'incident) :
+```bash
+   zcat "$DUMP" | $PFX exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" creaslot_prod'
+```
+   Vérifier ensuite l'application ; au besoin recréer les conteneurs applicatifs : `$PFX up -d`.
+
+> Procédure de restauration **testée le 17/06/2026** sur le VPS (dump réel restauré dans une base jetable,
+> intégrité vérifiée : 10/10 tables, comptes de lignes conformes). Un backup non testé n'est pas un backup.
+
+### Limites et évolutions
+- Dumps stockés **localement sur le VPS** : **point unique de défaillance** (perte du serveur = perte des
+  sauvegardes). Limite assumée à ce stade.
+- Évolutions : copie **hors-VPS** (`scp` avant une échéance importante, ou stockage objet chiffré) et
+  **automatisation par cron** quotidien — le script est déjà prêt pour cela (une ligne de crontab suffit).
+
+## 9. Rollback simple
 ```bash
 cd ~/creaslot
 git checkout <commit-stable>
@@ -102,7 +149,7 @@ docker compose -f compose.prod.yml --env-file .env.deploy.local up -d
 ```
 Le pipeline CI/CD *build-once / promote-on-green* fera l'objet d'une US dédiée ; ici le build se fait **sur le VPS**.
 
-## 9. À venir (US-9.4)
-- Sauvegardes BDD automatisées.
-- Supervision / monitoring.
-- Journalisation des échecs de connexion (OWASP A09).
+## 10. À venir (US-9.5)
+- Supervision / monitoring : healthchecks sur tous les services, logs Docker bornés (`max-size`/`max-file`), route `/health`.
+- Journalisation dédiée des échecs de connexion (channel Monolog `security`, OWASP A09).
+- Automatisation par cron de la sauvegarde de la base (évolution du script `scripts/backup-db.sh`).
