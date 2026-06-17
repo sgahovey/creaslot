@@ -11,6 +11,15 @@
 # utilisé pour SCRIPT_FILENAME — php-fpm résout le fichier chez lui, Caddy n'a pas
 # besoin que ce dossier existe de son côté.
 
+# --- Options globales Caddy ---
+# acme_ca : autorité ACME utilisée pour émettre les certificats. Défaut = Let's Encrypt
+# PRODUCTION. Pointer {$CADDY_ACME_CA} vers le endpoint STAGING permet de tester
+# l'obtention d'un certificat sans consommer le rate limit de production (cf.
+# .env.deploy.local.example). Sans incidence en mode `tls internal` (CA locale, hors ACME).
+{
+	acme_ca {$CADDY_ACME_CA:https://acme-v02.api.letsencrypt.org/directory}
+}
+
 # --- Snippet en-têtes de sécurité, importé par les deux sites ---
 (securite) {
 	header {

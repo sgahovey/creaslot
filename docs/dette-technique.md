@@ -567,3 +567,17 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 **Action proposée** : **profiler** l'interaction (onglet Performance / `console.time`) pour isoler le coût (DOM, réseau, JS), puis optimiser la cause identifiée (ex. requête déférée, allègement du rendu). Reproduire avant/après pour mesurer le gain.
 
 **Priorité** : 🟢 basse (perf perçue ; à profiler avant d'agir).
+
+---
+
+## DT-23 — Étiquette « DEV » en dur dans le template d'e-mail de test (🟢 BAS) — 🟠 OUVERTE
+
+**Détecté** : 16/06/2026, lors du test Brevo en production (US-9.3).
+
+**Constat** : `templates/emails/test.html.twig` affiche une étiquette « DEV » **figée dans le template** au lieu de refléter l'environnement réel. L'e-mail reçu en production affichait « DEV » alors que l'application tourne en prod (`about` confirme `Environment=prod`, `Debug=false`). Purement cosmétique, sans impact fonctionnel ni sécurité.
+
+**Impact** : nul (cosmétique) ; un e-mail de test peut induire en erreur sur l'environnement réel d'envoi.
+
+**Action proposée** : remplacer l'étiquette codée en dur par la valeur dynamique de l'environnement (`app.environment` côté Twig, ou variable passée par la commande), ou retirer l'étiquette.
+
+**Priorité** : 🟢 basse (cosmétique ; aucun impact fonctionnel ni sécurité).
