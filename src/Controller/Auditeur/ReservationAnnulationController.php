@@ -6,11 +6,10 @@ namespace App\Controller\Auditeur;
 
 use App\Entity\Reservation;
 use App\Enum\StatutReservation;
+use App\Exception\ReservationNonAnnulableException;
 use App\Form\AnnulationReservationType;
 use App\Security\ReservationVoter;
-use App\Service\NotificationService;
-use Doctrine\ORM\EntityManagerInterface;
-use Psr\Log\LoggerInterface;
+use App\Service\ReservationService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -21,9 +20,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class ReservationAnnulationController extends AbstractController
 {
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly LoggerInterface $logger,
-        private readonly NotificationService $notificationService,
+        private readonly ReservationService $reservationService,
     ) {
     }
 
@@ -41,65 +38,30 @@ final class ReservationAnnulationController extends AbstractController
             return $this->redirigerVersListe($request);
         }
 
-        return $this->enregistrerAnnulation(
-            $reservation,
-            $form->get('motifAnnulation')->getData(),
-            $request,
-        );
-    }
-
-    private function enregistrerAnnulation(
-        Reservation $reservation,
-        ?string $motif,
-        Request $request,
-    ): Response {
-        $this->entityManager->beginTransaction();
         try {
-            $this->entityManager->refresh($reservation);
-
-            if (!$reservation->isAnnulable()) {
-                $this->entityManager->rollback();
-                $this->addFlash('error', $this->messageRefus($reservation));
-
-                return $this->redirigerVersListe($request);
-            }
-
-            $reservation->annuler($motif);
-            $this->entityManager->flush();
-            $this->entityManager->commit();
-        } catch (\Throwable $e) {
-            $this->entityManager->rollback();
-            throw $e;
+            $this->reservationService->annuler(
+                $reservation,
+                $form->get('motifAnnulation')->getData(),
+            );
+            $this->addFlash('success', 'Votre réservation a été annulée. Un email de confirmation vous est envoyé.');
+        } catch (ReservationNonAnnulableException $e) {
+            $this->addFlash('error', $this->messageRefus($e->getStatut()));
         }
-
-        // Minimisation RGPD : on logue uniquement la longueur du motif (pas le contenu sensible).
-        $this->logger->info('Réservation annulée', [
-            'reservation_id' => $reservation->getId(),
-            'user_id'        => $reservation->getUtilisateur()->getId(),
-            'motif_longueur' => strlen($motif ?? ''),
-        ]);
-
-        // US-4.3 — Emails post-flush, hors transaction.
-        // Politique Option B : non-propagation des erreurs (cf. NotificationService).
-        $this->notificationService->notifierAuditeurAnnulationReservation($reservation);
-        $this->notificationService->notifierPersonnelAnnulationReservation($reservation);
-
-        $this->addFlash('success', 'Votre réservation a été annulée. Un email de confirmation vous est envoyé.');
 
         return $this->redirigerVersListe($request);
     }
 
-    private function messageRefus(Reservation $reservation): string
+    private function messageRefus(StatutReservation $statut): string
     {
-        return $reservation->getStatut() === StatutReservation::ANNULEE
+        return $statut === StatutReservation::ANNULEE
             ? 'Cette réservation a déjà été annulée.'
             : 'Cette réservation est passée, vous ne pouvez plus l\'annuler.';
     }
 
     /**
-     * Préserve le filtre actif si le Referer pointe vers la liste des réservations,
+     * Preserve le filtre actif si le Referer pointe vers la liste des reservations,
      * sinon redirige vers la route nue. Validation contre l'open-redirect :
-     * on n'utilise que le path extrait (jamais le host) et on vérifie qu'il
+     * on n'utilise que le path extrait (jamais le host) et on verifie qu'il
      * commence par la base de la route /mes-reservations.
      */
     private function redirigerVersListe(Request $request): Response
