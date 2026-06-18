@@ -27,26 +27,56 @@ des échecs de connexion (OWASP A09).
 
 ## 3. Mise à jour de code (procédure courante)
 
-> ⚠️ **IMPORTANT** — L'image **embarque le code** et tourne avec OPcache `validate_timestamps=0`.
-> Un `git pull` seul **ne prend JAMAIS effet** → il **FAUT rebuild + recreate**.
+### 3.1 Procédure nominale — pipeline CI/CD
+
+En exploitation normale, on ne se connecte pas au VPS : on **promeut une branche**
+et le pipeline GitHub Actions déploie (détail : `docs/architecture-deploiement.md` §5).
+
+**Préproduction** — déploiement automatique :
+
+```bash
+git checkout preprod && git pull --ff-only
+git merge --ff-only develop
+git push origin preprod
+```
+
+Le push déclenche le workflow *Deploiement preprod* (build de l'image au SHA puis
+déploiement) ; smoke attendu **401**. Aucune action manuelle sur le VPS.
+
+**Production** — déploiement après approbation manuelle :
+
+```bash
+git checkout main && git pull --ff-only
+git merge --ff-only preprod
+git push origin main
+```
+
+Le push déclenche *Deploiement prod*, qui se met en pause sur *Review deployments*.
+La mise en production part après **Actions → run concerné → Review deployments →
+Approve and deploy** ; smoke attendu **200**. On ne promeut vers `main` qu'une fois
+la préprod validée (*promote-on-green*).
+
+### 3.2 Procédure de secours — déploiement manuel sur le VPS
+
+À n'utiliser que si le pipeline est indisponible (incident GitHub Actions, urgence)
+ou pour un correctif appliqué directement sur le VPS.
+
+> ⚠️ **IMPORTANT** — L'image **embarque le code** et tourne avec OPcache
+> `validate_timestamps=0`. Un `git pull` seul **ne prend JAMAIS effet** → il **FAUT
+> rebuild + recreate**.
 
 ```bash
 cd ~/creaslot
 git pull --ff-only origin <branche>
-
 # Build mono-service (un seul service porte le build:, les 3 autres réutilisent l'image)
 docker compose -f compose.prod.yml --env-file .env.deploy.local build app-prod
-
 # Recrée app-* et worker-* avec la nouvelle image
 docker compose -f compose.prod.yml --env-file .env.deploy.local up -d
-
 # Si nouvelle migration :
 docker compose -f compose.prod.yml --env-file .env.deploy.local exec app-prod    php bin/console doctrine:migrations:migrate --no-interaction
 docker compose -f compose.prod.yml --env-file .env.deploy.local exec app-preprod php bin/console doctrine:migrations:migrate --no-interaction
-
 # Si nouveau transport Messenger :
 docker compose -f compose.prod.yml --env-file .env.deploy.local exec app-prod php bin/console messenger:setup-transports
-
 # Smoke :
 curl -s -o /dev/null -w "%{http_code}\n" https://creaslot.re/connexion         # attendu 200
 curl -s -o /dev/null -w "%{http_code}\n" https://preprod.creaslot.re/connexion  # attendu 401
@@ -149,7 +179,14 @@ docker compose -f compose.prod.yml --env-file .env.deploy.local up -d
 ```
 Le pipeline CI/CD *build-once / promote-on-green* fera l'objet d'une US dédiée ; ici le build se fait **sur le VPS**.
 
-## 10. À venir (US-9.5)
-- Supervision / monitoring : healthchecks sur tous les services, logs Docker bornés (`max-size`/`max-file`), route `/health`.
-- Journalisation dédiée des échecs de connexion (channel Monolog `security`, OWASP A09).
-- Automatisation par cron de la sauvegarde de la base (évolution du script `scripts/backup-db.sh`).
+## 10. Pistes d'évolution
+
+Les chantiers initialement listés ici ont été livrés :
+
+- **US-9.5** — logs Docker bornés (`max-size`/`max-file`) et journalisation dédiée des échecs de connexion (channel Monolog `security`, OWASP A09).
+- **US-10.1** — pipeline CI/CD de déploiement continu (cf. §3.1 et `docs/architecture-deploiement.md` §5).
+
+Restent ouvertes, par ordre de priorité :
+
+- **Sauvegarde automatisée** : passer le script manuel `scripts/backup-db.sh` en tâche planifiée (cron), avec politique de rétention et copie hors-VPS.
+- **Supervision applicative** : route `/health` (état app + base + file Messenger) et extension des healthchecks à l'ensemble des services (aujourd'hui sur `db`).
