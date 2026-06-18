@@ -10,6 +10,7 @@ use App\Entity\Utilisateur;
 use App\Enum\MotifRefusReservation;
 use App\Enum\StatutReservation;
 use App\Exception\CreneauIndisponibleException;
+use App\Exception\ReservationNonAnnulableException;
 use App\Repository\ReservationRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
@@ -97,6 +98,45 @@ class ReservationService
         $this->notificationService->notifierPersonnelReservation($reservation);
 
         return $reservation;
+    }
+
+    /**
+     * @throws ReservationNonAnnulableException si la reservation n'est plus annulable
+     */
+    public function annuler(Reservation $reservation, ?string $motif): void
+    {
+        $this->entityManager->beginTransaction();
+        try {
+            $this->entityManager->refresh($reservation);
+
+            if (!$reservation->isAnnulable()) {
+                $this->entityManager->rollback();
+
+                throw new ReservationNonAnnulableException($reservation->getStatut());
+            }
+
+            $reservation->annuler($motif);
+            $this->entityManager->flush();
+            $this->entityManager->commit();
+        } catch (ReservationNonAnnulableException $e) {
+            // rollback deja effectue ci-dessus : on relaie sans re-rollback
+            throw $e;
+        } catch (\Throwable $e) {
+            $this->entityManager->rollback();
+
+            throw $e;
+        }
+
+        // Minimisation RGPD : on logue uniquement la longueur du motif (pas le contenu sensible).
+        $this->logger->info('Réservation annulée', [
+            'reservation_id' => $reservation->getId(),
+            'user_id'        => $reservation->getUtilisateur()->getId(),
+            'motif_longueur' => strlen($motif ?? ''),
+        ]);
+
+        // Emails post-flush, hors transaction (Option B : non-propagation des erreurs).
+        $this->notificationService->notifierAuditeurAnnulationReservation($reservation);
+        $this->notificationService->notifierPersonnelAnnulationReservation($reservation);
     }
 
     private function creneauEstEncoreDisponible(Creneau $creneau): bool
