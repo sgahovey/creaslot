@@ -514,7 +514,10 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 
 ---
 
-## DT-19 — Logique de réservation dans le contrôleur au lieu d'un ReservationService (🟡 MOYEN) — 🟠 OUVERTE
+## DT-19 — Logique de réservation dans le contrôleur au lieu d'un ReservationService (🟡 MOYEN) — ✅ RÉSOLUE (18/06/2026)
+
+> **✅ RÉSOLUE le 18/06/2026** sur branche `feature/DT-19-reservation-service`.
+> Logique de réservation (création + annulation) extraite dans `ReservationService` : transaction + verrou pessimiste + re-check après refresh + notifications hors transaction ; signalisation par exceptions métier (`CreneauIndisponibleException`, `ReservationNonAnnulableException`) et enum `MotifRefusReservation` ; contrôleurs réduits à l'orchestration HTTP. Non-régression : 274 tests verts, PHPStan niveau 8, PHP-CS-Fixer 0. Commits `42ac8eb` (création) et `149191f` (annulation).
 
 **Détecté** : 07/06/2026, lors de l'audit de sécurité OWASP (US-8.3, A04 — Insecure Design).
 
