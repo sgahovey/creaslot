@@ -70,7 +70,7 @@ final class AppEmailTestCommand extends Command
                 $subject,
                 $template,
                 [
-                    'date_envoi'    => $maintenant,
+                    'date_envoi' => $maintenant,
                 ],
             );
         } catch (\Throwable $e) {
