@@ -579,7 +579,17 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 
 ---
 
-## DT-23 — Étiquette « DEV » en dur dans le template d'e-mail de test (🟢 BAS) — 🟠 OUVERTE
+## DT-23 — Étiquette « DEV » en dur dans le template d'e-mail de test (🟢 BAS) — ✅ RÉSOLUE (19/06/2026)
+
+> **✅ RÉSOLUE le 19/06/2026** sur branche `feature/DT-23-etiquette-env-email-test`.
+>
+> **Résumé fix** : la valeur n'était pas figée dans le template mais dans la commande `AppEmailTestCommand` (`'environnement' => 'dev'` codé en dur). Le template `test.html.twig` consomme désormais directement le global Twig `app_environment_label` (`{{ app_environment_label|upper }}`) — la même source que le bandeau d'environnement — et la variable figée est retirée du contexte de la commande. Plus aucune étiquette d'environnement en dur ; source unique partagée avec le bandeau.
+>
+> **Comportement** : en prod l'e-mail affiche « PROD », en préprod « PREPROD ». Le global vaut `%env(APP_ENVIRONMENT_LABEL)%` (défaut committé `preprod`, surchargé par l'environnement réel sur le VPS) — jamais vide, donc aucun repli nécessaire.
+>
+> **Validation** : suite complète verte (274 tests, 1009 assertions, 0 deprecation/notice). Vérification visuelle de l'e-mail au prochain envoi de test préprod/prod via Brevo.
+>
+> **Commit** : `531187d`.
 
 **Détecté** : 16/06/2026, lors du test Brevo en production (US-9.3).
 
