@@ -12,7 +12,7 @@
  #
  # Variables de contexte attendues :
  #   date_envoi    \DateTimeImmutable  — moment de l'envoi
- #   environnement string              — 'dev' | 'preprod' | 'prod'
+#   (etiquette d'environnement lue depuis le global Twig app_environment_label)
  #}
 
 {% block subject %}Test CreaSlot{% endblock %}
@@ -73,7 +73,7 @@
                                         <strong>Environnement</strong>
                                     </td>
                                     <td style="padding: 12px 16px; background-color: #ffffff; color: #1a3e6f; font-size: 13px; font-weight: bold; font-family: Arial, sans-serif;">
-                                        {{ environnement|upper }}
+                                        {{ app_environment_label|upper }}
                                     </td>
                                 </tr>
                             </table>
