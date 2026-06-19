@@ -1,9 +1,9 @@
-# Architecture de déploiement — CreaSlot (US-9.2)
+# Architecture de déploiement — CreaSlot (US-9.2 + US-10.1)
 
 > Livrable de mémoire MSP3 — Concepteur Développeur d'Applications (CDA).
 > Pose l'**architecture des deux environnements** (préproduction + production) et les
 > **choix** qui la sous-tendent. **Rattachement CDA : CP10** (« Préparer et documenter
-> le déploiement d'une application » — conception des environnements).
+> le déploiement d'une application » — conception des environnements) **et CP11** (mise en production — pipeline CI/CD de déploiement continu, cf. §5).
 
 ---
 
@@ -18,10 +18,12 @@ certificat auto-signé de Caddy (`tls internal`) — les deux sites répondent e
 en-têtes de sécurité (dont la CSP) sont posés, la pré-prod est protégée, les bases sont
 isolées, les workers consomment la file.
 
+**Complété par US-10.1** : le **pipeline CI/CD (CP11)** de déploiement continu (build d'une image versionnée sur GHCR, promotion par environnement, déploiement par SSH avec approbation manuelle avant la production), décrit en §5.
+
 **Renvoyé** (non dupliqué ici) :
 - **US-9.3 — déploiement réel sur le VPS** : DNS `*.sslip.io`, certificats **ACME Let's
   Encrypt**, secrets de production, `trusted_proxies`, ouverture des ports 80/443, crons
-  (`app:envoyer-rappels-j1`, `app:purger-journal`). Couvre la **CI/CD (CP11)**.
+  (`app:envoyer-rappels-j1`, `app:purger-journal`).
 - **US-9.4 — exploitation** : runbook opérationnel, sauvegardes/restauration, supervision
   et journalisation des échecs d'authentification (**OWASP A09**).
 
@@ -215,7 +217,90 @@ Ordre **logique** (le détail opérationnel relève d'US-9.3/9.4) :
 
 ---
 
-## 5. Validation locale réalisée (tls internal)
+## 5. Pipeline CI/CD (déploiement continu — US-10.1)
+
+La séquence décrite en §4 reste la mise en route manuelle de référence. En
+exploitation courante, les mises à jour applicatives sont déployées par un
+pipeline d'intégration et de déploiement continus, déclenché par `git push`,
+avec une porte de contrôle humain avant toute mise en production.
+
+### 5.1 Principe : branche = environnement (promote-on-green)
+
+Chaque branche longue est liée à un environnement. Un `push` sur `preprod`
+déploie automatiquement la préproduction ; un `push` sur `main` déploie la
+production, mais seulement après approbation manuelle. La promotion est
+linéaire et ne se fait que sur du vert (CI passée) :
+
+`feature/US-X.Y-* → develop → preprod → main`
+
+On ne promeut vers l'environnement suivant qu'une fois l'environnement courant
+validé (*promote-on-green*), ce qui garantit qu'un code arrivant en production
+a déjà été éprouvé en préproduction sur la même image.
+
+### 5.2 Construction de l'image versionnée (GHCR)
+
+Le workflow réutilisable `.github/workflows/build-push.yml` (appelé via
+`workflow_call`) construit l'image applicative et la pousse sur le registre
+public GHCR, taguée au SHA du commit : `ghcr.io/sgahovey/creaslot:<github.sha>`.
+L'image est ainsi traçable et immuable (un SHA = une image). Conformément au
+choix *build-once* (§3.2), cette même image est réutilisée par les services
+`app-*` et `worker-*`. Le cache de build GitHub Actions (`type=gha`) accélère
+les reconstructions.
+
+### 5.3 Déploiement par SSH avec forced-command
+
+Les workflows `deploy-preprod.yml` et `deploy-prod.yml` se connectent au VPS en
+SSH au moyen d'une clé dédiée, distincte de la clé d'administration. Dans le
+fichier `authorized_keys` du VPS, cette clé est contrainte par une
+*forced-command* : elle ne peut exécuter **que** `scripts/deploy-ci.sh`, sans
+shell interactif (`no-pty`), sans redirection de port ni d'agent
+(`no-port-forwarding`, `no-agent-forwarding`, `no-X11-forwarding`).
+
+Le script `deploy-ci.sh` lit la commande transmise dans
+`$SSH_ORIGINAL_COMMAND` (de la forme `env tag`), puis **valide strictement**
+ses arguments — `env` doit appartenir à `{preprod, prod}` et `tag` respecter
+`^[0-9a-f]{7,40}$` — avant d'enchaîner : `pull` de l'image, `up -d` du couple
+`app`/`worker` ciblé, exécution des migrations Doctrine `--no-interaction`,
+puis smoke test.
+
+Ce modèle « push SSH + forced-command » a été préféré à un agent/runner
+installé sur le VPS : la surface d'attaque est minimale (une seule commande
+autorisée, arguments filtrés contre l'injection), il n'y a pas de runner
+supplémentaire à maintenir et à durcir, et les secrets restent centralisés
+côté GitHub.
+
+### 5.4 Porte d'approbation manuelle (production)
+
+L'environnement GitHub `production` est protégé : un relecteur requis est
+désigné et les déploiements sont restreints à la branche `main`. Lors d'un
+`push` sur `main`, le job `deploy` se met en pause sur « Review deployments » :
+aucune mise en production n'a lieu sans validation humaine explicite. La
+préproduction, à l'inverse, se déploie sans approbation pour favoriser
+l'itération rapide.
+
+### 5.5 Smoke tests différenciés
+
+À l'issue de chaque déploiement, un smoke test HTTP vérifie que
+l'environnement répond avant de déclarer le job réussi :
+
+- **préprod** : un code `401` est attendu, car le site est placé derrière le
+  `basic_auth` de Caddy ; recevoir `401` prouve que Caddy route bien la requête
+  et que la protection d'accès est active ;
+- **prod** : un code `200` est attendu, le site étant public.
+
+Un smoke en échec fait échouer le job, fournissant un signal immédiat de
+non-disponibilité.
+
+### 5.6 Secrets et configuration
+
+Le pipeline n'utilise que trois secrets de dépôt — `VPS_HOST`, `VPS_USER` et
+`VPS_SSH_KEY` (la clé privée de déploiement) ; la clé publique correspondante
+est installée dans `authorized_keys` du VPS avec la forced-command. **Aucun
+secret applicatif ne transite par le pipeline** : les fichiers `.env.*.local`
+demeurent sur le VPS (cohérent avec §3.7), le déploiement ne faisant que
+basculer le tag d'image et relancer les conteneurs.
+
+## 6. Validation locale réalisée (tls internal)
 
 Sur la stack `creaslot_prod` (Caddy `CADDY_TLS=internal`, hôtes `preprod.localhost` /
 `prod.localhost`) :
@@ -236,20 +321,20 @@ Preuve pérenne automatisée : `tests/Controller/CspHeaderTest.php` (intégrée 
 
 ---
 
-## 6. Renvois explicites
+## 7. Renvois explicites
 
 | Sujet | Renvoi |
 |---|---|
 | DNS `*.sslip.io`, **certificats ACME** Let's Encrypt, ports 80/443 | **US-9.3** |
 | Secrets de production (`.env.*.local` réels), `trusted_proxies` | **US-9.3** |
 | Crons `app:envoyer-rappels-j1` / `app:purger-journal` | **US-9.3** |
-| **CI/CD (CP11)** — pipeline de build et de promotion | **US-9.3** |
+| **CI/CD (CP11)** — pipeline de build et de promotion | **§5 (ce document, US-10.1)** |
 | Runbook d'exploitation, sauvegardes/restauration | **US-9.4** |
 | Supervision + journalisation des échecs de login (**A09**) | **US-9.4** |
 
 ---
 
-## 7. Références
+## 8. Références
 
 | Fichier | Rôle |
 |---|---|

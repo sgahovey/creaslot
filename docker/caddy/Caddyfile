@@ -27,7 +27,6 @@
 		X-Frame-Options "SAMEORIGIN"
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
-		X-XSS-Protection "1; mode=block"
 		# HSTS — forcer HTTPS pendant 1 an, sous-domaines inclus.
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		# Permissions-Policy — désactive les API sensibles non utilisées.

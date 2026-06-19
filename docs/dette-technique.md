@@ -1,6 +1,6 @@
 # Dette technique CreaSlot — Suivi
 
-Date dernière mise à jour : 3 juin 2026.
+Date dernière mise à jour : 19 juin 2026.
 Convention : DT-N = Dette Technique numéro N.
 
 ---
@@ -531,7 +531,13 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 
 ---
 
-## DT-20 — En-tête X-XSS-Protection déprécié dans le Caddyfile (🟢 BAS) — 🟠 OUVERTE
+## DT-20 — En-tête X-XSS-Protection déprécié dans le Caddyfile (🟢 BAS) — ✅ RÉSOLUE (19/06/2026)
+
+> **✅ RÉSOLUE le 19/06/2026** sur branche `feature/DT-20-retirer-x-xss-protection`.
+>
+> **Résumé fix** : la ligne `X-XSS-Protection "1; mode=block"` est retirée du snippet `securite` de `docker/caddy/Caddyfile` (commit `a0688f8`). Aucune compensation : la protection contre le XSS est assurée par la CSP à nonce stricte (DT-13 / US-9.2). Les autres en-têtes (HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy) sont préservés.
+>
+> **Validation** : en-tête absent du fichier (grep = 0, voisins intacts) ; confirmation `curl -I` au prochain déploiement préprod via le pipeline.
 
 **Détecté** : 15/06/2026, lors d'US-9.2 (revue des en-têtes derrière Caddy).
 
