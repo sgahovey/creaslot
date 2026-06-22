@@ -573,7 +573,17 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 
 ---
 
-## DT-22 — Latence d'un handler de clic (~1,6 s) sur une page d'administration (🟢 BAS) — 🟠 OUVERTE
+## DT-22 — Latence d'un handler de clic (~1,6 s) sur une page d'administration (🟢 BAS) — ✅ CLÔTURÉE (NON REPRODUITE) (22/06/2026)
+
+> **✅ CLÔTURÉE (NON REPRODUITE) le 22/06/2026** sur branche `feature/DT-22-profiling-latence-admin`.
+>
+> **Démarche** : profiling de l'interaction (métrique INP, *Interaction to Next Paint*) sur les quatre pages d'administration (Occupation, Statistiques, Comptes, Journal), en local avec les données de démonstration (fixtures), puis mesure de contrôle en navigation privée (extensions désactivées).
+>
+> **Résultat** : aucune latence reproduite. INP relevés — Occupation 33 ms, Statistiques 13 ms, Comptes 18 ms, Journal 21 ms (seuil « bon » < 200 ms) ; contrôle Occupation en navigation privée : 22 ms. Le handler de clic ne dépasse jamais ~33 ms.
+>
+> **Analyse** : les ~1,6 s rapportés en US-9.2 sont attribués à un artefact de mesure — très probablement une extension navigateur (Trendtrack / Beezy, accrochées aux clics, ~221 ms de main-thread relevés) ou un premier clic à froid. L'hypothèse « effet volume » est écartée : FullCalendar borne le fetch à la fenêtre affichée (semaine/mois), et la volumétrie réelle au Cnam ne sature pas une vue.
+>
+> **Décision** : aucune optimisation entreprise (optimisation prématurée évitée, faute de coût mesurable à corriger). Dette clôturée ; à re-profiler en production si la perception de lenteur réapparaît avec du volume réel.
 
 **Détecté** : 15/06/2026, lors d'US-9.2 (tour de validation navigateur, onglet Performance).
 
