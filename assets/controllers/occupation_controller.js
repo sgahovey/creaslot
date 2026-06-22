@@ -1,4 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
+import { escapeHtml, heureSlot, melangerBlanc } from '../fullcalendar_helpers.js';
 
 /*
  * Vue globale occupé/libre du Super-admin (US-5.7), FullCalendar v6 self-hosté.
@@ -7,46 +8,9 @@ import { Controller } from '@hotwired/stimulus';
  * Le bundle global officiel de FullCalendar (window.FullCalendar) est inclus par
  * des <script> classiques dans le bloc javascripts du template (cf. agenda).
  *
- * Helpers (échappement, couleurs) embarqués localement à dessein : on ne touche
- * pas agenda_controller.js. La mutualisation est tracée en dette technique [[DT-16]].
+ * Helpers (échappement, couleurs) importés du module partagé
+ * assets/fullcalendar_helpers.js (DT-16).
  */
-
-function escapeHtml(str) {
-    if (str == null || str === '') {
-        return '';
-    }
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-}
-
-function heureSlot(d) {
-    if (!d) {
-        return '';
-    }
-    return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-}
-
-function hexVersRgb(hex) {
-    let h = String(hex).replace('#', '');
-    if (h.length === 3) {
-        h = h.split('').map(function (c) { return c + c; }).join('');
-    }
-    const n = parseInt(h, 16);
-    if (isNaN(n)) return { r: 40, g: 40, b: 40 };
-    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
-}
-
-function melangerBlanc(hex, ratio) {
-    const c = hexVersRgb(hex);
-    const t = Math.min(1, Math.max(0, ratio));
-    const r = Math.round(c.r + (255 - c.r) * t);
-    const g = Math.round(c.g + (255 - c.g) * t);
-    const b = Math.round(c.b + (255 - c.b) * t);
-    return 'rgb(' + r + ',' + g + ',' + b + ')';
-}
 
 export default class extends Controller {
     static targets = ['calendar'];
