@@ -38,7 +38,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
  * Si la variable d'environnement APP_MAILER_REDIRECT_TO est définie (uniquement
  * prévue en environnement DEV, jamais en preprod/prod), TOUS les emails sont
  * redirigés vers cette adresse au lieu du destinataire d'origine. Le sujet
- * est alors préfixé "[DEV→destinataire-original@exemple.fr] " pour conserver
+ * est alors préfixé "[<ENV>→destinataire-original@exemple.fr] " pour conserver
  * la traçabilité du destinataire prévu. La syntaxe %env(default::VAR)% du
  * conteneur Symfony fait que l'absence de la variable renvoie NULL sans
  * erreur : en preprod/prod, où la variable n'existe pas, le service envoie
@@ -58,6 +58,8 @@ readonly class NotificationService
         private string $expediteur,
         #[Autowire('%env(APP_NOTIFICATION_REPLY_TO)%')]
         private string $replyTo,
+        #[Autowire('%env(APP_ENVIRONMENT_LABEL)%')]
+        private string $environmentLabel,
         #[Autowire('%env(default::APP_MAILER_REDIRECT_TO)%')]
         private ?string $redirectionDev = null,
     ) {
@@ -68,7 +70,7 @@ readonly class NotificationService
      *
      * Si APP_MAILER_REDIRECT_TO est définie (cf. section "Redirection DEV" du
      * docblock de classe), $to est remplacé par l'adresse de redirection et
-     * le sujet est préfixé "[DEV→destinataire-original]" avant construction
+     * le sujet est préfixé "[<ENV>→destinataire-original]" avant construction
      * du TemplatedEmail.
      *
      * @param string               $to       Adresse email du destinataire (jamais loguée en clair)
@@ -88,7 +90,7 @@ readonly class NotificationService
         $redirige = $this->redirectionDev !== null && $this->redirectionDev !== '';
 
         if ($redirige) {
-            $subject = sprintf('[DEV→%s] %s', $to, $subject);
+            $subject = sprintf('[%s→%s] %s', strtoupper($this->environmentLabel), $to, $subject);
             $to = $this->redirectionDev;
         }
 

@@ -1,6 +1,6 @@
 # Dette technique CreaSlot — Suivi
 
-Date dernière mise à jour : 19 juin 2026.
+Date dernière mise à jour : 22 juin 2026.
 Convention : DT-N = Dette Technique numéro N.
 
 ---
@@ -598,5 +598,29 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 **Impact** : nul (cosmétique) ; un e-mail de test peut induire en erreur sur l'environnement réel d'envoi.
 
 **Action proposée** : remplacer l'étiquette codée en dur par la valeur dynamique de l'environnement (`app.environment` côté Twig, ou variable passée par la commande), ou retirer l'étiquette.
+
+**Priorité** : 🟢 basse (cosmétique ; aucun impact fonctionnel ni sécurité).
+
+---
+
+## DT-24 — Préfixe de redirection mailer figé à « DEV » au lieu de l'environnement réel (🟢 BAS) — ✅ RÉSOLUE (19/06/2026)
+
+> **✅ RÉSOLUE le 19/06/2026** sur branche `feature/DT-24-prefixe-redirection-env-reel`.
+>
+> **Résumé fix** : le mécanisme de redirection des e-mails hors-prod (`NotificationService::envoyer`) préfixait le sujet `[DEV→destinataire]` avec « DEV » codé en dur. Le préfixe consomme désormais `APP_ENVIRONMENT_LABEL` (injecté au constructeur, `strtoupper`) — la même source que le badge du corps (DT-23). Plus aucune étiquette d'environnement en dur (code + docblocks, exemples passés en `[<ENV>→…]`).
+>
+> **Comportement** : la redirection n'est active qu'en dev (`APP_MAILER_REDIRECT_TO` non définie en preprod/prod) ; le préfixe affiche le label réel de l'environnement (`[PREPROD→…]` en dev avec le défaut `.env`), cohérent avec le corps. En prod, aucun préfixe (redirection inactive).
+>
+> **Validation** : suite complète verte (274 tests, 1009 assertions), PHP-CS-Fixer 0. Non-régression `NotificationServiceTest` (paramètre `environmentLabel` ajouté à l'instanciation manuelle).
+>
+> **Commit** : `81ccf1d`.
+
+**Détecté** : 19/06/2026, lors de la vérification de bout en bout de DT-23 (envoi d'un e-mail de test réel).
+
+**Constat** : après le fix DT-23 (badge du corps), l'e-mail de test affichait toujours « DEV » dans le **sujet** (`[DEV→destinataire] Test CreaSlot…`). Ce préfixe est posé par `NotificationService::envoyer` (ni la commande, ni le template), avec « DEV » figé dans le `sprintf`. Trompeur : en préprod, le même préfixe afficherait aussi « DEV ».
+
+**Impact** : nul (cosmétique) ; signalétique d'environnement incohérente entre le sujet et le corps des e-mails redirigés hors-prod.
+
+**Action proposée** : brancher le préfixe sur `APP_ENVIRONMENT_LABEL` (source unique partagée avec le corps), via injection au constructeur de `NotificationService` ; mettre à jour les docblocks.
 
 **Priorité** : 🟢 basse (cosmétique ; aucun impact fonctionnel ni sécurité).
