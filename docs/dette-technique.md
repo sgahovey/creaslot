@@ -452,7 +452,21 @@ FullCalendar de `CLAUDE.md`.
 
 ---
 
-## DT-16 — Mutualisation des helpers FullCalendar et du JSON no-store (🟡 MOYEN) — 🟠 OUVERTE
+## DT-16 — Mutualisation des helpers FullCalendar et du JSON no-store (🟡 MOYEN) — 🟡 PARTIELLEMENT RÉSOLUE (volets JS + PHP) (22/06/2026)
+
+> **🟡 PARTIELLEMENT RÉSOLUE (volets JS + PHP) le 22/06/2026** sur branche `feature/DT-16-helpers-fullcalendar-no-store`.
+>
+> **Volet JS (fait)** : les 4 helpers dupliqués (`escapeHtml`, `heureSlot`, `hexVersRgb`, `melangerBlanc`) sont extraits dans `assets/fullcalendar_helpers.js`, importé par `agenda_controller` et `occupation_controller` (`hexVersRgb` reste interne au module).
+>
+> **Volet PHP (fait)** : la réponse JSON no-store dupliquée (`jsonSansCache` / `repondreSansCache`) est extraite dans le trait `JsonSansCacheTrait` (`src/Controller/Traits`), composé par `CreneauApiController` et `OccupationController` (nom unifié `jsonSansCache`).
+>
+> **Volet écarté** : la mutualisation du rendu `eventContent` est abandonnée (contenus réellement différents, 3 vs 4 lignes, et piège de double-échappement sur la ligne « état » de l'agenda).
+>
+> **Volet CSS (restant)** : la mutualisation de l'habillage toolbar/pastille (style inline d'`agenda.html.twig` dupliqué dans le bloc `.cs-occupation-page` de `creaslot.css`, ~150 lignes) est reportée en tâche dédiée — seul volet à risque de régression visuelle (2 calendriers) pour un gain de maintenabilité pure ; à traiter via une classe partagée `.cs-fc-calendar` avec vérification visuelle stricte.
+>
+> **Validation** : PHP-CS-Fixer 0, PHPStan niveau 8 = 0, suite complète verte (274 tests, 1009 assertions) ; vérification navigateur (occupation Admin + agenda Personnel : calendriers et pastilles rendus, console propre).
+>
+> **Commit** : `be20af4`.
 
 **Détecté** : 03/06/2026, lors de l'implémentation d'US-5.7 (vue globale occupé/libre).
 
