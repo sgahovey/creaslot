@@ -551,7 +551,15 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 
 ---
 
-## DT-21 — Champ username caché absent du formulaire de changement de mot de passe (🟢 BAS) — 🟠 OUVERTE
+## DT-21 — Champ username caché absent du formulaire de changement de mot de passe (🟢 BAS) — ✅ RÉSOLUE (19/06/2026)
+
+> **✅ RÉSOLUE le 19/06/2026** sur branche `feature/DT-21-username-cache-form-mdp`.
+>
+> **Résumé fix** : ajout d'un champ `<input type="text" name="username" autocomplete="username" hidden>` (valeur = identifiant de connexion via `app.user.userIdentifier`) juste après `form_start` dans `templates/profil/index.html.twig`. Les attributs `autocomplete` des champs (`current-password` / `new-password`) étaient déjà en place dans `ChangementMotDePasseType`. L'avertissement DevTools disparaît ; les gestionnaires de mots de passe associent correctement l'identifiant.
+>
+> **Validation** : `lint:twig` OK, suite complète verte (274 tests, 1009 assertions).
+>
+> **Commit** : `d6da3ac`.
 
 **Détecté** : 15/06/2026, lors d'US-9.2 (tour de validation navigateur, console DevTools).
 
