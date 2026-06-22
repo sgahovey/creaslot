@@ -1,4 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
+import { couleurToken, chartEstDisponible } from '../chartjs_helpers.js';
 
 /*
  * Graphiques de la page Statistiques Super-admin (US-5.8).
@@ -10,8 +11,8 @@ import { Controller } from '@hotwired/stimulus';
  * Chart.js v4 est fourni par son bundle UMD officiel, vendorisé dans
  * assets/vendor/chartjs/ et inclus via une <script> classique par le template.
  * Il expose window.Chart. On NE PASSE PAS par l'ESM (chart.js/auto en importmap) :
- * même piège que FullCalendar (DT-8). couleurToken/garde window.Chart/cycle
- * connect-disconnect sont dupliqués depuis graphique_occupation_controller (DT-17).
+ * même piège que FullCalendar (DT-8). couleurToken et la garde window.Chart
+ * proviennent du module partagé assets/chartjs_helpers.js (DT-17).
  *
  * Les séries sont transmises par attributs data-value JSON (échappés côté Twig) ;
  * chaque <canvas role="img" aria-label> est doublé d'un <table> RGAA (le <canvas>
@@ -26,11 +27,7 @@ export default class extends Controller {
     };
 
     connect() {
-        if (typeof window.Chart === 'undefined') {
-            console.error(
-                "Chart.js n'est pas chargé : vérifiez la <script> du bundle UMD "
-                + '(assets/vendor/chartjs/chart.umd.min.js) dans le bloc javascripts du template.'
-            );
+        if (!chartEstDisponible()) {
             return;
         }
 
@@ -66,12 +63,12 @@ export default class extends Controller {
                     {
                         label: 'Créneaux offerts',
                         data: lignes.map((ligne) => ligne.offre),
-                        backgroundColor: this.couleurToken('--cs-blue-primary', '#0d6efd'),
+                        backgroundColor: couleurToken('--cs-blue-primary', '#0d6efd'),
                     },
                     {
                         label: 'Dont réservés',
                         data: lignes.map((ligne) => ligne.reserves),
-                        backgroundColor: this.couleurToken('--cs-success', '#198754'),
+                        backgroundColor: couleurToken('--cs-success', '#198754'),
                     },
                 ],
             },
@@ -98,7 +95,7 @@ export default class extends Controller {
        token bleu si une couleur manque. Aucune réservation → doughnut vide propre. */
     configurationDoughnut() {
         const lignes = this.typeValue;
-        const repliBleu = this.couleurToken('--cs-blue-primary', '#0d6efd');
+        const repliBleu = couleurToken('--cs-blue-primary', '#0d6efd');
 
         return {
             type: 'doughnut',
@@ -123,12 +120,5 @@ export default class extends Controller {
                 },
             },
         };
-    }
-
-    /* Lit un token de charte --cs-* ; repli sur une couleur sûre si absent.
-       (Dupliqué depuis graphique_occupation_controller — cf. DT-17.) */
-    couleurToken(nomToken, repli) {
-        const valeur = getComputedStyle(document.documentElement).getPropertyValue(nomToken).trim();
-        return valeur !== '' ? valeur : repli;
     }
 }
