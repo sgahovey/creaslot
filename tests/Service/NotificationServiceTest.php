@@ -81,6 +81,7 @@ final class NotificationServiceTest extends TestCase
             entityManager: $this->entityManager,
             expediteur: 'noreply@test.local',
             replyTo: 'contact@test.local',
+            environmentLabel: 'test',
             redirectionDev: null, // pas de redirection en tests : sujet et destinataire non modifiés
         );
     }
