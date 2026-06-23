@@ -165,7 +165,7 @@ Recommandation : appliquer les 3 niveaux (defense in depth, best practice Symfon
 
 ---
 
-## DT-5 — `final` retiré de NotificationService pour testabilité (🟢 BAS)
+## DT-5 — `final` retiré de NotificationService pour testabilité (🟢 BAS) — ✅ CLÔTURÉE (DÉCISION) (23/06/2026)
 
 **Détecté** : 19/05/2026, lors écriture EnvoyerRappelsJ1CommandTest.
 
@@ -179,11 +179,12 @@ Recommandation : appliquer les 3 niveaux (defense in depth, best practice Symfon
 - Quand US-4.7 (page Mes notifications) ou US-4.8 (préférences) sera traitée, envisager l'extraction de l'interface si plusieurs implémentations émergent
 - Si pas de besoin futur, garder `readonly class` simple
 
+**Décision** (23/06/2026) : **statu quo formalisé**, aucun changement de code. `NotificationService` reste `readonly class` **sans** `final`. La contrainte d'origine est toujours active et vérifiée : `EnvoyerRappelsJ1CommandTest` mocke le service via `createMock(NotificationService::class)`, et PHPUnit ne peut pas mocker une classe `final`. Remettre `final` exigerait soit l'extraction d'une `NotificationServiceInterface` (Dependency Inversion) — **sur-ingénierie** sans second implémenteur au volume Cnam — soit la réécriture de la stratégie de test (risque de régression pour un gain cosmétique). Le `final` était cosmétique ; son retrait est un choix d'architecture **assumé et documenté**, pas un défaut. À réexaminer uniquement si un second implémenteur de notification émerge.
 **Priorité** : 🟢 basse, statu quo acceptable.
 
 ---
 
-## DT-6 — Setup BDD test à automatiser (🟢 BAS)
+## DT-6 — Setup BDD test à automatiser (🟢 BAS) — ✅ CLÔTURÉE (DÉCISION) (23/06/2026)
 
 **Détecté** : 27/05/2026, lors mise en place du 1er test d'intégration (cf. [[DT-1]]).
 
@@ -211,11 +212,12 @@ Sans ce setup, tout test d'intégration extending `KernelTestCase` échoue avec 
 
 **Recommandation** : Option C (init MySQL au démarrage) — totalement transparent pour le dev, aucune commande supplémentaire à mémoriser. Option B si on veut plus de contrôle (ex : truncate sélectif entre suites).
 
+**Décision** (23/06/2026) : **clôturée — le besoin critique est déjà couvert**. Le pipeline d'intégration continue (`.github/workflows/ci.yml`) provisionne la base de test à chaque exécution : `doctrine:database:create --env=test --if-not-exists`, puis `doctrine:migrations:migrate --env=test`, puis `doctrine:fixtures:load --env=test`. Les tests d'intégration tournent donc de manière reproductible en CI sans intervention manuelle. Le seul reliquat est le **confort du développeur en local** (rejouer les 3 commandes après un `docker compose down -v`), d'impact faible pour un projet solo. L'automatisation locale (`init.sql` ou `bin/setup-test-db.sh`) est **reportée à son déclencheur** : arrivée d'un second développeur sur le projet. Aucun code à ce stade.
 **Priorité** : 🟢 basse, à faire avant si plusieurs devs rejoignent le projet OU avant déploiement CI/CD.
 
 ---
 
-## DT-7 — Factorisation JS templates créneau (🟢 BAS)
+## DT-7 — Factorisation JS templates créneau (🟢 BAS) — ✅ CLÔTURÉE (DÉCISION) (23/06/2026)
 
 **Détecté** : 28/05/2026, lors du fix [[DT-2]] (niveau 1 UX).
 
@@ -229,6 +231,7 @@ Sans ce setup, tout test d'intégration extending `KernelTestCase` échoue avec 
 
 **Recommandation** : Option B (Stimulus) — la stack embarque déjà StimulusBundle + AssetMapper, et c'est testable/réutilisable.
 
+**Décision** (23/06/2026) : **clôturée — factorisation non justifiée à ce jour, en attente du déclencheur**. État vérifié : seuls **deux** templates portent ce JS (`personnel/creneau/nouveau.html.twig` et `personnel/creneau/modifier.html.twig`) ; `agenda.html.twig` et `liste.html.twig` ne sont pas concernés. Avec deux points d'entrée seulement, extraire le JS partagé (Stimulus, asset dédié ou macro) ajouterait une indirection pour un gain de maintenabilité marginal — **optimisation prématurée** écartée (cf. *Coder proprement*, éviter l'abstraction spéculative). La factorisation sera traitée à son **déclencheur** : apparition d'un **3e point d'entrée** (ex. modale de création rapide) ou besoin de **tester ce JS** isolément. Aucun code à ce stade.
 **Priorité** : 🟢 basse, à faire si 3e template apparaît OU besoin de tests JS.
 
 ---
