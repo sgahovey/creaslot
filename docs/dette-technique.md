@@ -356,7 +356,7 @@ Quatre sites routent désormais leur formatage d'affichage via le service : `Slo
 
 ---
 
-## DT-12 — NotificationService : factoriser le squelette des 6 méthodes notifier*() (🟡 MOYEN) — 🟠 OUVERTE
+## DT-12 — NotificationService : factoriser le squelette des 7 méthodes notifier*() (🟡 MOYEN) — ✅ RÉSOLUE (23/06/2026)
 
 **Détecté** : 01/06/2026, lors d'une revue qualité en lecture seule (DRY).
 
@@ -366,6 +366,11 @@ Quatre sites routent désormais leur formatage d'affichage via le service : `Slo
 
 **Action proposée** : extraire un helper privé `envoyerOuLoguer(string $type, array $idsContexte, string $to, string $subject, string $template, array $context)` encapsulant le try/catch + log RGPD ; factoriser l'extraction des trois acteurs. Chaque `notifier*()` se réduit alors à : préparer le contexte → (persister notification in-app) → déléguer au helper.
 
+**Résolution** (23/06/2026) : extraction d'un helper privé `envoyerEtTracer(string $to, string $subject, string $template, array $context, string $messageErreur, array $contexteErreur)` encapsulant le bloc `try { envoyer(...) } catch (\Throwable) { logger->error(...) }` dupliqué dans les **7** méthodes `notifier*()`. Le helper **avale** l'exception (politique Option B : le flux métier reste valide si l'email échoue, retry géré par Messenger en async) et complète le contexte d'erreur métier avec `exception`/`message` — par opposition à `envoyer()` qui re-propage après avoir logué (couche bas niveau, log RGPD/SMTP). Distinction documentée dans le PHPDoc du helper.
+
+Chaque `notifier*()` passe son **message et ses identifiants métier propres** (`type`, `*_id`, et pour la méthode commentaire `commentaire_avant_len`/`commentaire_apres_len`, avec `reservation_id` issu de `getReservationActive()?->getId()`) : le **contenu des logs reste strictement inchangé** (mêmes clés, même ordre métier-puis-`exception`/`message`). Les **gardes** en tête de méthode (`if statut !== ... return`), la **logique de préférence email** (`if !isEmailRappelJ1() return`, etc.) et `persisterNotification()` sont **inchangées** — seul le bloc try/catch est factorisé.
+
+**Bilan** : refacto pur, contrôle `grep "try {"` = 2 occurrences légitimes restantes (`envoyer` qui propage, `envoyerEtTracer` qui avale) — plus aucun try/catch dans les 7 `notifier*()`. 286 tests verts dont les 23 de `NotificationService` (filet de non-régression), PHPStan 8 = 0, CS-Fixer 0. Commit de code : `f09392e`.
 **Priorité** : 🟡 moyenne, à traiter lors de la prochaine évolution de NotificationService (nouveau type d'email).
 
 ---
