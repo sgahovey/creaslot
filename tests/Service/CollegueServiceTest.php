@@ -90,7 +90,13 @@ final class CollegueServiceTest extends KernelTestCase
 
         self::assertCount(1, $dtos);
         self::assertSame(CollegueService::STATUT_EN_RDV, $dtos[0]->statut);
-        self::assertSame($enCoursFin->format('H\hi'), $dtos[0]->heureFinRdv);
+        // Le service formate heureFinRdv via DateFormatterService::pourHeureCompacte qui
+        // force Indian/Reunion ; l'attendu doit appliquer la MÊME conversion pour rester
+        // déterministe quelle que soit la timezone du process (UTC en CI, Réunion en local).
+        self::assertSame(
+            $enCoursFin->setTimezone(new \DateTimeZone('Indian/Reunion'))->format('H\hi'),
+            $dtos[0]->heureFinRdv,
+        );
         self::assertNotNull($dtos[0]->prochainRdvDate);
         self::assertSame(
             $prochainDebut->format('Y-m-d H:i:s'),

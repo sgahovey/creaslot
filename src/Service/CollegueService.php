@@ -21,6 +21,7 @@ class CollegueService
     public function __construct(
         private readonly UtilisateurRepository $utilisateurRepository,
         private readonly CreneauRepository $creneauRepository,
+        private readonly DateFormatterService $dateFormatter,
     ) {
     }
 
@@ -60,7 +61,7 @@ class CollegueService
             $dtos[] = new CollegueDTO(
                 $collegue,
                 $statut,
-                $finRdvEnCours?->format('H\hi'),
+                $finRdvEnCours !== null ? $this->dateFormatter->pourHeureCompacte($finRdvEnCours) : null,
                 $prochainsRdv[$id] ?? null,
             );
         }

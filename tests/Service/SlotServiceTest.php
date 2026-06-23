@@ -9,6 +9,7 @@ use App\Entity\TypeRdv;
 use App\Entity\Utilisateur;
 use App\Enum\RoleUtilisateur;
 use App\Repository\CreneauRepository;
+use App\Service\DateFormatterService;
 use App\Service\SlotService;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -30,7 +31,7 @@ final class SlotServiceTest extends TestCase
     {
         $this->repository = $this->createMock(CreneauRepository::class);
         $this->logger = $this->createMock(LoggerInterface::class);
-        $this->slotService = new SlotService($this->repository, $this->logger);
+        $this->slotService = new SlotService($this->repository, $this->logger, new DateFormatterService());
     }
 
     public function test_pas_de_chevauchement_avec_creneau_passe_returns_false(): void
@@ -181,7 +182,10 @@ final class SlotServiceTest extends TestCase
     public function test_construire_message_chevauchement_contient_type_et_horaires(): void
     {
         $user = $this->creerUtilisateur(1);
-        $conflit = $this->creerCreneauExistant(3, $user, '2026-08-20 14:30', '2026-08-20 15:45');
+        // Dates ancrées explicitement en heure Réunion (offset +04:00, fixe et sans DST) :
+        // DateFormatterService force Indian/Reunion, donc le rendu doit être indépendant de
+        // la timezone du process (UTC en CI, Indian/Reunion en local).
+        $conflit = $this->creerCreneauExistant(3, $user, '2026-08-20 14:30 +04:00', '2026-08-20 15:45 +04:00');
 
         $msg = $this->slotService->construireMessageChevauchement($conflit);
 
