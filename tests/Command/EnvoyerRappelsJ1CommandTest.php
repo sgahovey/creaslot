@@ -7,6 +7,7 @@ namespace App\Tests\Command;
 use App\Command\EnvoyerRappelsJ1Command;
 use App\Entity\Reservation;
 use App\Repository\ReservationRepository;
+use App\Service\DateFormatterService;
 use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -52,6 +53,7 @@ final class EnvoyerRappelsJ1CommandTest extends TestCase
             notificationService: $this->notificationService,
             entityManager: $this->entityManager,
             logger: $this->logger,
+            dateFormatter: new DateFormatterService(),
         );
 
         $application = new Application();

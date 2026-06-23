@@ -9,6 +9,7 @@ use App\Entity\TypeRdv;
 use App\Entity\Utilisateur;
 use App\Enum\RoleUtilisateur;
 use App\Repository\CreneauRepository;
+use App\Service\DateFormatterService;
 use App\Service\SlotService;
 use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -30,7 +31,7 @@ final class SlotServiceTest extends TestCase
     {
         $this->repository = $this->createMock(CreneauRepository::class);
         $this->logger = $this->createMock(LoggerInterface::class);
-        $this->slotService = new SlotService($this->repository, $this->logger);
+        $this->slotService = new SlotService($this->repository, $this->logger, new DateFormatterService());
     }
 
     public function test_pas_de_chevauchement_avec_creneau_passe_returns_false(): void
