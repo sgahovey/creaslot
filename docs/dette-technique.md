@@ -335,7 +335,7 @@ Le sujet reste construit côté PHP (`NotificationService`) : le layout ne porte
 
 ---
 
-## DT-11 — Centraliser le formatage de date d'affichage dans DateFormatterService (🟡 MOYEN) — 🟠 OUVERTE
+## DT-11 — Centraliser le formatage de date d'affichage dans DateFormatterService (🟡 MOYEN) — ✅ RÉSOLUE (23/06/2026)
 
 **Détecté** : 01/06/2026, lors d'une revue qualité en lecture seule (DRY).
 
@@ -345,6 +345,13 @@ Le sujet reste construit côté PHP (`NotificationService`) : le layout ne porte
 
 **Action proposée** : étendre `DateFormatterService` avec des méthodes centralisées (`pourAffichage` date, `pourHeure`, etc., timezone `Indian/Reunion` uniforme) et router **tout** le formatage d'affichage à travers le service ; supprimer les `->format(...)` en dur.
 
+**Résolution** (23/06/2026) : `DateFormatterService` étendu de trois méthodes d'affichage, calquées sur `pourSujetEmail` (conversion immutable non mutante, timezone `Indian/Reunion` forcée) : `pourDate` (`d/m/Y`), `pourHeure` (`H:i`) et `pourHeureCompacte` (`H\hi`). `pourHeure` et `pourHeureCompacte` coexistent volontairement — elles ne diffèrent que par le séparateur (`:` vs `h`), les deux rendus existant réellement dans l'application.
+
+Quatre sites routent désormais leur formatage d'affichage via le service : `SlotService` (message de chevauchement : `pourDate` + 2× `pourHeure`), `CollegueService` (heure de fin de RDV : `pourHeureCompacte`, `null` préservé), `EnvoyerRappelsJ1Command` (`pourDate`) et `AppEmailTestCommand` (qui réutilise `pourSujetEmail` au lieu de ré-implémenter le format à la main).
+
+**Hors périmètre** : les `format(\DateTimeInterface::ATOM)` des logs de `SlotService::enregistrerChevauchementDetecte` restent inchangés — donnée machine (tri/parsing), pas de l'affichage humain.
+
+**Bilan** : 286 tests verts (12 nouveaux couvrant les 3 méthodes sur 4 angles : conversion UTC→Réunion, stabilité si déjà en Réunion, zéro initial < 10h, compat `\DateTime` mutable), PHPStan 8 = 0, CS-Fixer 0. Rendu identique (tz conteneur = `Indian/Reunion`) ; date du rappel J-1 vérifiée en console (24/06/2026). Commit de code : `8fafb79`.
 **Priorité** : 🟡 moyenne, à traiter au prochain ajout d'un format de date OU dans une passe DRY.
 
 ---
