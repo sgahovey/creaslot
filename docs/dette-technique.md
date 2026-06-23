@@ -1,6 +1,6 @@
 # Dette technique CreaSlot — Suivi
 
-Date dernière mise à jour : 22 juin 2026.
+Date dernière mise à jour : 23 juin 2026.
 Convention : DT-N = Dette Technique numéro N.
 
 ---
@@ -282,7 +282,7 @@ FullCalendar de `CLAUDE.md`.
 
 ---
 
-## DT-9 — Layout email Twig partagé (🟡 MOYEN) — 🟠 OUVERTE
+## DT-9 — Layout email Twig partagé (🟡 MOYEN) — ✅ RÉSOLUE (23/06/2026)
 
 **Détecté** : 01/06/2026, lors d'une revue qualité en lecture seule (Clean Code R.C. Martin + critères CDA).
 
@@ -292,6 +292,13 @@ FullCalendar de `CLAUDE.md`.
 
 **Action proposée** : créer `templates/emails/_layout.html.twig` portant la structure commune (head, styles, en-tête, signature), exposant un `{% block contenu %}` ; chaque email passe à `{% extends 'emails/_layout.html.twig' %}` et ne déclare plus que son contenu propre.
 
+**Résolution** (23/06/2026) : création de `templates/emails/_layout.html.twig` portant la coque HTML commune (doctype, `<head>`, wrapper table centrant, header bleu marine `#1A3E6F` + « CreaSlot », footer Cnam), exposée via les blocs `body_html`, `titre`, `sous_titre` et `contenu`. Les **8 templates métier** passent à `{% extends 'emails/_layout.html.twig' %}` et ne portent plus que leur corps : confirmation/annulation/modification/rappel auditeur, confirmation/annulation personnel, suppression créneau, reset password (ajouté en US-6.2). Migration **incrémentale** : pilote (`reservation_confirmation_auditeur`) validé par envoi réel avant propagation aux 7 autres.
+
+Le sujet reste construit côté PHP (`NotificationService`) : le layout ne porte volontairement pas de `block subject`. L'**asymétrie RGPD** des annulations est préservée — le template auditeur affiche le motif (saisi par l'auditeur lui-même), le template personnel ne le reçoit jamais.
+
+`test.html.twig` reste **volontairement autonome** : email de diagnostic technique avec un `block subject`, un header sans sous-titre et un footer différent (« CreaSlot — Application de gestion des rendez-vous » / « © 2026 Cnam Réunion ») ; l'aligner sur le layout changerait son rendu pour aucun gain.
+
+**Bilan** : `git diff` à +42 / −442 lignes (duplication résorbée), `lint:twig` 10/10, 274 tests verts, rendus confirmés par envois réels (confirmation, annulation auditeur+personnel, reset password). Commit de code : `1042bc6`.
 **Priorité** : 🟡 moyenne, à traiter avant l'ajout d'un nouvel email OU avant un changement de charte email.
 
 ---
