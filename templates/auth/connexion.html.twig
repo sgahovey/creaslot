@@ -77,15 +77,24 @@
                 <label for="password" class="form-label">
                     Mot de passe
                 </label>
-                <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    class="form-control"
-                    placeholder="Votre mot de passe"
-                    autocomplete="current-password"
-                    required
-                >
+                <div class="input-group" data-controller="afficher-mot-de-passe">
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        class="form-control"
+                        placeholder="Votre mot de passe"
+                        autocomplete="current-password"
+                        required
+                        data-afficher-mot-de-passe-target="champ"
+                    >
+                    <button class="btn btn-outline-secondary" type="button"
+                            data-action="afficher-mot-de-passe#basculer"
+                            aria-label="Afficher le mot de passe"
+                            aria-pressed="false">
+                        <i class="bi bi-eye" aria-hidden="true" data-afficher-mot-de-passe-target="icone"></i>
+                    </button>
+                </div>
                 <div class="text-end mt-2">
                     <a href="{{ path('app_mot_de_passe_oublie') }}" style="font-size: var(--cs-fs-small);">Mot de passe oublié ?</a>
                 </div>
