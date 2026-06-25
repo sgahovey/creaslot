@@ -706,3 +706,31 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 **Hors périmètre** : les écrans d'administration (occupation, statistiques) qui chargent des données en asynchrone feront l'objet d'une dette dédiée (DT-26) si pertinent.
 
 **Priorité** : 🟢 basse (amélioration UX ; aucun impact fonctionnel ni sécurité).
+
+---
+
+## DT-26 — Absence d'indicateur visuel de chargement sur le calendrier d'occupation (admin) (🟢 BAS) — ✅ RÉSOLUE (25/06/2026)
+
+> **✅ RÉSOLUE le 25/06/2026** sur branche `feature/DT-26-spinner-admin`.
+>
+> **Origine** : extension du retour visuel introduit en DT-25 (spinner agenda) à la vue d'occupation admin, suite à la même revue UX (retour formateur).
+>
+> **Résumé fix** : ajout d'un spinner Bootstrap 5 (`.spinner-border`, natif) en overlay du calendrier FullCalendar de la vue d'occupation, en répliquant le pattern DT-25. Piloté par le hook `loading` déjà existant d'`occupation_controller.js` (qui positionnait déjà `aria-busy`) : affiché pendant le chargement des évènements d'occupation, masqué à la fin.
+>
+> **Périmètre cadré par audit** : seul le calendrier d'occupation charge en asynchrone (`eventSources` avec `url` + hook `loading`). Les graphiques Chart.js (statistiques par service/type, graphique d'occupation du dashboard) sont EXCLUS : leurs données sont rendues inline par Twig (`lignes.map` / `series.map`), sans aucun appel réseau asynchrone, donc aucun spinner n'est justifié. Aucun fetch séparé à couvrir (pas de bouton type Mes prochains RDV), donc pas de `.finally()` ni de garde `aria-busy` nécessaires (plus simple que DT-25).
+>
+> **Accessibilité (RGAA)** : `role=status`, `aria-live=polite`, libellé `.visually-hidden`, `spinner-border` natif Bootstrap.
+>
+> **Validation** : 288 tests verts (non-régression ; front pur sans test automatisé), validation visuelle navigateur (spinner affiché puis masqué proprement sur changement de période, throttling Slow 3G).
+
+**Détecté** : 25/06/2026, lors de la même revue UX que DT-25 (retour formateur), en étendant la réflexion aux écrans admin.
+
+**Constat** : le calendrier d'occupation (`occupation_controller.js`) positionnait déjà `aria-busy` via son hook `loading`, mais sans retour visuel pendant le chargement des évènements. À l'inverse, les deux contrôleurs Chart.js (`statistiques_controller.js`, `graphique_occupation_controller.js`) lisent des données déjà présentes inline (rendu Twig) : aucun chargement asynchrone, donc hors périmètre.
+
+**Fichiers concernés** : `templates/admin/occupation/index.html.twig` (overlay spinner + wrapper `position-relative` + règle CSS `.cs-occupation-loading-overlay`, calquée sur `.cs-agenda-loading-overlay`), `assets/controllers/occupation_controller.js` (cible Stimulus `loadingOverlay`, pilotage dans le hook `loading`).
+
+**Action réalisée** : overlay spinner Bootstrap piloté par le hook `loading` existant du contrôleur d'occupation, en répliquant le pattern DT-25 ; version simplifiée sans `.finally()` ni garde `aria-busy` (aucun fetch séparé à couvrir).
+
+**Hors périmètre** : les graphiques Chart.js (statistiques par service/type, graphique d'occupation du dashboard), dont les données sont rendues inline par Twig sans appel réseau asynchrone — aucun spinner justifié.
+
+**Priorité** : 🟢 basse (amélioration UX ; aucun impact fonctionnel ni sécurité).
