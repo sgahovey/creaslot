@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Controller\Traits\JsonSansCacheTrait;
 use App\Repository\CreneauRepository;
 use App\Repository\ServiceRepository;
 use App\Repository\TypeRdvRepository;
@@ -26,6 +27,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_SUPER_ADMIN')]
 final class OccupationController extends AbstractController
 {
+    use JsonSansCacheTrait;
+
     private const string FUSEAU_REUNION = 'Indian/Reunion';
 
     public function __construct(
@@ -66,14 +69,14 @@ final class OccupationController extends AbstractController
         $finRaw = $request->query->getString('end');
 
         if ($debutRaw === '' || $finRaw === '') {
-            return $this->repondreSansCache([]);
+            return $this->jsonSansCache([]);
         }
 
         $debutPlage = $this->analyserDateIso($debutRaw);
         $finPlage = $this->analyserDateIso($finRaw);
 
         if ($debutPlage === null || $finPlage === null) {
-            return $this->repondreSansCache([], Response::HTTP_BAD_REQUEST);
+            return $this->jsonSansCache([], Response::HTTP_BAD_REQUEST);
         }
 
         $serviceId = $this->idFiltre($request, 'service');
@@ -82,7 +85,7 @@ final class OccupationController extends AbstractController
         $creneaux = $this->creneauRepository->findDansPlageGlobale($debutPlage, $finPlage, $serviceId, $typeId);
         $idsOccupes = $this->creneauRepository->findIdsCreneauxOccupesDansPlage($debutPlage, $finPlage, $serviceId, $typeId);
 
-        return $this->repondreSansCache($this->serializer->toCalendarEvents($creneaux, $idsOccupes));
+        return $this->jsonSansCache($this->serializer->toCalendarEvents($creneaux, $idsOccupes));
     }
 
     /**
@@ -142,21 +145,5 @@ final class OccupationController extends AbstractController
         $fin = $maintenant->modify('friday this week')->setTime(23, 59, 59);
 
         return [$debut, $fin];
-    }
-
-    /**
-     * Réponse JSON non mise en cache : la vue d'occupation doit refléter l'état
-     * courant immédiatement (mêmes raisons que CreneauApiController::jsonSansCache).
-     * Helper local volontairement dupliqué pour garder l'US auto-contenue [[DT-16]].
-     *
-     * @param array<int|string, mixed> $donnees
-     */
-    private function repondreSansCache(array $donnees, int $statut = Response::HTTP_OK): JsonResponse
-    {
-        $reponse = new JsonResponse($donnees, $statut);
-        $reponse->setPrivate();
-        $reponse->headers->addCacheControlDirective('no-store');
-
-        return $reponse;
     }
 }

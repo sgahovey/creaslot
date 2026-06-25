@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Api;
 
+use App\Controller\Traits\JsonSansCacheTrait;
 use App\Entity\Utilisateur;
 use App\Repository\CreneauRepository;
 use App\Service\CreneauCalendarSerializer;
@@ -18,6 +19,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_PERSONNEL')]
 final class CreneauApiController extends AbstractController
 {
+    use JsonSansCacheTrait;
+
     public function __construct(
         private readonly CreneauRepository $creneauRepository,
         private readonly CreneauCalendarSerializer $serializer,
@@ -67,22 +70,5 @@ final class CreneauApiController extends AbstractController
         );
 
         return $this->jsonSansCache($this->serializer->toCalendarEvents($creneaux));
-    }
-
-    /**
-     * Réponse JSON non mise en cache : un agenda d'administration doit refléter
-     * l'état courant immédiatement après une édition. Un `max-age` positif faisait
-     * resservir par le navigateur une copie périmée (ancien type/couleur) après
-     * modification d'un créneau.
-     *
-     * @param array<int|string, mixed> $donnees
-     */
-    private function jsonSansCache(array $donnees, int $statut = Response::HTTP_OK): JsonResponse
-    {
-        $reponse = new JsonResponse($donnees, $statut);
-        $reponse->setPrivate();
-        $reponse->headers->addCacheControlDirective('no-store');
-
-        return $reponse;
     }
 }

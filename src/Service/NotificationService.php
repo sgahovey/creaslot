@@ -38,7 +38,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
  * Si la variable d'environnement APP_MAILER_REDIRECT_TO est définie (uniquement
  * prévue en environnement DEV, jamais en preprod/prod), TOUS les emails sont
  * redirigés vers cette adresse au lieu du destinataire d'origine. Le sujet
- * est alors préfixé "[DEV→destinataire-original@exemple.fr] " pour conserver
+ * est alors préfixé "[<ENV>→destinataire-original@exemple.fr] " pour conserver
  * la traçabilité du destinataire prévu. La syntaxe %env(default::VAR)% du
  * conteneur Symfony fait que l'absence de la variable renvoie NULL sans
  * erreur : en preprod/prod, où la variable n'existe pas, le service envoie
@@ -58,6 +58,8 @@ readonly class NotificationService
         private string $expediteur,
         #[Autowire('%env(APP_NOTIFICATION_REPLY_TO)%')]
         private string $replyTo,
+        #[Autowire('%env(APP_ENVIRONMENT_LABEL)%')]
+        private string $environmentLabel,
         #[Autowire('%env(default::APP_MAILER_REDIRECT_TO)%')]
         private ?string $redirectionDev = null,
     ) {
@@ -68,7 +70,7 @@ readonly class NotificationService
      *
      * Si APP_MAILER_REDIRECT_TO est définie (cf. section "Redirection DEV" du
      * docblock de classe), $to est remplacé par l'adresse de redirection et
-     * le sujet est préfixé "[DEV→destinataire-original]" avant construction
+     * le sujet est préfixé "[<ENV>→destinataire-original]" avant construction
      * du TemplatedEmail.
      *
      * @param string               $to       Adresse email du destinataire (jamais loguée en clair)
@@ -88,7 +90,7 @@ readonly class NotificationService
         $redirige = $this->redirectionDev !== null && $this->redirectionDev !== '';
 
         if ($redirige) {
-            $subject = sprintf('[DEV→%s] %s', $to, $subject);
+            $subject = sprintf('[%s→%s] %s', strtoupper($this->environmentLabel), $to, $subject);
             $to = $this->redirectionDev;
         }
 
@@ -126,6 +128,41 @@ readonly class NotificationService
             $contexteSucces['redirige_vers_hash'] = substr(hash('sha256', $this->redirectionDev), 0, 8);
         }
         $this->logger->info('Email envoyé', $contexteSucces);
+    }
+
+    /**
+     * Envoie un email et trace un eventuel echec SANS le propager.
+     *
+     * Factorise le bloc try/catch commun aux methodes notifier*() : l'email
+     * transactionnel est tente via envoyer() ; si l'envoi echoue, l'erreur est
+     * loguee (contexte metier + classe/message d'exception) mais l'exception
+     * est AVALEE (politique Option B : le flux metier reste valide meme si
+     * l'email echoue, retry gere par Messenger en async preprod/prod).
+     *
+     * Difference avec envoyer() : envoyer() re-propage l'exception apres l'avoir
+     * loguee (couche bas niveau, log RGPD/SMTP) ; envoyerEtTracer() l'avale
+     * (couche metier notifier*).
+     *
+     * @param array<string, mixed>       $context        Variables passées au template
+     * @param array<string, scalar|null> $contexteErreur Identifiants metier a tracer
+     *                                                   (type, *_id) en cas d'echec
+     */
+    private function envoyerEtTracer(
+        string $to,
+        string $subject,
+        string $template,
+        array $context,
+        string $messageErreur,
+        array $contexteErreur,
+    ): void {
+        try {
+            $this->envoyer($to, $subject, $template, $context);
+        } catch (\Throwable $e) {
+            $this->logger->error($messageErreur, $contexteErreur + [
+                'exception' => $e::class,
+                'message'   => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -192,21 +229,17 @@ readonly class NotificationService
             $reservation,
         );
 
-        try {
-            $this->envoyer(
-                $auditeur->getEmail(),
-                $subject,
-                'emails/reservation_confirmation_auditeur.html.twig',
-                $context,
-            );
-        } catch (\Throwable $e) {
-            $this->logger->error('Echec envoi notification reservation auditeur', [
+        $this->envoyerEtTracer(
+            $auditeur->getEmail(),
+            $subject,
+            'emails/reservation_confirmation_auditeur.html.twig',
+            $context,
+            'Echec envoi notification reservation auditeur',
+            [
                 'type'           => 'auditeur_reservation',
                 'reservation_id' => $reservation->getId(),
-                'exception'      => $e::class,
-                'message'        => $e->getMessage(),
-            ]);
-        }
+            ],
+        );
     }
 
     /**
@@ -247,21 +280,17 @@ readonly class NotificationService
             'lien_mon_agenda'      => $this->genererLienAbsolu('app_creneau_agenda'),
         ];
 
-        try {
-            $this->envoyer(
-                $personnel->getEmail(),
-                $subject,
-                'emails/reservation_confirmation_personnel.html.twig',
-                $context,
-            );
-        } catch (\Throwable $e) {
-            $this->logger->error('Echec envoi notification reservation personnel', [
+        $this->envoyerEtTracer(
+            $personnel->getEmail(),
+            $subject,
+            'emails/reservation_confirmation_personnel.html.twig',
+            $context,
+            'Echec envoi notification reservation personnel',
+            [
                 'type'           => 'personnel_reservation',
                 'reservation_id' => $reservation->getId(),
-                'exception'      => $e::class,
-                'message'        => $e->getMessage(),
-            ]);
-        }
+            ],
+        );
     }
 
     /**
@@ -320,21 +349,17 @@ readonly class NotificationService
             $reservation,
         );
 
-        try {
-            $this->envoyer(
-                $auditeur->getEmail(),
-                $subject,
-                'emails/reservation_annulation_auditeur.html.twig',
-                $context,
-            );
-        } catch (\Throwable $e) {
-            $this->logger->error('Echec envoi notification annulation auditeur', [
+        $this->envoyerEtTracer(
+            $auditeur->getEmail(),
+            $subject,
+            'emails/reservation_annulation_auditeur.html.twig',
+            $context,
+            'Echec envoi notification annulation auditeur',
+            [
                 'type'           => 'auditeur_annulation',
                 'reservation_id' => $reservation->getId(),
-                'exception'      => $e::class,
-                'message'        => $e->getMessage(),
-            ]);
-        }
+            ],
+        );
     }
 
     /**
@@ -381,21 +406,17 @@ readonly class NotificationService
             'lien_mon_agenda'      => $this->genererLienAbsolu('app_creneau_agenda'),
         ];
 
-        try {
-            $this->envoyer(
-                $personnel->getEmail(),
-                $subject,
-                'emails/reservation_annulation_personnel.html.twig',
-                $context,
-            );
-        } catch (\Throwable $e) {
-            $this->logger->error('Echec envoi notification annulation personnel', [
+        $this->envoyerEtTracer(
+            $personnel->getEmail(),
+            $subject,
+            'emails/reservation_annulation_personnel.html.twig',
+            $context,
+            'Echec envoi notification annulation personnel',
+            [
                 'type'           => 'personnel_annulation',
                 'reservation_id' => $reservation->getId(),
-                'exception'      => $e::class,
-                'message'        => $e->getMessage(),
-            ]);
-        }
+            ],
+        );
     }
 
     /**
@@ -472,25 +493,21 @@ readonly class NotificationService
             return;
         }
 
-        try {
-            $this->envoyer(
-                $auditeur->getEmail(),
-                $subject,
-                'emails/reservation_modification_auditeur.html.twig',
-                $context,
-            );
-        } catch (\Throwable $e) {
-            $this->logger->error('Echec envoi notification commentaire creneau', [
+        $this->envoyerEtTracer(
+            $auditeur->getEmail(),
+            $subject,
+            'emails/reservation_modification_auditeur.html.twig',
+            $context,
+            'Echec envoi notification commentaire creneau',
+            [
                 'type'                  => 'auditeur_commentaire_creneau',
                 'creneau_id'            => $creneau->getId(),
                 'reservation_id'        => $creneau->getReservationActive()?->getId(),
                 'auditeur_id'           => $auditeur->getId(),
                 'commentaire_avant_len' => strlen($commentaireAvant ?? ''),
                 'commentaire_apres_len' => strlen($creneau->getCommentaireAuditeur() ?? ''),
-                'exception'             => $e::class,
-                'message'               => $e->getMessage(),
-            ]);
-        }
+            ],
+        );
     }
 
     /**
@@ -555,23 +572,19 @@ readonly class NotificationService
             $reservation,
         );
 
-        try {
-            $this->envoyer(
-                $auditeur->getEmail(),
-                $subject,
-                'emails/creneau_suppression_auditeur.html.twig',
-                $context,
-            );
-        } catch (\Throwable $e) {
-            $this->logger->error('Echec envoi notification suppression creneau', [
+        $this->envoyerEtTracer(
+            $auditeur->getEmail(),
+            $subject,
+            'emails/creneau_suppression_auditeur.html.twig',
+            $context,
+            'Echec envoi notification suppression creneau',
+            [
                 'type'           => 'auditeur_suppression_creneau',
                 'creneau_id'     => $creneau->getId(),
                 'reservation_id' => $reservation->getId(),
                 'auditeur_id'    => $auditeur->getId(),
-                'exception'      => $e::class,
-                'message'        => $e->getMessage(),
-            ]);
-        }
+            ],
+        );
     }
 
     /**
@@ -639,23 +652,19 @@ readonly class NotificationService
             return;
         }
 
-        try {
-            $this->envoyer(
-                $auditeur->getEmail(),
-                $subject,
-                'emails/reservation_rappel_auditeur.html.twig',
-                $context,
-            );
-        } catch (\Throwable $e) {
-            $this->logger->error('Echec envoi rappel J-1', [
+        $this->envoyerEtTracer(
+            $auditeur->getEmail(),
+            $subject,
+            'emails/reservation_rappel_auditeur.html.twig',
+            $context,
+            'Echec envoi rappel J-1',
+            [
                 'type'           => 'auditeur_rappel_j1',
                 'creneau_id'     => $creneau->getId(),
                 'reservation_id' => $reservation->getId(),
                 'auditeur_id'    => $auditeur->getId(),
-                'exception'      => $e::class,
-                'message'        => $e->getMessage(),
-            ]);
-        }
+            ],
+        );
     }
 
     /**

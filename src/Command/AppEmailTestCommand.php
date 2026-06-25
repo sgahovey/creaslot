@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Service\DateFormatterService;
 use App\Service\NotificationService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -28,6 +29,7 @@ final class AppEmailTestCommand extends Command
 {
     public function __construct(
         private readonly NotificationService $notificationService,
+        private readonly DateFormatterService $dateFormatter,
     ) {
         parent::__construct();
     }
@@ -62,7 +64,7 @@ final class AppEmailTestCommand extends Command
         $io->writeln(sprintf('  <info>Template utilisé</info>            : %s', $template));
         $io->newLine();
 
-        $subject = 'Test CreaSlot — ' . $maintenant->format('d/m/Y \à H\hi');
+        $subject = 'Test CreaSlot — ' . $this->dateFormatter->pourSujetEmail($maintenant);
 
         try {
             $this->notificationService->envoyer(
@@ -70,8 +72,7 @@ final class AppEmailTestCommand extends Command
                 $subject,
                 $template,
                 [
-                    'date_envoi'    => $maintenant,
-                    'environnement' => 'dev',
+                    'date_envoi' => $maintenant,
                 ],
             );
         } catch (\Throwable $e) {

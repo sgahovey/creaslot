@@ -17,6 +17,7 @@ final readonly class SlotService
     public function __construct(
         private CreneauRepository $creneauRepository,
         private LoggerInterface $logger,
+        private DateFormatterService $dateFormatter,
     ) {
     }
 
@@ -61,9 +62,9 @@ final readonly class SlotService
         return sprintf(
             'Ce créneau chevauche un créneau existant : %s du %s de %s à %s.',
             $conflit->getTypeRdv()->getLibelle(),
-            $conflit->getDateDebut()->format('d/m/Y'),
-            $conflit->getDateDebut()->format('H:i'),
-            $conflit->getDateFin()->format('H:i'),
+            $this->dateFormatter->pourDate($conflit->getDateDebut()),
+            $this->dateFormatter->pourHeure($conflit->getDateDebut()),
+            $this->dateFormatter->pourHeure($conflit->getDateFin()),
         );
     }
 

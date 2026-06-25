@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Repository\ReservationRepository;
+use App\Service\DateFormatterService;
 use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -48,6 +49,7 @@ final class EnvoyerRappelsJ1Command extends Command
         private readonly NotificationService $notificationService,
         private readonly EntityManagerInterface $entityManager,
         private readonly LoggerInterface $logger,
+        private readonly DateFormatterService $dateFormatter,
     ) {
         parent::__construct();
     }
@@ -63,7 +65,7 @@ final class EnvoyerRappelsJ1Command extends Command
         $io->title('Envoi des rappels J-1');
         $io->writeln(sprintf(
             'Recherche des réservations ACTIVE pour le %s (Réunion)...',
-            $demainDebut->format('d/m/Y'),
+            $this->dateFormatter->pourDate($demainDebut),
         ));
 
         $reservations = $this->reservationRepository

@@ -1,4 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
+import { couleurToken, chartEstDisponible } from '../chartjs_helpers.js';
 
 /*
  * Graphique d'occupation du tableau de bord Super-admin (US-5.2).
@@ -24,11 +25,7 @@ export default class extends Controller {
             return;
         }
 
-        if (typeof window.Chart === 'undefined') {
-            console.error(
-                "Chart.js n'est pas chargé : vérifiez la <script> du bundle UMD "
-                + '(assets/vendor/chartjs/chart.umd.min.js) dans le bloc javascripts du template.'
-            );
+        if (!chartEstDisponible()) {
             return;
         }
 
@@ -53,12 +50,12 @@ export default class extends Controller {
                     {
                         label: 'Créneaux offerts',
                         data: series.map((jour) => jour.offre),
-                        backgroundColor: this.couleurToken('--cs-blue-primary', '#0d6efd'),
+                        backgroundColor: couleurToken('--cs-blue-primary', '#0d6efd'),
                     },
                     {
                         label: 'Dont réservés',
                         data: series.map((jour) => jour.reserves),
-                        backgroundColor: this.couleurToken('--cs-success', '#198754'),
+                        backgroundColor: couleurToken('--cs-success', '#198754'),
                     },
                 ],
             },
@@ -84,11 +81,5 @@ export default class extends Controller {
     /* 'YYYY-MM-DD' → 'JJ/MM' (pas de dépendance date, la chaîne est déjà en jour Réunion). */
     formaterJourCourt(jourIso) {
         return jourIso.slice(8, 10) + '/' + jourIso.slice(5, 7);
-    }
-
-    /* Lit un token de charte --cs-* ; repli sur une couleur sûre si absent. */
-    couleurToken(nomToken, repli) {
-        const valeur = getComputedStyle(document.documentElement).getPropertyValue(nomToken).trim();
-        return valeur !== '' ? valeur : repli;
     }
 }

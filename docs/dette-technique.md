@@ -1,6 +1,6 @@
 # Dette technique CreaSlot — Suivi
 
-Date dernière mise à jour : 19 juin 2026.
+Date dernière mise à jour : 23 juin 2026.
 Convention : DT-N = Dette Technique numéro N.
 
 ---
@@ -165,7 +165,7 @@ Recommandation : appliquer les 3 niveaux (defense in depth, best practice Symfon
 
 ---
 
-## DT-5 — `final` retiré de NotificationService pour testabilité (🟢 BAS)
+## DT-5 — `final` retiré de NotificationService pour testabilité (🟢 BAS) — ✅ CLÔTURÉE (DÉCISION) (23/06/2026)
 
 **Détecté** : 19/05/2026, lors écriture EnvoyerRappelsJ1CommandTest.
 
@@ -179,11 +179,12 @@ Recommandation : appliquer les 3 niveaux (defense in depth, best practice Symfon
 - Quand US-4.7 (page Mes notifications) ou US-4.8 (préférences) sera traitée, envisager l'extraction de l'interface si plusieurs implémentations émergent
 - Si pas de besoin futur, garder `readonly class` simple
 
+**Décision** (23/06/2026) : **statu quo formalisé**, aucun changement de code. `NotificationService` reste `readonly class` **sans** `final`. La contrainte d'origine est toujours active et vérifiée : `EnvoyerRappelsJ1CommandTest` mocke le service via `createMock(NotificationService::class)`, et PHPUnit ne peut pas mocker une classe `final`. Remettre `final` exigerait soit l'extraction d'une `NotificationServiceInterface` (Dependency Inversion) — **sur-ingénierie** sans second implémenteur au volume Cnam — soit la réécriture de la stratégie de test (risque de régression pour un gain cosmétique). Le `final` était cosmétique ; son retrait est un choix d'architecture **assumé et documenté**, pas un défaut. À réexaminer uniquement si un second implémenteur de notification émerge.
 **Priorité** : 🟢 basse, statu quo acceptable.
 
 ---
 
-## DT-6 — Setup BDD test à automatiser (🟢 BAS)
+## DT-6 — Setup BDD test à automatiser (🟢 BAS) — ✅ CLÔTURÉE (DÉCISION) (23/06/2026)
 
 **Détecté** : 27/05/2026, lors mise en place du 1er test d'intégration (cf. [[DT-1]]).
 
@@ -211,11 +212,12 @@ Sans ce setup, tout test d'intégration extending `KernelTestCase` échoue avec 
 
 **Recommandation** : Option C (init MySQL au démarrage) — totalement transparent pour le dev, aucune commande supplémentaire à mémoriser. Option B si on veut plus de contrôle (ex : truncate sélectif entre suites).
 
+**Décision** (23/06/2026) : **clôturée — le besoin critique est déjà couvert**. Le pipeline d'intégration continue (`.github/workflows/ci.yml`) provisionne la base de test à chaque exécution : `doctrine:database:create --env=test --if-not-exists`, puis `doctrine:migrations:migrate --env=test`, puis `doctrine:fixtures:load --env=test`. Les tests d'intégration tournent donc de manière reproductible en CI sans intervention manuelle. Le seul reliquat est le **confort du développeur en local** (rejouer les 3 commandes après un `docker compose down -v`), d'impact faible pour un projet solo. L'automatisation locale (`init.sql` ou `bin/setup-test-db.sh`) est **reportée à son déclencheur** : arrivée d'un second développeur sur le projet. Aucun code à ce stade.
 **Priorité** : 🟢 basse, à faire avant si plusieurs devs rejoignent le projet OU avant déploiement CI/CD.
 
 ---
 
-## DT-7 — Factorisation JS templates créneau (🟢 BAS)
+## DT-7 — Factorisation JS templates créneau (🟢 BAS) — ✅ CLÔTURÉE (DÉCISION) (23/06/2026)
 
 **Détecté** : 28/05/2026, lors du fix [[DT-2]] (niveau 1 UX).
 
@@ -229,6 +231,7 @@ Sans ce setup, tout test d'intégration extending `KernelTestCase` échoue avec 
 
 **Recommandation** : Option B (Stimulus) — la stack embarque déjà StimulusBundle + AssetMapper, et c'est testable/réutilisable.
 
+**Décision** (23/06/2026) : **clôturée — factorisation non justifiée à ce jour, en attente du déclencheur**. État vérifié : seuls **deux** templates portent ce JS (`personnel/creneau/nouveau.html.twig` et `personnel/creneau/modifier.html.twig`) ; `agenda.html.twig` et `liste.html.twig` ne sont pas concernés. Avec deux points d'entrée seulement, extraire le JS partagé (Stimulus, asset dédié ou macro) ajouterait une indirection pour un gain de maintenabilité marginal — **optimisation prématurée** écartée (cf. *Coder proprement*, éviter l'abstraction spéculative). La factorisation sera traitée à son **déclencheur** : apparition d'un **3e point d'entrée** (ex. modale de création rapide) ou besoin de **tester ce JS** isolément. Aucun code à ce stade.
 **Priorité** : 🟢 basse, à faire si 3e template apparaît OU besoin de tests JS.
 
 ---
@@ -282,7 +285,7 @@ FullCalendar de `CLAUDE.md`.
 
 ---
 
-## DT-9 — Layout email Twig partagé (🟡 MOYEN) — 🟠 OUVERTE
+## DT-9 — Layout email Twig partagé (🟡 MOYEN) — ✅ RÉSOLUE (23/06/2026)
 
 **Détecté** : 01/06/2026, lors d'une revue qualité en lecture seule (Clean Code R.C. Martin + critères CDA).
 
@@ -292,6 +295,13 @@ FullCalendar de `CLAUDE.md`.
 
 **Action proposée** : créer `templates/emails/_layout.html.twig` portant la structure commune (head, styles, en-tête, signature), exposant un `{% block contenu %}` ; chaque email passe à `{% extends 'emails/_layout.html.twig' %}` et ne déclare plus que son contenu propre.
 
+**Résolution** (23/06/2026) : création de `templates/emails/_layout.html.twig` portant la coque HTML commune (doctype, `<head>`, wrapper table centrant, header bleu marine `#1A3E6F` + « CreaSlot », footer Cnam), exposée via les blocs `body_html`, `titre`, `sous_titre` et `contenu`. Les **8 templates métier** passent à `{% extends 'emails/_layout.html.twig' %}` et ne portent plus que leur corps : confirmation/annulation/modification/rappel auditeur, confirmation/annulation personnel, suppression créneau, reset password (ajouté en US-6.2). Migration **incrémentale** : pilote (`reservation_confirmation_auditeur`) validé par envoi réel avant propagation aux 7 autres.
+
+Le sujet reste construit côté PHP (`NotificationService`) : le layout ne porte volontairement pas de `block subject`. L'**asymétrie RGPD** des annulations est préservée — le template auditeur affiche le motif (saisi par l'auditeur lui-même), le template personnel ne le reçoit jamais.
+
+`test.html.twig` reste **volontairement autonome** : email de diagnostic technique avec un `block subject`, un header sans sous-titre et un footer différent (« CreaSlot — Application de gestion des rendez-vous » / « © 2026 Cnam Réunion ») ; l'aligner sur le layout changerait son rendu pour aucun gain.
+
+**Bilan** : `git diff` à +42 / −442 lignes (duplication résorbée), `lint:twig` 10/10, 274 tests verts, rendus confirmés par envois réels (confirmation, annulation auditeur+personnel, reset password). Commit de code : `1042bc6`.
 **Priorité** : 🟡 moyenne, à traiter avant l'ajout d'un nouvel email OU avant un changement de charte email.
 
 ---
@@ -328,7 +338,7 @@ FullCalendar de `CLAUDE.md`.
 
 ---
 
-## DT-11 — Centraliser le formatage de date d'affichage dans DateFormatterService (🟡 MOYEN) — 🟠 OUVERTE
+## DT-11 — Centraliser le formatage de date d'affichage dans DateFormatterService (🟡 MOYEN) — ✅ RÉSOLUE (23/06/2026)
 
 **Détecté** : 01/06/2026, lors d'une revue qualité en lecture seule (DRY).
 
@@ -338,11 +348,18 @@ FullCalendar de `CLAUDE.md`.
 
 **Action proposée** : étendre `DateFormatterService` avec des méthodes centralisées (`pourAffichage` date, `pourHeure`, etc., timezone `Indian/Reunion` uniforme) et router **tout** le formatage d'affichage à travers le service ; supprimer les `->format(...)` en dur.
 
+**Résolution** (23/06/2026) : `DateFormatterService` étendu de trois méthodes d'affichage, calquées sur `pourSujetEmail` (conversion immutable non mutante, timezone `Indian/Reunion` forcée) : `pourDate` (`d/m/Y`), `pourHeure` (`H:i`) et `pourHeureCompacte` (`H\hi`). `pourHeure` et `pourHeureCompacte` coexistent volontairement — elles ne diffèrent que par le séparateur (`:` vs `h`), les deux rendus existant réellement dans l'application.
+
+Quatre sites routent désormais leur formatage d'affichage via le service : `SlotService` (message de chevauchement : `pourDate` + 2× `pourHeure`), `CollegueService` (heure de fin de RDV : `pourHeureCompacte`, `null` préservé), `EnvoyerRappelsJ1Command` (`pourDate`) et `AppEmailTestCommand` (qui réutilise `pourSujetEmail` au lieu de ré-implémenter le format à la main).
+
+**Hors périmètre** : les `format(\DateTimeInterface::ATOM)` des logs de `SlotService::enregistrerChevauchementDetecte` restent inchangés — donnée machine (tri/parsing), pas de l'affichage humain.
+
+**Bilan** : 286 tests verts (12 nouveaux couvrant les 3 méthodes sur 4 angles : conversion UTC→Réunion, stabilité si déjà en Réunion, zéro initial < 10h, compat `\DateTime` mutable), PHPStan 8 = 0, CS-Fixer 0. Rendu identique (tz conteneur = `Indian/Reunion`) ; date du rappel J-1 vérifiée en console (24/06/2026). Commit de code : `8fafb79`.
 **Priorité** : 🟡 moyenne, à traiter au prochain ajout d'un format de date OU dans une passe DRY.
 
 ---
 
-## DT-12 — NotificationService : factoriser le squelette des 6 méthodes notifier*() (🟡 MOYEN) — 🟠 OUVERTE
+## DT-12 — NotificationService : factoriser le squelette des 7 méthodes notifier*() (🟡 MOYEN) — ✅ RÉSOLUE (23/06/2026)
 
 **Détecté** : 01/06/2026, lors d'une revue qualité en lecture seule (DRY).
 
@@ -352,6 +369,11 @@ FullCalendar de `CLAUDE.md`.
 
 **Action proposée** : extraire un helper privé `envoyerOuLoguer(string $type, array $idsContexte, string $to, string $subject, string $template, array $context)` encapsulant le try/catch + log RGPD ; factoriser l'extraction des trois acteurs. Chaque `notifier*()` se réduit alors à : préparer le contexte → (persister notification in-app) → déléguer au helper.
 
+**Résolution** (23/06/2026) : extraction d'un helper privé `envoyerEtTracer(string $to, string $subject, string $template, array $context, string $messageErreur, array $contexteErreur)` encapsulant le bloc `try { envoyer(...) } catch (\Throwable) { logger->error(...) }` dupliqué dans les **7** méthodes `notifier*()`. Le helper **avale** l'exception (politique Option B : le flux métier reste valide si l'email échoue, retry géré par Messenger en async) et complète le contexte d'erreur métier avec `exception`/`message` — par opposition à `envoyer()` qui re-propage après avoir logué (couche bas niveau, log RGPD/SMTP). Distinction documentée dans le PHPDoc du helper.
+
+Chaque `notifier*()` passe son **message et ses identifiants métier propres** (`type`, `*_id`, et pour la méthode commentaire `commentaire_avant_len`/`commentaire_apres_len`, avec `reservation_id` issu de `getReservationActive()?->getId()`) : le **contenu des logs reste strictement inchangé** (mêmes clés, même ordre métier-puis-`exception`/`message`). Les **gardes** en tête de méthode (`if statut !== ... return`), la **logique de préférence email** (`if !isEmailRappelJ1() return`, etc.) et `persisterNotification()` sont **inchangées** — seul le bloc try/catch est factorisé.
+
+**Bilan** : refacto pur, contrôle `grep "try {"` = 2 occurrences légitimes restantes (`envoyer` qui propage, `envoyerEtTracer` qui avale) — plus aucun try/catch dans les 7 `notifier*()`. 286 tests verts dont les 23 de `NotificationService` (filet de non-régression), PHPStan 8 = 0, CS-Fixer 0. Commit de code : `f09392e`.
 **Priorité** : 🟡 moyenne, à traiter lors de la prochaine évolution de NotificationService (nouveau type d'email).
 
 ---
@@ -452,7 +474,21 @@ FullCalendar de `CLAUDE.md`.
 
 ---
 
-## DT-16 — Mutualisation des helpers FullCalendar et du JSON no-store (🟡 MOYEN) — 🟠 OUVERTE
+## DT-16 — Mutualisation des helpers FullCalendar et du JSON no-store (🟡 MOYEN) — 🟡 PARTIELLEMENT RÉSOLUE (volets JS + PHP) (22/06/2026)
+
+> **🟡 PARTIELLEMENT RÉSOLUE (volets JS + PHP) le 22/06/2026** sur branche `feature/DT-16-helpers-fullcalendar-no-store`.
+>
+> **Volet JS (fait)** : les 4 helpers dupliqués (`escapeHtml`, `heureSlot`, `hexVersRgb`, `melangerBlanc`) sont extraits dans `assets/fullcalendar_helpers.js`, importé par `agenda_controller` et `occupation_controller` (`hexVersRgb` reste interne au module).
+>
+> **Volet PHP (fait)** : la réponse JSON no-store dupliquée (`jsonSansCache` / `repondreSansCache`) est extraite dans le trait `JsonSansCacheTrait` (`src/Controller/Traits`), composé par `CreneauApiController` et `OccupationController` (nom unifié `jsonSansCache`).
+>
+> **Volet écarté** : la mutualisation du rendu `eventContent` est abandonnée (contenus réellement différents, 3 vs 4 lignes, et piège de double-échappement sur la ligne « état » de l'agenda).
+>
+> **Volet CSS (restant)** : la mutualisation de l'habillage toolbar/pastille (style inline d'`agenda.html.twig` dupliqué dans le bloc `.cs-occupation-page` de `creaslot.css`, ~150 lignes) est reportée en tâche dédiée — seul volet à risque de régression visuelle (2 calendriers) pour un gain de maintenabilité pure ; à traiter via une classe partagée `.cs-fc-calendar` avec vérification visuelle stricte.
+>
+> **Validation** : PHP-CS-Fixer 0, PHPStan niveau 8 = 0, suite complète verte (274 tests, 1009 assertions) ; vérification navigateur (occupation Admin + agenda Personnel : calendriers et pastilles rendus, console propre).
+>
+> **Commit** : `be20af4`.
 
 **Détecté** : 03/06/2026, lors de l'implémentation d'US-5.7 (vue globale occupé/libre).
 
@@ -551,7 +587,15 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 
 ---
 
-## DT-21 — Champ username caché absent du formulaire de changement de mot de passe (🟢 BAS) — 🟠 OUVERTE
+## DT-21 — Champ username caché absent du formulaire de changement de mot de passe (🟢 BAS) — ✅ RÉSOLUE (19/06/2026)
+
+> **✅ RÉSOLUE le 19/06/2026** sur branche `feature/DT-21-username-cache-form-mdp`.
+>
+> **Résumé fix** : ajout d'un champ `<input type="text" name="username" autocomplete="username" hidden>` (valeur = identifiant de connexion via `app.user.userIdentifier`) juste après `form_start` dans `templates/profil/index.html.twig`. Les attributs `autocomplete` des champs (`current-password` / `new-password`) étaient déjà en place dans `ChangementMotDePasseType`. L'avertissement DevTools disparaît ; les gestionnaires de mots de passe associent correctement l'identifiant.
+>
+> **Validation** : `lint:twig` OK, suite complète verte (274 tests, 1009 assertions).
+>
+> **Commit** : `d6da3ac`.
 
 **Détecté** : 15/06/2026, lors d'US-9.2 (tour de validation navigateur, console DevTools).
 
@@ -565,7 +609,17 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 
 ---
 
-## DT-22 — Latence d'un handler de clic (~1,6 s) sur une page d'administration (🟢 BAS) — 🟠 OUVERTE
+## DT-22 — Latence d'un handler de clic (~1,6 s) sur une page d'administration (🟢 BAS) — ✅ CLÔTURÉE (NON REPRODUITE) (22/06/2026)
+
+> **✅ CLÔTURÉE (NON REPRODUITE) le 22/06/2026** sur branche `feature/DT-22-profiling-latence-admin`.
+>
+> **Démarche** : profiling de l'interaction (métrique INP, *Interaction to Next Paint*) sur les quatre pages d'administration (Occupation, Statistiques, Comptes, Journal), en local avec les données de démonstration (fixtures), puis mesure de contrôle en navigation privée (extensions désactivées).
+>
+> **Résultat** : aucune latence reproduite. INP relevés — Occupation 33 ms, Statistiques 13 ms, Comptes 18 ms, Journal 21 ms (seuil « bon » < 200 ms) ; contrôle Occupation en navigation privée : 22 ms. Le handler de clic ne dépasse jamais ~33 ms.
+>
+> **Analyse** : les ~1,6 s rapportés en US-9.2 sont attribués à un artefact de mesure — très probablement une extension navigateur (Trendtrack / Beezy, accrochées aux clics, ~221 ms de main-thread relevés) ou un premier clic à froid. L'hypothèse « effet volume » est écartée : FullCalendar borne le fetch à la fenêtre affichée (semaine/mois), et la volumétrie réelle au Cnam ne sature pas une vue.
+>
+> **Décision** : aucune optimisation entreprise (optimisation prématurée évitée, faute de coût mesurable à corriger). Dette clôturée ; à re-profiler en production si la perception de lenteur réapparaît avec du volume réel.
 
 **Détecté** : 15/06/2026, lors d'US-9.2 (tour de validation navigateur, onglet Performance).
 
@@ -579,7 +633,17 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 
 ---
 
-## DT-23 — Étiquette « DEV » en dur dans le template d'e-mail de test (🟢 BAS) — 🟠 OUVERTE
+## DT-23 — Étiquette « DEV » en dur dans le template d'e-mail de test (🟢 BAS) — ✅ RÉSOLUE (19/06/2026)
+
+> **✅ RÉSOLUE le 19/06/2026** sur branche `feature/DT-23-etiquette-env-email-test`.
+>
+> **Résumé fix** : la valeur n'était pas figée dans le template mais dans la commande `AppEmailTestCommand` (`'environnement' => 'dev'` codé en dur). Le template `test.html.twig` consomme désormais directement le global Twig `app_environment_label` (`{{ app_environment_label|upper }}`) — la même source que le bandeau d'environnement — et la variable figée est retirée du contexte de la commande. Plus aucune étiquette d'environnement en dur ; source unique partagée avec le bandeau.
+>
+> **Comportement** : en prod l'e-mail affiche « PROD », en préprod « PREPROD ». Le global vaut `%env(APP_ENVIRONMENT_LABEL)%` (défaut committé `preprod`, surchargé par l'environnement réel sur le VPS) — jamais vide, donc aucun repli nécessaire.
+>
+> **Validation** : suite complète verte (274 tests, 1009 assertions, 0 deprecation/notice). Vérification visuelle de l'e-mail au prochain envoi de test préprod/prod via Brevo.
+>
+> **Commit** : `531187d`.
 
 **Détecté** : 16/06/2026, lors du test Brevo en production (US-9.3).
 
@@ -588,5 +652,29 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 **Impact** : nul (cosmétique) ; un e-mail de test peut induire en erreur sur l'environnement réel d'envoi.
 
 **Action proposée** : remplacer l'étiquette codée en dur par la valeur dynamique de l'environnement (`app.environment` côté Twig, ou variable passée par la commande), ou retirer l'étiquette.
+
+**Priorité** : 🟢 basse (cosmétique ; aucun impact fonctionnel ni sécurité).
+
+---
+
+## DT-24 — Préfixe de redirection mailer figé à « DEV » au lieu de l'environnement réel (🟢 BAS) — ✅ RÉSOLUE (19/06/2026)
+
+> **✅ RÉSOLUE le 19/06/2026** sur branche `feature/DT-24-prefixe-redirection-env-reel`.
+>
+> **Résumé fix** : le mécanisme de redirection des e-mails hors-prod (`NotificationService::envoyer`) préfixait le sujet `[DEV→destinataire]` avec « DEV » codé en dur. Le préfixe consomme désormais `APP_ENVIRONMENT_LABEL` (injecté au constructeur, `strtoupper`) — la même source que le badge du corps (DT-23). Plus aucune étiquette d'environnement en dur (code + docblocks, exemples passés en `[<ENV>→…]`).
+>
+> **Comportement** : la redirection n'est active qu'en dev (`APP_MAILER_REDIRECT_TO` non définie en preprod/prod) ; le préfixe affiche le label réel de l'environnement (`[PREPROD→…]` en dev avec le défaut `.env`), cohérent avec le corps. En prod, aucun préfixe (redirection inactive).
+>
+> **Validation** : suite complète verte (274 tests, 1009 assertions), PHP-CS-Fixer 0. Non-régression `NotificationServiceTest` (paramètre `environmentLabel` ajouté à l'instanciation manuelle).
+>
+> **Commit** : `81ccf1d`.
+
+**Détecté** : 19/06/2026, lors de la vérification de bout en bout de DT-23 (envoi d'un e-mail de test réel).
+
+**Constat** : après le fix DT-23 (badge du corps), l'e-mail de test affichait toujours « DEV » dans le **sujet** (`[DEV→destinataire] Test CreaSlot…`). Ce préfixe est posé par `NotificationService::envoyer` (ni la commande, ni le template), avec « DEV » figé dans le `sprintf`. Trompeur : en préprod, le même préfixe afficherait aussi « DEV ».
+
+**Impact** : nul (cosmétique) ; signalétique d'environnement incohérente entre le sujet et le corps des e-mails redirigés hors-prod.
+
+**Action proposée** : brancher le préfixe sur `APP_ENVIRONMENT_LABEL` (source unique partagée avec le corps), via injection au constructeur de `NotificationService` ; mettre à jour les docblocks.
 
 **Priorité** : 🟢 basse (cosmétique ; aucun impact fonctionnel ni sécurité).

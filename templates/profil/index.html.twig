@@ -71,6 +71,8 @@
             </h2>
 
             {{ form_start(formMotDePasse, { action: path('app_mon_profil_mot_de_passe'), attr: { novalidate: 'novalidate' } }) }}
+            {# Champ username cache : indice pour les gestionnaires de mots de passe (DT-21). #}
+            <input type="text" name="username" value="{{ app.user.userIdentifier }}" autocomplete="username" hidden>
                 {{ form_errors(formMotDePasse) }}
 
                 {{ form_row(formMotDePasse.motDePasseActuel) }}
