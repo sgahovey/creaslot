@@ -41,6 +41,9 @@ services:
       CADDY_ACME_CA: ${CADDY_ACME_CA:-https://acme-v02.api.letsencrypt.org/directory}
       PREPROD_BASICAUTH_USER: ${PREPROD_BASICAUTH_USER}
       PREPROD_BASICAUTH_HASH: ${PREPROD_BASICAUTH_HASH}
+      STATUS_HOST: ${STATUS_HOST}
+      STATUS_BASICAUTH_USER: ${STATUS_BASICAUTH_USER}
+      STATUS_BASICAUTH_HASH: ${STATUS_BASICAUTH_HASH}
     volumes:
       - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
