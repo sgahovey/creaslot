@@ -126,19 +126,12 @@
 
             {# CGU #}
             <div class="mb-4">
-                <div class="form-check">
-                    {{ form_widget(formulaire.cgu, { attr: { class: 'form-check-input' ~ (formulaire.cgu.vars.errors|length > 0 ? ' is-invalid' : '') } }) }}
-                    <label class="form-check-label" for="{{ formulaire.cgu.vars.id }}">
-                        J'accepte les <a href="#" class="text-decoration-none" style="color: var(--cs-blue-primary);">conditions générales d'utilisation</a>.
-                    </label>
-                    {% if formulaire.cgu.vars.errors|length > 0 %}
-                        <div class="invalid-feedback d-block" role="alert">
-                            {% for erreur in formulaire.cgu.vars.errors %}
-                                <span>{{ erreur.message }}</span>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
+                {{ form_row(formulaire.cgu, {
+                    label: 'J\'accepte les <a href="' ~ path('app_cgu') ~ '" target="_blank" rel="noopener" class="text-decoration-none" style="color: var(--cs-blue-primary);">conditions générales d\'utilisation</a>.',
+                    label_html: true,
+                    attr: { class: 'form-check-input' ~ (formulaire.cgu.vars.errors|length > 0 ? ' is-invalid' : '') },
+                    row_attr: { class: 'form-check' }
+                }) }}
             </div>
 
             {# Bouton de soumission #}

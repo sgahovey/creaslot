@@ -64,7 +64,8 @@ class InscriptionType extends AbstractType
                 'invalid_message' => 'Les mots de passe ne correspondent pas.',
             ])
             ->add('cgu', CheckboxType::class, [
-                'label'       => "J'accepte les conditions générales d'utilisation.",
+                // Le label (avec le lien cliquable vers les CGU) est défini dans le template via form_row,
+                // car il doit être construit avec path('app_cgu') côté Twig (DT-29).
                 'mapped'      => false,
                 'constraints' => [
                     new IsTrue(message: "Vous devez accepter les conditions générales d'utilisation."),

@@ -786,3 +786,27 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 **Hors périmètre** : le contrôleur Stimulus et le thème de formulaire (déjà en place, inchangés).
 
 **Priorité** : 🟢 basse (cohérence UX ; aucun impact fonctionnel ni sécurité — le `name=password` de connexion est préservé pour le firewall).
+
+## DT-29 — Libellé CGU dupliqué et lien mort sur la page d'inscription (🟢 BAS) — ✅ RÉSOLUE (25/06/2026)
+
+> **✅ RÉSOLUE le 25/06/2026** sur branche `feature/DT-29-cgu-inscription`.
+>
+> **Origine** : constat lors de la vérification de la page d'inscription (après ajout du toggle mot de passe en DT-28).
+>
+> **Résumé fix** : le champ CGU présentait deux défauts. (1) Le libellé « J'accepte les conditions générales d'utilisation » s'affichait DEUX FOIS : une fois via le label du widget `CheckboxType` (option `label` dans `InscriptionType`) et une fois via un label manuel dans le template (qui porte le lien). (2) Le lien « conditions générales d'utilisation » pointait vers `href="#"` (lien mort), alors que la vraie page CGU existe depuis US-10.1 (route `app_cgu`).
+>
+> **Correction** : option `label` mise à `false` sur le champ `cgu` de `InscriptionType` (le widget ne rend plus son propre label, on garde le label manuel du template qui porte le lien) ; lien corrigé vers `{{ path('app_cgu') }}` avec `target="_blank"` et `rel="noopener"` (consultation des CGU sans perte de la saisie en cours). La contrainte `IsTrue` (case obligatoire) est préservée.
+>
+> **Validation** : 297 tests verts (le WebTest d'inscription reste vert, le `name` du champ étant inchangé), lint Twig OK, vérification visuelle (libellé unique, lien ouvrant la page CGU, case toujours obligatoire).
+
+**Détecté** : 25/06/2026, sur la page d'inscription (libellé CGU affiché en double et lien non fonctionnel).
+
+**Constat** : double définition du label (widget `CheckboxType` + label manuel du template) et lien `href="#"` alors que la route `app_cgu` existe désormais.
+
+**Fichiers concernés** : `src/Form/InscriptionType.php` (champ `cgu` : `label` mis à `false`), `templates/auth/inscription.html.twig` (lien CGU corrigé vers `app_cgu`, ouverture nouvel onglet).
+
+**Action réalisée** : suppression du doublon de libellé (label du widget désactivé au profit du label manuel cliquable) et câblage du lien vers la vraie page CGU.
+
+**Hors périmètre** : la page CGU elle-même (livrée en US-10.1) ; la contrainte d'acceptation obligatoire (inchangée).
+
+**Priorité** : 🟢 basse (UX / lien fonctionnel ; aucun impact sur la validation, la case reste obligatoire).
