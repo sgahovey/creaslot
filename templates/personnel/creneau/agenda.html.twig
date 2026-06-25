@@ -44,6 +44,23 @@
             display: none !important;
         }
 
+        .cs-agenda-loading-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 13;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--cs-space-md);
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(1px);
+            border-radius: var(--cs-radius-lg);
+        }
+
+        .cs-agenda-loading-overlay[hidden] {
+            display: none !important;
+        }
+
         .cs-agenda-empty-card {
             max-width: 320px;
             padding: var(--cs-space-lg);
@@ -219,6 +236,15 @@
     <div class="card border-0 shadow-sm p-2 p-md-3 cs-fc-calendar-shell"
          style="border-radius: var(--cs-radius-lg);">
         <div id="cs-fc-calendar-wrap" class="cs-fc-calendar-wrap position-relative">
+            <div id="cs-agenda-loading-overlay"
+                 class="cs-agenda-loading-overlay"
+                 data-agenda-target="loadingOverlay"
+                 hidden
+                 role="status"
+                 aria-live="polite">
+                <div class="spinner-border text-primary" aria-hidden="true"></div>
+                <span class="visually-hidden">Chargement des créneaux en cours…</span>
+            </div>
             <div id="calendar"
                  class="cs-fc-shell"
                  data-agenda-target="calendar"

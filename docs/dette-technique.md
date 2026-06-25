@@ -1,6 +1,6 @@
 # Dette technique CreaSlot — Suivi
 
-Date dernière mise à jour : 23 juin 2026.
+Date dernière mise à jour : 25 juin 2026.
 Convention : DT-N = Dette Technique numéro N.
 
 ---
@@ -678,3 +678,31 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 **Action proposée** : brancher le préfixe sur `APP_ENVIRONMENT_LABEL` (source unique partagée avec le corps), via injection au constructeur de `NotificationService` ; mettre à jour les docblocks.
 
 **Priorité** : 🟢 basse (cosmétique ; aucun impact fonctionnel ni sécurité).
+
+---
+
+## DT-25 — Absence d'indicateur visuel de chargement sur l'agenda (🟢 BAS) — ✅ RÉSOLUE (25/06/2026)
+
+> **✅ RÉSOLUE le 25/06/2026** sur branche `feature/DT-25-spinner-agenda`.
+>
+> **Origine** : recommandation issue d'une revue (retour formateur) sur l'expérience utilisateur, pas un défaut détecté en audit interne.
+>
+> **Résumé fix** : ajout d'un spinner Bootstrap 5 (`.spinner-border`, natif, sans dépendance) en overlay du calendrier FullCalendar de l'agenda Personnel. Le hook `loading` de FullCalendar était déjà branché (il positionnait `aria-busy` pour l'accessibilité) mais n'avait aucun retour visuel : le spinner est désormais affiché pendant le chargement des créneaux et masqué à la fin.
+>
+> **Couverture** : tous les chargements de créneaux déclenchés par le hook `loading` (changements de vue jour/semaine/mois, aujourd'hui, prev/next) + l'appel réseau séparé du bouton « Mes prochains RDV » (géré manuellement, masquage en `.finally()` avec garde sur `aria-busy` pour ne pas couper un refetch FullCalendar déclenché par `changeView`).
+>
+> **Accessibilité (RGAA)** : `role=status`, `aria-live=polite`, libellé `.visually-hidden`, `spinner-border` natif Bootstrap.
+>
+> **Validation** : 288 tests verts (non-régression ; front pur sans test automatisé), validation visuelle navigateur (spinner affiché puis masqué proprement sur changement de période et sur Mes prochains RDV). Commit de code : `489c66a`.
+
+**Détecté** : 25/06/2026, lors d'une revue UX (retour formateur).
+
+**Constat** : le hook `loading` de FullCalendar dans `assets/controllers/agenda_controller.js` positionnait déjà `aria-busy` sur le calendrier, mais aucun retour visuel n'était présenté à l'utilisateur pendant le chargement des créneaux (calendrier figé sans indication).
+
+**Fichiers concernés** : `templates/personnel/creneau/agenda.html.twig` (overlay spinner + règle CSS `.cs-agenda-loading-overlay`), `assets/controllers/agenda_controller.js` (cible Stimulus `loadingOverlay`, pilotage dans le hook `loading` et dans `allerVersProchainsRdvReserve`).
+
+**Action réalisée** : overlay spinner Bootstrap piloté par le hook `loading` existant ; couverture de l'appel séparé Mes prochains RDV avec coordination anti-conflit via `aria-busy`.
+
+**Hors périmètre** : les écrans d'administration (occupation, statistiques) qui chargent des données en asynchrone feront l'objet d'une dette dédiée (DT-26) si pertinent.
+
+**Priorité** : 🟢 basse (amélioration UX ; aucun impact fonctionnel ni sécurité).
