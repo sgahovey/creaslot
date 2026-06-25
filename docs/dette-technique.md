@@ -760,3 +760,29 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 **Hors périmètre** : la configuration du firewall et de `default_target_path` (inchangée) ; seul le comportement du contrôleur racine est modifié.
 
 **Priorité** : 🟡 moyenne (divulgation de stack — OWASP A05 ; exposition limitée aux utilisateurs authentifiés, donc risque faible mais corrigé).
+
+---
+
+## DT-28 — Bouton afficher/masquer le mot de passe absent des pages connexion et inscription (🟢 BAS) — ✅ RÉSOLUE (25/06/2026)
+
+> **✅ RÉSOLUE le 25/06/2026** sur branche `feature/DT-28-toggle-mot-de-passe`.
+>
+> **Origine** : constat d'incohérence UX. Le composant « œil » afficher/masquer le mot de passe (contrôleur Stimulus `afficher-mot-de-passe` + thème de formulaire `form/champ_mot_de_passe.html.twig`, US-6.1) existait déjà et était utilisé sur la réinitialisation de mot de passe et la page profil, mais PAS sur les pages connexion et inscription.
+>
+> **Résumé fix** : le composant existant est réutilisé sur les 2 pages auth, sans créer de nouveau code. Inscription (Symfony Form `RepeatedType`/`PasswordType`) : application du thème via `{% form_theme formulaire ... 'form/champ_mot_de_passe.html.twig' %}` → les 2 champs (saisie + confirmation) héritent du bouton œil. Connexion (champ HTML brut `name=password` lu par le firewall, donc hors Symfony Form) : câblage manuel d'un `input-group` identique au composant (`data-controller=afficher-mot-de-passe`, cibles `champ`/`icone`, action `basculer`).
+>
+> **Accessibilité (RGAA)** : bouton `type=button` (ne soumet pas le formulaire), `aria-label`, `aria-pressed` reflétant l'état, icône `aria-hidden`. Amélioration progressive : sans JS, le champ reste un mot de passe masqué normal.
+>
+> **Validation** : 297 tests verts (non-régression ; front pur), vérification visuelle navigateur (bascule sur connexion et sur les 2 champs d'inscription).
+
+**Détecté** : 25/06/2026, constat d'absence du bouton œil sur connexion et inscription alors qu'il existe ailleurs.
+
+**Constat** : le composant `afficher-mot-de-passe` (contrôleur Stimulus + thème de formulaire) était déjà livré (US-6.1) et utilisé sur `reset_password/reset.html.twig` et `profil/index.html.twig`, mais pas sur `templates/auth/connexion.html.twig` ni `templates/auth/inscription.html.twig`.
+
+**Fichiers concernés** : `templates/auth/inscription.html.twig` (directive `form_theme`), `templates/auth/connexion.html.twig` (câblage manuel `input-group` sur le champ HTML brut). Aucun code JS/CSS ni le contrôleur modifiés (le composant existait).
+
+**Action réalisée** : réutilisation du composant existant sur les 2 pages, selon leur nature (`form_theme` pour le Symfony Form d'inscription, HTML manuel pour le champ firewall de connexion).
+
+**Hors périmètre** : le contrôleur Stimulus et le thème de formulaire (déjà en place, inchangés).
+
+**Priorité** : 🟢 basse (cohérence UX ; aucun impact fonctionnel ni sécurité — le `name=password` de connexion est préservé pour le firewall).

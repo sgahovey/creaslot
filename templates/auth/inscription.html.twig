@@ -1,5 +1,8 @@
 {% extends 'base.html.twig' %}
 
+{# Thème ajoutant le bouton « œil » afficher/masquer (US-6.1) aux champs mot de passe. #}
+{% form_theme formulaire 'bootstrap_5_layout.html.twig' 'form/champ_mot_de_passe.html.twig' %}
+
 {% block title %}Inscription{% endblock %}
 
 {# Pages d'auth : masquer header, footer et flash (ils sont dans la carte) #}
