@@ -121,6 +121,10 @@ jobs:
       DATABASE_URL: "mysql://root:root@127.0.0.1:3306/creaslot?serverVersion=8.0"
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Historique complet requis par SonarCloud pour le blame git
+          # (sinon avertissement « shallow clone »). Limité au job phpunit.
+          fetch-depth: 0
 
       - name: Configurer PHP 8.4
         uses: shivammathur/setup-php@v2
@@ -128,7 +132,7 @@ jobs:
           php-version: '8.4'
           extensions: pdo_mysql, intl, zip, ctype, iconv
           tools: composer:v2
-          coverage: none
+          coverage: pcov
 
       - name: Répertoire de cache Composer
         id: composer-cache
@@ -157,7 +161,13 @@ jobs:
         # 8 WebTests s'appuient sur les comptes de fixtures (creaslotdemo+…).
         run: php bin/console doctrine:fixtures:load --env=test --no-interaction
 
-      - name: Lancer la suite
-        # failOnDeprecation/Notice/Warning="true" (phpunit.dist.xml) : strict, voulu.
-        # Mailer en transport Doctrine (async) → emails mis en file, pas de worker.
-        run: php bin/phpunit
+      - name: Lancer la suite avec couverture
+        # PCOV active via setup-php (coverage: pcov). Genere coverage.xml (format clover)
+        # consomme par SonarCloud (sonar.php.coverage.reportPaths). failOnDeprecation/
+        # Notice/Warning reste actif (phpunit.dist.xml).
+        run: php bin/phpunit --coverage-clover=coverage.xml
+
+      - name: Analyse SonarCloud
+        uses: SonarSource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
