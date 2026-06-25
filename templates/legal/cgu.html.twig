@@ -1,0 +1,76 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Conditions générales d'utilisation{% endblock %}
+
+{% block body %}
+<div class="container py-4" style="max-width: 860px;">
+
+    <h1 class="h4 fw-bold mb-4" style="color: var(--cs-text-primary);">
+        <i class="bi bi-file-earmark-check me-2" aria-hidden="true"></i>Conditions générales d'utilisation
+    </h1>
+
+    <p class="text-secondary mb-4">Dernière mise à jour : juin 2026.</p>
+
+    <div class="alert alert-info" role="note">
+        CreaSlot est un <strong>démonstrateur pédagogique</strong> (projet du titre
+        Concepteur Développeur d'Applications). Il fonctionne avec des
+        <strong>données fictives</strong> et sa disponibilité n'est pas garantie.
+    </div>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">1. Objet</h2>
+    <p>
+        Les présentes conditions générales d'utilisation (CGU) encadrent l'usage de
+        l'application CreaSlot, qui permet la gestion de rendez-vous : le personnel propose
+        des créneaux et les auditeurs les réservent (en présentiel, par téléphone ou en visio).
+        Toute utilisation du site vaut acceptation des présentes CGU.
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">2. Statut du service</h2>
+    <p>
+        CreaSlot est mis à disposition à des fins de démonstration et de formation. Les données
+        qu'il contient sont fictives et peuvent être réinitialisées à tout moment. Le service
+        est fourni « en l'état », sans garantie de disponibilité continue ni de conservation
+        des données saisies.
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">3. Accès et comptes</h2>
+    <p>
+        L'application distingue trois rôles : <span class="fw-semibold">auditeur</span>
+        (réservation de créneaux), <span class="fw-semibold">personnel</span> (création et
+        gestion des créneaux) et <span class="fw-semibold">super-administrateur</span>
+        (administration des comptes et supervision). Chaque utilisateur est responsable de la
+        confidentialité de ses identifiants et des actions réalisées depuis son compte. Tout
+        usage suspect doit être signalé à l'adresse de contact.
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">4. Usage acceptable</h2>
+    <p>
+        L'utilisateur s'engage à utiliser l'application conformément à sa destination, sans
+        chercher à la détourner, à en perturber le fonctionnement ni à accéder à des données ou
+        à des fonctionnalités qui ne lui sont pas destinées. Le respect des autres utilisateurs
+        est attendu, notamment dans les informations saisies (commentaires, motifs).
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">5. Responsabilité</h2>
+    <p>
+        S'agissant d'un démonstrateur, l'éditeur ne garantit ni la disponibilité continue du
+        service, ni l'absence d'erreurs, ni la pérennité des données. Sa responsabilité ne
+        saurait être engagée en cas d'indisponibilité, de perte de données ou de dommage lié à
+        l'utilisation de l'application.
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">6. Données personnelles</h2>
+    <p>
+        Les modalités de traitement des données personnelles sont décrites dans la
+        <a href="{{ path('app_confidentialite') }}">politique de confidentialité</a>.
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">7. Évolution des CGU</h2>
+    <p>
+        Les présentes CGU pourront être adaptées, en particulier lors d'une éventuelle mise en
+        exploitation réelle de l'application au profit du Cnam La Réunion. La version applicable
+        est celle publiée sur le site.
+    </p>
+
+</div>
+{% endblock %}

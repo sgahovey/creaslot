@@ -1,0 +1,136 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Politique de confidentialité{% endblock %}
+
+{% block body %}
+<div class="container py-4" style="max-width: 860px;">
+
+    <h1 class="h4 fw-bold mb-4" style="color: var(--cs-text-primary);">
+        <i class="bi bi-shield-lock me-2" aria-hidden="true"></i>Politique de confidentialité
+    </h1>
+
+    <p class="text-secondary mb-4">Dernière mise à jour : juin 2026.</p>
+
+    <div class="alert alert-info" role="note">
+        CreaSlot est un <strong>démonstrateur pédagogique</strong> (projet du titre Concepteur
+        Développeur d'Applications) fonctionnant avec des <strong>données fictives</strong>.
+        La présente politique décrit les traitements réellement mis en œuvre par l'application.
+        En cas de mise en exploitation réelle au profit du Cnam La Réunion, ce dernier deviendrait
+        le responsable de traitement et cette politique serait actualisée.
+    </div>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Responsable du traitement</h2>
+    <p>
+        À ce stade de démonstration, les traitements sont mis en œuvre par l'auteur du projet
+        (cf. <a href="{{ path('app_mentions_legales') }}">mentions légales</a>). Pour toute
+        question relative à vos données : <a href="mailto:contact@cnam-reunion.fr">contact@cnam-reunion.fr</a>.
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Données collectées</h2>
+    <p>L'application traite uniquement les données nécessaires à son fonctionnement :</p>
+    <ul>
+        <li>
+            <strong>Compte utilisateur</strong> : adresse e-mail, mot de passe (stocké
+            <strong>haché avec argon2id</strong>, jamais en clair), nom, prénom, rôle
+            (auditeur, personnel ou super-administrateur), service de rattachement, date de
+            création du compte, date de dernière connexion, statut actif/inactif et préférences
+            de notification par e-mail (rappel à J-1, notification de modification de commentaire).
+        </li>
+        <li>
+            <strong>Rendez-vous</strong> : créneaux et réservations (date, type de rendez-vous —
+            présentiel, téléphone ou visio —, commentaire éventuel, motif d'annulation éventuel),
+            rattachés à l'auditeur et au personnel concernés.
+        </li>
+        <li>
+            <strong>Notifications</strong> : notifications applicatives liées aux rendez-vous.
+        </li>
+        <li>
+            <strong>Journal d'administration</strong> : trace des actions sensibles sur les comptes
+            (création, modification, activation/désactivation), à des fins de sécurité et de
+            traçabilité.
+        </li>
+        <li>
+            <strong>Réinitialisation de mot de passe</strong> : jetons temporaires générés lors
+            d'une demande de réinitialisation.
+        </li>
+    </ul>
+    <p>
+        Aucune donnée sensible au sens du RGPD (santé, opinions, etc.) n'est collectée.
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Finalités</h2>
+    <ul>
+        <li>la gestion des rendez-vous : proposition de créneaux par le personnel et réservation par les auditeurs ;</li>
+        <li>la gestion des comptes utilisateurs et l'authentification ;</li>
+        <li>l'envoi de notifications et de rappels par e-mail ;</li>
+        <li>la traçabilité des actions d'administration (sécurité).</li>
+    </ul>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Base légale</h2>
+    <p>
+        Les traitements reposent sur l'exécution du service de prise de rendez-vous et sur
+        l'intérêt légitime de l'organisation à gérer ses comptes et à sécuriser l'application.
+        L'envoi des e-mails de rappel repose sur une <strong>préférence activable</strong> par
+        l'utilisateur, modifiable à tout moment depuis son profil.
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Minimisation des données</h2>
+    <p>
+        Seules les données strictement nécessaires aux finalités ci-dessus sont collectées. Aucun
+        profilage ni aucune collecte à des fins publicitaires n'est réalisé.
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Destinataires et sous-traitance</h2>
+    <p>
+        Les données sont accessibles aux seuls utilisateurs habilités selon leur rôle. Les e-mails
+        transactionnels (confirmations, rappels) sont acheminés via un prestataire d'envoi d'e-mails.
+        L'hébergement est assuré par OVH, en France (Union européenne). Aucun transfert de données
+        hors de l'Union européenne n'est réalisé.
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Durée de conservation</h2>
+    <p>
+        Le journal d'administration est <strong>purgé automatiquement au-delà de 12 mois</strong>
+        (limitation de la conservation, art. 5.1.e du RGPD). Les comptes et les réservations sont
+        conservés le temps de l'usage du service ; les jetons de réinitialisation de mot de passe
+        sont temporaires et expirent rapidement.
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Sécurité</h2>
+    <p>Les mesures techniques mises en œuvre comprennent notamment :</p>
+    <ul>
+        <li>le hachage des mots de passe avec <strong>argon2id</strong> (jamais stockés en clair) ;</li>
+        <li>un contrôle d'accès par rôles, appliqué à chaque action sur une ressource ;</li>
+        <li>un journal d'audit des actions sensibles (accountability) ;</li>
+        <li>l'invalidation de la session d'un utilisateur dès la désactivation de son compte.</li>
+    </ul>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Vos droits</h2>
+    <p>
+        Conformément aux articles 15 à 22 du RGPD, vous disposez des droits d'accès, de
+        rectification, d'effacement, d'opposition et de portabilité de vos données. Pour faciliter
+        leur exercice, l'application permet :
+    </p>
+    <ul>
+        <li>
+            d'<strong>exporter vos données personnelles</strong> dans un format réutilisable, depuis
+            la page « Mes données » de votre espace ;
+        </li>
+        <li>
+            de modifier vos <strong>préférences de notification</strong> directement depuis votre profil.
+        </li>
+    </ul>
+    <p>
+        Pour toute autre demande relative à vos droits, écrivez à
+        <a href="mailto:contact@cnam-reunion.fr">contact@cnam-reunion.fr</a>. Vous disposez
+        également du droit d'introduire une réclamation auprès de la CNIL (www.cnil.fr).
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Cookies</h2>
+    <p>
+        L'application utilise uniquement un cookie de session strictement nécessaire à
+        l'authentification. Aucun cookie publicitaire ni traceur tiers n'est déposé.
+    </p>
+
+</div>
+{% endblock %}
