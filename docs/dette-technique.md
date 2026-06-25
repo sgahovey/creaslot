@@ -734,3 +734,29 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 **Hors périmètre** : les graphiques Chart.js (statistiques par service/type, graphique d'occupation du dashboard), dont les données sont rendues inline par Twig sans appel réseau asynchrone — aucun spinner justifié.
 
 **Priorité** : 🟢 basse (amélioration UX ; aucun impact fonctionnel ni sécurité).
+
+---
+
+## DT-27 — Page d'accueil de squelette exposant la stack technique (🟡 MOYEN) — ✅ RÉSOLUE (25/06/2026)
+
+> **✅ RÉSOLUE le 25/06/2026** sur branche `feature/DT-27-page-accueil`.
+>
+> **Origine** : constat lors d'une vérification de la page d'accueil servie aux utilisateurs connectés.
+>
+> **Résumé fix** : la route racine `/` (`HomeController`) rendait une page de squelette Symfony affichant en clair la version PHP (8.4.22), la version Symfony (8.0.13), l'`APP_ENV`, le mode debug, les extensions PHP chargées et une mention « Prochaine étape : US-1.3 ». Cette page est la destination post-login (`default_target_path: /` dans security.yaml), donc vue par tout utilisateur connecté. `HomeController` est transformé en aiguilleur : `/` redirige selon le rôle, du plus spécifique au plus général (`ROLE_SUPER_ADMIN` → `app_admin_dashboard` `/admin` ; `ROLE_PERSONNEL` → `app_creneau_agenda` `/creneau/agenda` ; `ROLE_AUDITEUR` → `app_creneaux_disponibles` `/creneaux-disponibles` ; fallback → `app_login`). Le template `home/index.html.twig` et la méthode morte `collectExtensionsStatus()` sont supprimés.
+>
+> **Sécurité** : suppression d'une divulgation de la stack technique (OWASP A05 — Security Misconfiguration), qui facilitait la reconnaissance de versions vulnérables. Exposition limitée aux utilisateurs déjà authentifiés (la racine est derrière `access_control ^/ IS_AUTHENTICATED_FULLY`), risque donc faible, mais correction nette.
+>
+> **Validation** : 292 tests verts (288 + 4 nouveaux), PHPStan niveau 8 = 0, PHP-CS-Fixer 0. Test fonctionnel `tests/Controller/HomeRedirectionTest.php` couvrant les 3 rôles + le cas non authentifié.
+
+**Détecté** : 25/06/2026, en vérifiant le contenu de la page d'accueil après connexion.
+
+**Constat** : `HomeController::index` rendait `templates/home/index.html.twig`, une page de squelette Symfony exposant versions/extensions/mode debug et la mention « Prochaine étape : US-1.3 ». Page de chantier indigne d'une application finie ET divulgation de stack. Cette page est la cible de `default_target_path: /`.
+
+**Fichiers concernés** : `src/Controller/HomeController.php` (aiguilleur par rôle), `templates/home/index.html.twig` (supprimé), `tests/Controller/HomeRedirectionTest.php` (créé).
+
+**Action réalisée** : `HomeController` réduit à un aiguilleur de redirection par rôle (ordre du plus spécifique au plus général, car la hiérarchie `SUPER_ADMIN ⊃ PERSONNEL ⊃ AUDITEUR` rendrait `isGranted('ROLE_AUDITEUR')` vrai pour tous les rôles) ; suppression du template de chantier et de la méthode morte `collectExtensionsStatus()`.
+
+**Hors périmètre** : la configuration du firewall et de `default_target_path` (inchangée) ; seul le comportement du contrôleur racine est modifié.
+
+**Priorité** : 🟡 moyenne (divulgation de stack — OWASP A05 ; exposition limitée aux utilisateurs authentifiés, donc risque faible mais corrigé).
