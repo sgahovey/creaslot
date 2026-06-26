@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Controller\Auditeur;
+namespace App\Controller;
 
 use App\Entity\Utilisateur;
 use App\Repository\NotificationRepository;
@@ -13,10 +13,13 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Liste des notifications in-app de l'Auditeur courant (US-4.7).
+ * Liste des notifications in-app de l'utilisateur courant (US-4.7, US-11.1).
+ *
+ * Accessible à tout utilisateur connecté (auditeur, personnel, super-admin) :
+ * chacun ne voit QUE ses propres notifications.
  *
  * Auto-lu (Q-US47-D1) : à l'ouverture, toutes les notifications non lues de
- * l'Auditeur sont marquées comme lues.
+ * l'utilisateur courant sont marquées comme lues.
  *
  * Ordre critique — marquer-lues PUIS lister :
  * marquerToutesLues() est un UPDATE DQL en masse qui contourne l'UnitOfWork.
@@ -24,9 +27,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Inversé, le template afficherait un état lu=false périmé.
  *
  * Sécurité : pas de Voter — le filtrage par destinataire dans le repository
- * garantit que l'Auditeur ne voit QUE ses propres notifications.
+ * garantit que l'utilisateur ne voit QUE ses propres notifications.
  */
-#[IsGranted('ROLE_AUDITEUR')]
+#[IsGranted('IS_AUTHENTICATED_FULLY')]
 final class NotificationListeController extends AbstractController
 {
     private const LIMIT_PAR_PAGE = 10;
@@ -50,7 +53,7 @@ final class NotificationListeController extends AbstractController
         $paginator = $this->notificationRepository->findByDestinatairePaginated($utilisateur, $page);
         $total = count($paginator);
 
-        return $this->render('auditeur/notification/liste.html.twig', [
+        return $this->render('notification/liste.html.twig', [
             'notifications' => $paginator,
             'total'         => $total,
             'page'          => $page,
