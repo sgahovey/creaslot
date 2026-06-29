@@ -82,6 +82,9 @@ services:
   # ---------------------------------------------------------------------------
   db:
     image: mysql:8.0
+    # log-bin-trust-function-creators : autorise la creation de triggers/procedures
+    # par un user non-SUPER quand le binary logging est actif (US-12.1).
+    command: --log-bin-trust-function-creators=1
     volumes:
       - mysql_data:/var/lib/mysql
     environment:
