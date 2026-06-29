@@ -82,6 +82,14 @@ curl -s -o /dev/null -w "%{http_code}\n" https://creaslot.re/connexion         #
 curl -s -o /dev/null -w "%{http_code}\n" https://preprod.creaslot.re/connexion  # attendu 401
 ```
 
+> ⚠️ **Pré-requis migration `Version20260629120000` (trigger + procédure, US-12.1)** —
+> Avant de promouvoir une version contenant cette migration vers **préprod/prod**,
+> s'assurer que le service MySQL a le paramètre **`log_bin_trust_function_creators=1`**
+> (`command: --log-bin-trust-function-creators=1` du service `db` dans `compose.prod.yml`,
+> comme en DEV). Sans ce paramètre, la migration échoue avec l'**erreur 1419** (création
+> d'un trigger sans privilège `SUPER` alors que le binary logging est actif). Cela vaut
+> pour le déploiement nominal (§3.1, migration jouée par le pipeline) comme manuel (§3.2).
+
 ## 4. HTTPS / certificats (Caddy + Let's Encrypt)
 - Caddy **obtient et renouvelle** les certificats automatiquement (ACME). Domaines : `creaslot.re` (prod, apex) et `preprod.creaslot.re` ; enregistrements DNS **A** pointant vers `51.178.25.175`.
 - `CADDY_ACME_CA` **vide = CA PRODUCTION**. Pour tester sans griller le rate-limit Let's Encrypt :
