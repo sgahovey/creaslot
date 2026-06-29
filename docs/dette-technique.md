@@ -1,6 +1,6 @@
 # Dette technique CreaSlot — Suivi
 
-Date dernière mise à jour : 25 juin 2026.
+Date dernière mise à jour : 29 juin 2026.
 Convention : DT-N = Dette Technique numéro N.
 
 ---
@@ -810,3 +810,25 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 **Hors périmètre** : la page CGU elle-même (livrée en US-10.1) ; la contrainte d'acceptation obligatoire (inchangée).
 
 **Priorité** : 🟢 basse (UX / lien fonctionnel ; aucun impact sur la validation, la case reste obligatoire).
+
+## DT-30 — Absence du bandeau d'environnement preprod dans le corps des emails (🟢 BAS) — ✅ RÉSOLUE (29/06/2026)
+
+> **✅ RÉSOLUE le 29/06/2026** sur branche `feature/DT-30-bandeau-preprod-emails`.
+>
+> **Origine** : constat d'incohérence. L'interface web affiche un bandeau orange « PRÉ-PRODUCTION — Les données de cet environnement ne sont pas réelles » (`templates/_partials/bandeau_environnement.html.twig`) en preprod, mais les emails envoyés depuis la preprod n'avaient AUCUN marquage visuel dans leur corps (seul le sujet était préfixé `[PREPROD...]` côté PHP).
+>
+> **Résumé fix** : ajout d'un bandeau preprod dans le layout commun des emails (`templates/emails/_layout.html.twig`), placé après le header et avant le corps. Conditionné par la globale Twig `app_environment_label == 'preprod'` (même condition que le bandeau web). Une seule modif dans le layout couvre les 8 emails qui en héritent. Style inline (contrainte email : pas de CSS externe), couleur `#FD7E14` (token `--cs-warning` du bandeau web) et texte cohérents avec le web. En prod, aucun bandeau.
+>
+> **Validation** : 303 tests verts (front pur), lint Twig OK. Vérification visuelle réelle à faire en preprod (le bandeau ne s'affiche qu'avec `app_environment_label=preprod`).
+
+**Détecté** : 29/06/2026, en consultant un email de notification envoyé depuis la preprod (bandeau présent sur le web, absent du corps de l'email).
+
+**Constat** : le layout email `_layout.html.twig` ne portait pas de marquage d'environnement, alors que la globale Twig `app_environment_label` est accessible dans les emails (déjà utilisée dans `emails/test.html.twig`).
+
+**Fichiers concernés** : `templates/emails/_layout.html.twig` (ajout d'une ligne de bandeau conditionnelle).
+
+**Action réalisée** : réutilisation de la condition et de la couleur du bandeau web, en styles inline adaptés aux emails, dans le layout commun.
+
+**Hors périmètre** : le bandeau web (inchangé) ; le préfixe `[PREPROD]` du sujet et la redirection des emails (mécanisme PHP existant, inchangé).
+
+**Priorité** : 🟢 basse (cohérence du marquage preprod web↔email ; aucun impact fonctionnel ni sécurité).
