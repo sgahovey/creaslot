@@ -508,7 +508,15 @@ Chaque `notifier*()` passe son **message et ses identifiants métier propres** (
 
 ---
 
-## DT-17 — Mutualisation des helpers Chart.js entre les deux contrôleurs Stimulus (🟡 MOYEN) — 🟠 OUVERTE
+## DT-17 — Mutualisation des helpers Chart.js entre les deux contrôleurs Stimulus (🟡 MOYEN) — ✅ RÉSOLUE (29/06/2026)
+
+> **✅ RÉSOLUE le 29/06/2026**. **Constat de clôture** : la factorisation était déjà en place dans le code (module `assets/chartjs_helpers.js`, créé le 25/06/2026), mais l'entrée de suivi n'avait pas été fermée.
+>
+> **Résumé** : les deux helpers dupliqués sont extraits dans `assets/chartjs_helpers.js` et importés par `graphique_occupation_controller.js` et `statistiques_controller.js` : `couleurToken(nomToken, repli)` (lecture d'un token de charte `--cs-*` avec repli) et `chartEstDisponible()` (garde `window.Chart`, logue et retourne `false` si le bundle UMD n'est pas chargé).
+>
+> **Décision assumée** : le cycle `connect()`/`disconnect()` n'est **pas** factorisé dans une classe de base. Les deux contrôleurs gèrent un nombre différent de graphiques (1 pour le dashboard, 2 pour les statistiques) ; mutualiser le cycle de vie via une classe de base Stimulus ajouterait une abstraction pour un gain marginal (cohérent avec l'évitement de l'abstraction spéculative appliqué en DT-7 et DT-16). Seuls les helpers purs et réutilisables sont partagés.
+>
+> **Validation** : les deux contrôleurs importent bien le module (vérifié par grep), comportement inchangé (refacto pur), graphiques dashboard + statistiques rendus à l'identique.
 
 **Détecté** : 04/06/2026, lors de l'implémentation d'US-5.8 (statistiques par service / type).
 
