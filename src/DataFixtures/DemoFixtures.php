@@ -14,10 +14,18 @@ use App\Enum\RoleUtilisateur;
 use App\Enum\StatutReservation;
 use App\Enum\TypeNotification;
 use Doctrine\Bundle\FixturesBundle\Fixture;
+use Doctrine\Bundle\FixturesBundle\FixtureGroupInterface;
+use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-class AppFixtures extends Fixture
+/**
+ * Données fictives de démonstration (personnel, auditeurs, admin de démo,
+ * créneaux, réservations, notifications) destinées à la préproduction et au
+ * développement uniquement. S'appuie sur les références exposées par
+ * ReferenceFixtures (Services et types de rendez-vous).
+ */
+class DemoFixtures extends Fixture implements DependentFixtureInterface, FixtureGroupInterface
 {
     public function __construct(
         private readonly UserPasswordHasherInterface $passwordHasher,
@@ -26,79 +34,40 @@ class AppFixtures extends Fixture
 
     public function load(ObjectManager $manager): void
     {
-        $services = $this->creerServices($manager);
-        $types = $this->creerTypesRdv($manager);
-        $personnels = $this->creerPersonnel($manager, $services);
+        $personnels = $this->creerPersonnel($manager);
         $auditeurs = $this->creerAuditeurs($manager);
         $this->creerAdmin($manager);
 
-        $creneaux = $this->creerCreneaux($manager, $personnels, $types);
+        $creneaux = $this->creerCreneaux($manager, $personnels);
         $this->creerReservations($manager, $creneaux, $auditeurs);
         $this->creerNotifications($manager, $auditeurs);
 
         $manager->flush();
     }
 
-    /** @return Service[] */
-    private function creerServices(ObjectManager $manager): array
+    public function getDependencies(): array
     {
-        $donnees = [
-            ['Service Commercial', 'Responsables commerciaux du Cnam'],
-            ['Service Alternance', 'Gestionnaires de l\'alternance'],
-            ['Accueil',            'Accueil et orientation des auditeurs'],
-        ];
-
-        $services = [];
-        foreach ($donnees as [$nom, $description]) {
-            $service = new Service();
-            $service->setNom($nom)->setDescription($description)->setEstActif(true);
-            $manager->persist($service);
-            $services[] = $service;
-        }
-
-        return $services;
+        return [ReferenceFixtures::class];
     }
 
-    /** @return TypeRdv[] */
-    private function creerTypesRdv(ObjectManager $manager): array
+    public static function getGroups(): array
     {
-        $donnees = [
-            ['PRESENTIEL', 'Présentiel', '#28A745', 'bi-geo-alt',      'Rendez-vous en présentiel au Cnam Réunion'],
-            ['VISIO',      'Visio',      '#FD7E14', 'bi-camera-video', 'Rendez-vous en visioconférence'],
-            ['TELEPHONE',  'Téléphone',  '#007BFF', 'bi-telephone',    'Rendez-vous par téléphone'],
-        ];
-
-        $types = [];
-        foreach ($donnees as [$code, $libelle, $couleur, $icone, $description]) {
-            $type = new TypeRdv();
-            $type->setCode($code)
-                 ->setLibelle($libelle)
-                 ->setCouleurHex($couleur)
-                 ->setIcone($icone)
-                 ->setDescription($description)
-                 ->setEstActif(true);
-            $manager->persist($type);
-            $types[] = $type;
-        }
-
-        return $types;
+        return ['demo'];
     }
 
-    /**
-     * @param Service[] $services
-     *
-     * @return Utilisateur[]
-     */
-    private function creerPersonnel(ObjectManager $manager, array $services): array
+    /** @return Utilisateur[] */
+    private function creerPersonnel(ObjectManager $manager): array
     {
         $donnees = [
-            ['Marie',     'Dupont',   'creaslotdemo+marie@gmail.com',    $services[0]],
-            ['Jean',      'Martin',   'creaslotdemo+jean@gmail.com',     $services[1]],
-            ['Sophie',    'Lefevre',  'creaslotdemo+sophie@gmail.com',   $services[2]],
+            ['Marie',     'Dupont',   'creaslotdemo+marie@gmail.com',    ReferenceFixtures::PREFIXE_SERVICE . '0'],
+            ['Jean',      'Martin',   'creaslotdemo+jean@gmail.com',     ReferenceFixtures::PREFIXE_SERVICE . '1'],
+            ['Sophie',    'Lefevre',  'creaslotdemo+sophie@gmail.com',   ReferenceFixtures::PREFIXE_SERVICE . '2'],
         ];
 
         $personnels = [];
-        foreach ($donnees as [$prenom, $nom, $email, $service]) {
+        foreach ($donnees as [$prenom, $nom, $email, $referenceService]) {
+            $service = $this->getReference($referenceService, Service::class);
+
             $utilisateur = new Utilisateur();
             $utilisateur->setEmail($email)
                         ->setPrenom($prenom)
@@ -165,15 +134,11 @@ class AppFixtures extends Fixture
 
     /**
      * @param Utilisateur[] $personnels
-     * @param TypeRdv[]     $types
      *
      * @return Creneau[]
      */
-    private function creerCreneaux(
-        ObjectManager $manager,
-        array $personnels,
-        array $types,
-    ): array {
+    private function creerCreneaux(ObjectManager $manager, array $personnels): array
+    {
         $now = new \DateTimeImmutable();
         $creneaux = [];
 
@@ -197,13 +162,15 @@ class AppFixtures extends Fixture
                 ->modify(sprintf('%+d days', $offsetJours));
             $dateFin = $dateDebut->modify('+1 hour');
 
+            $type = $this->getReference(ReferenceFixtures::PREFIXE_TYPE . ($index % 3), TypeRdv::class);
+
             $creneau = new Creneau();
             $creneau->setDateDebut($dateDebut)
                     ->setDateFin($dateFin)
                     ->setCommentaireAuditeur($commentaire)
                     ->setEstActif(true)
                     ->setUtilisateur($personnels[$index % 3])
-                    ->setTypeRdv($types[$index % 3]);
+                    ->setTypeRdv($type);
             $manager->persist($creneau);
             $creneaux[] = $creneau;
         }
