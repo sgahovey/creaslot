@@ -59,6 +59,9 @@ services:
 
   db:
     image: mysql:8.0
+    # --log-bin-trust-function-creators=1 requis pour creer le trigger d'audit US-12.1
+    # par un user non-SUPER quand le binary logging est actif (erreur 1419 sinon).
+    command: --log-bin-trust-function-creators=1
     restart: unless-stopped
     logging: *default-logging
     environment:
