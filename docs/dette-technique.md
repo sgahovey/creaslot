@@ -1,6 +1,6 @@
 # Dette technique CreaSlot — Suivi
 
-Date dernière mise à jour : 29 juin 2026.
+Date dernière mise à jour : 1er juillet 2026.
 Convention : DT-N = Dette Technique numéro N.
 
 ---
@@ -857,3 +857,43 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 **Action réalisée** : separation en deux groupes de fixtures relies par `DependentFixtureInterface` + systeme de references Doctrine ; documentation des commandes de chargement par environnement.
 **Hors périmètre** : la logique des fixtures elle-meme (donnees inchangees) ; le peuplement reel de preprod/prod (realise separement apres promotion, jamais en touchant les serveurs directement).
 **Priorité** : 🟢 basse (amelioration de deployabilite ; aucun impact fonctionnel ni securite).
+
+## DT-32 — Flag log-bin-trust-function-creators absent de compose.prod.yml (bloque la migration du trigger US-12.1) (🟡 MOYEN) — ✅ RÉSOLUE (01/07/2026)
+> **✅ RÉSOLUE le 01/07/2026** (PR #96 mergee, commit `78774a8`).
+>
+> **Origine** : la migration `Version20260629120000` (US-12.1) cree un trigger SQL. MySQL refuse la creation d'un trigger par un utilisateur non-SUPER quand le binary logging est actif (erreur **1419**). Le flag `--log-bin-trust-function-creators=1` etait present dans `docker-compose.yml` (dev) mais absent de `compose.prod.yml` (preprod/prod).
+>
+> **Résumé fix** : ajout de `command: --log-bin-trust-function-creators=1` au service `db` de `compose.prod.yml`.
+>
+> **Intervention manuelle preprod (assumée, documentee honnetement)** : au premier deploiement preprod, la migration a echoue (1419) car le conteneur `db` tournait depuis 13 jours sans le flag et le pipeline ne l'avait pas recree. Correction manuelle sur le VPS : mise a jour du repo (`git reset --hard origin/preprod`), recreation du conteneur `db` (`docker compose up -d --force-recreate db`, volume `mysql_data_prod` preserve, variable MySQL passee de OFF a ON), puis nettoyage d'un etat de migration partiel (le 1er essai avait cree la table `historique_utilisateur` en auto-commit DDL avant de planter au trigger : table presente, trigger et procedure absents, migration non enregistree cote Doctrine) via `DROP TABLE` de la table orpheline, avant relance reussie de la migration (table + trigger + procedure crees, verifies 1/1/1).
+
+**Détecté** : 01/07/2026, lors du premier deploiement preprod de la migration US-12.1 (trigger).
+**Constat** : le flag `--log-bin-trust-function-creators=1`, present sur la db de dev (`docker-compose.yml`), etait absent du service `db` de `compose.prod.yml` — d'ou l'erreur MySQL 1419 au moment de creer le trigger via un utilisateur non-SUPER avec binary logging actif.
+**Fichiers concernés** : `compose.prod.yml` (service `db`).
+**Action réalisée** : ajout du flag `--log-bin-trust-function-creators=1` au service `db` ; en complement, intervention manuelle ponctuelle sur le VPS preprod (recreation de `db` + nettoyage de l'etat de migration partiel) pour debloquer le deploiement en cours.
+**Hors périmètre** : la correction du pipeline lui-meme (il ne synchronise pas `compose.prod.yml` sur le VPS et ne recree pas `db`) — tracee en [[DT-34]].
+**Priorité** : 🟡 moyenne (bloquant le deploiement du trigger ; contourne manuellement).
+
+## DT-33 — Peuplement preprod impossible via doctrine:fixtures:load (image runtime sans Composer ni fixtures-bundle) (🟡 MOYEN) — ✅ RÉSOLUE (01/07/2026)
+> **✅ RÉSOLUE le 01/07/2026** (PR #97 mergee).
+>
+> **Origine** : l'image de prod/preprod est construite en `composer --no-dev` (stage `build` du Dockerfile). Elle n'embarque ni Composer, ni doctrine-fixtures-bundle. La commande `doctrine:fixtures:load` est donc indisponible en preprod (erreur « no commands defined in `doctrine:fixtures` namespace », puis « composer: not found »). Il fallait neanmoins peupler `creaslot_preprod` avec les memes donnees de demo que les fixtures.
+>
+> **Résumé fix** : creation de `scripts/seed-preprod.sql`, equivalent SQL de `ReferenceFixtures` + `DemoFixtures` : 3 services, 3 types de RDV, 9 comptes (3 personnels, 5 auditeurs, 1 super-admin), 10 creneaux, 3 reservations, 5 notifications. Idempotent (purge inverse-FK dans une transaction, `reset_password_request` incluse car FK NON NULL, rejouable), dates de creneaux relatives via `DATE_ADD`/`CURDATE()` (restent futures), mots de passe en argon2id (mot de passe demo : `password`) generes via `security:hash-password` en `APP_ENV=prod` (iso-config, pas la config dev qui est en bcrypt cost-4), preference RGPD de Julie preservee (`email_rappel_j1 = 0`). Colonnes verifiees via la `naming_strategy` underscore + les migrations.
+>
+> **Validation** : teste en local (chargement code retour 0, comptages 3/3/9/10/3/5 conformes, Julie a 0, hash argon2id confirme en base). Execution reelle sur le VPS preprod : a realiser (promotion `develop`→`preprod` puis execution manuelle du seed sur `creaslot_preprod`).
+
+**Détecté** : 01/07/2026, en preparant le peuplement de la preprod (fixtures indisponibles sur l'image runtime).
+**Constat** : l'image runtime `composer --no-dev` n'embarque ni Composer ni doctrine-fixtures-bundle, rendant `doctrine:fixtures:load` inutilisable en preprod ; il fallait un equivalent SQL des fixtures, executable directement sur MySQL.
+**Fichiers concernés** : `scripts/seed-preprod.sql` (nouveau).
+**Action réalisée** : ecriture d'un seed SQL idempotent reproduisant a l'identique `ReferenceFixtures` + `DemoFixtures` (colonnes issues de la `naming_strategy` underscore + migrations, dates relatives `DATE_ADD`/`CURDATE()`, hash argon2id iso-config prod, preference RGPD de Julie preservee).
+**Hors périmètre** : l'automatisation du chargement du seed dans le pipeline (execution manuelle voulue) ; le peuplement de la prod (qui ne recoit jamais les donnees de demo, seulement le groupe `reference` via `--group=reference --append`, cf. [[DT-31]]).
+**Priorité** : 🟡 moyenne (necessaire a la demo preprod ; contourne).
+
+## DT-34 — Le pipeline de déploiement ne synchronise pas compose.prod.yml sur le VPS et ne recrée pas le conteneur db (🟡 MOYEN) — ⚠️ NON RÉSOLUE
+**Détecté** : 01/07/2026, lors du deploiement preprod de [[DT-32]].
+**Constat** : le pipeline `deploy-preprod.yml` (et par extension `deploy-prod.yml`) tire l'image applicative depuis GHCR et recree uniquement les services `app`/`worker`. Il ne met PAS a jour le fichier `compose.prod.yml` present sur le VPS (le repo du VPS restait sur un ancien commit) et ne recree PAS le conteneur `db`. Consequence : toute modification de la configuration du service `db` dans `compose.prod.yml` (comme le flag [[DT-32]]) n'est jamais appliquee automatiquement au deploiement ; il faut intervenir manuellement sur le serveur (`git reset` + `--force-recreate db`). Le probleme se reproduira a chaque changement de config `db`.
+**Impact** : les changements de configuration d'infrastructure `db` (flags MySQL, variables, volumes) necessitent une intervention manuelle sur le VPS ; risque d'echec de deploiement silencieux (le pipeline reussit mais la config attendue n'est pas active).
+**Action proposée** : faire en sorte que le pipeline (a) synchronise `compose.prod.yml` sur le VPS (via `git pull`/`reset` du repo de deploiement, ou copie du fichier), et (b) recree le conteneur `db` quand sa configuration change (`docker compose up -d --force-recreate db`, volume preserve). A cadrer : detecter le changement de config `db` pour eviter une micro-coupure `db` a chaque deploiement.
+**Hors périmètre** : la refonte complete de la strategie de deploiement.
+**Priorité** : 🟡 moyenne (fiabilite du deploiement ; contourne manuellement a ce jour).
