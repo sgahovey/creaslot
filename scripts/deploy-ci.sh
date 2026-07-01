@@ -38,14 +38,25 @@ APP="app-$ENV"; WORKER="worker-$ENV"
 
 echo ">>> Deploiement $ENV @ $TAG"
 
-# 4. Tirer l'image GHCR (tag precis) et recreer UNIQUEMENT les services de cet env.
+# 4. Synchroniser le working tree du depot sur le commit deploye ($TAG).
+# Les fichiers d'orchestration versionnes (compose.prod.yml, Caddyfile, init-prod.sh)
+# resteraient sinon sur un ancien commit : une modif de compose.prod.yml ne serait
+# jamais appliquee au deploiement. $TAG est deja valide par la regex ^[0-9a-f]{7,40}$
+# ci-dessus, son usage est donc sur (pas d'injection). On vise le SHA directement
+# (pas une branche) pour deployer exactement le commit demande par le pipeline.
+echo ">>> Synchronisation du depot sur $TAG"
+git fetch --quiet origin
+git reset --hard --quiet "$TAG"
+echo ">>> Depot synchronise sur $(git rev-parse --short HEAD)"
+
+# 5. Tirer l'image GHCR (tag precis) et recreer UNIQUEMENT les services de cet env.
 "${PFX[@]}" pull "$APP" "$WORKER"
 "${PFX[@]}" up -d "$APP" "$WORKER"
 
-# 5. Migrations Doctrine (idempotent).
+# 6. Migrations Doctrine (idempotent).
 "${PFX[@]}" exec -T "$APP" php bin/console doctrine:migrations:migrate --no-interaction
 
-# 6. Smoke test.
+# 7. Smoke test.
 code=$(curl -s -o /dev/null -w "%{http_code}" "$SMOKE_URL" || true)
 if [ "$code" != "$SMOKE_CODE" ]; then
   echo "ERREUR: smoke $ENV ($SMOKE_URL -> $code, attendu $SMOKE_CODE)." >&2
