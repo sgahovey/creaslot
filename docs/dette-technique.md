@@ -840,3 +840,20 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 **Hors périmètre** : le bandeau web (inchangé) ; le préfixe `[PREPROD]` du sujet et la redirection des emails (mécanisme PHP existant, inchangé).
 
 **Priorité** : 🟢 basse (cohérence du marquage preprod web↔email ; aucun impact fonctionnel ni sécurité).
+
+## DT-31 — Fixtures Doctrine monolithiques : impossible de peupler prod et preprod differemment (🟢 BAS) — ✅ RÉSOLUE (30/06/2026)
+> **✅ RÉSOLUE le 30/06/2026** sur branche `feature/DT-31-fixtures-groupes-reference-demo`.
+>
+> **Origine** : `AppFixtures` etait une classe monolithique chargeant toutes les donnees d'un bloc (services, types de RDV, comptes fictifs, creneaux, reservations, notifications). Impossible de charger uniquement les donnees de reference metier (services + types de RDV) sans charger aussi les faux comptes de demonstration. Or la production ne doit recevoir que les donnees de reference, jamais les donnees de demo.
+>
+> **Résumé fix** : scission de `AppFixtures` en deux classes a groupes. `ReferenceFixtures` (groupe `reference`) : services + types de RDV, exposes via le systeme de references Doctrine (`addReference`, prefixes stables `PREFIXE_SERVICE` / `PREFIXE_TYPE`). `DemoFixtures` (groupe `demo`) : personnel, auditeurs, super-admin de demo, creneaux, reservations, notifications ; implemente `DependentFixtureInterface` (depend de `ReferenceFixtures`) et recupere les donnees de reference via `getReference`. Refacto pur : donnees produites inchangees.
+>
+> **Chargement par environnement** : dev/preprod = `doctrine:fixtures:load` (complet) ; prod = `doctrine:fixtures:load --group=reference --append` (services + types uniquement, sans purge). Le super-admin de prod reste cree par la commande `app:creer-admin` (pas de doublon dans le groupe `reference`).
+>
+> **Validation** : chargement complet identique a l'avant-refacto (3 services, 3 types, 9 comptes, 10 creneaux) ; `--group=reference` seul verifie a 3 services + 3 types + 0 compte + 0 creneau ; `--append` confirme ne pas purger la base. `lint:container` OK, 306 tests verts. Couverture Sonar : `src/DataFixtures/**` exclu du calcul de couverture (donnees de demo non testables unitairement), Quality Gate au vert.
+**Détecté** : 30/06/2026, en preparant le peuplement differencie preprod/prod.
+**Constat** : une seule classe `AppFixtures` melait donnees de reference et donnees de demo, rendant impossible un chargement selectif par environnement.
+**Fichiers concernés** : `src/DataFixtures/ReferenceFixtures.php` (nouveau), `src/DataFixtures/DemoFixtures.php` (nouveau, ex-`AppFixtures`), `src/DataFixtures/AppFixtures.php` (supprime), `sonar-project.properties` (exclusion de couverture).
+**Action réalisée** : separation en deux groupes de fixtures relies par `DependentFixtureInterface` + systeme de references Doctrine ; documentation des commandes de chargement par environnement.
+**Hors périmètre** : la logique des fixtures elle-meme (donnees inchangees) ; le peuplement reel de preprod/prod (realise separement apres promotion, jamais en touchant les serveurs directement).
+**Priorité** : 🟢 basse (amelioration de deployabilite ; aucun impact fonctionnel ni securite).
