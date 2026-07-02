@@ -890,7 +890,17 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 **Hors périmètre** : l'automatisation du chargement du seed dans le pipeline (execution manuelle voulue) ; le peuplement de la prod (qui ne recoit jamais les donnees de demo, seulement le groupe `reference` via `--group=reference --append`, cf. [[DT-31]]).
 **Priorité** : 🟡 moyenne (necessaire a la demo preprod ; contourne).
 
-## DT-34 — Le pipeline de déploiement ne synchronise pas compose.prod.yml sur le VPS et ne recrée pas le conteneur db (🟡 MOYEN) — ⚠️ NON RÉSOLUE
+## DT-34 — Le pipeline de déploiement ne synchronise pas compose.prod.yml sur le VPS et ne recrée pas le conteneur db (🟡 MOYEN) — ✅ RÉSOLUE (01/07/2026)
+> **✅ RÉSOLUE le 01/07/2026** (PR #99 mergee, commit `cc521c9`).
+>
+> **Résumé fix** : ajout d'une etape de synchronisation git dans `scripts/deploy-ci.sh`, apres le `cd` dans le repo et avant le pull de l'image : `git fetch --quiet origin` puis `git reset --hard --quiet "$TAG"` (le SHA deja valide par la regex hexadecimale). Le working tree du VPS est desormais amene exactement sur le commit deploye avant tout `docker compose up`, donc les fichiers d'orchestration versionnes (compose.prod.yml, Caddyfile, init-prod.sh) sont toujours a jour. `set -euo pipefail` garantit l'arret avant deploiement si la synchro echoue.
+>
+> **Portee volontairement limitee** : seule la synchro du depot est automatisee. La recreation du conteneur `db` reste MANUELLE et documentee (geste rare, risque de micro-coupure de la prod partagee) — la meilleure pratique theorique (push de config immuable via scp/rsync) a ete ecartee car elle imposerait de revoir la forced command SSH, disproportionne au volume du projet.
+>
+> **Paradoxe de bootstrap (documente honnetement)** : le deploiement qui a livre ce correctif a lui-meme tourne avec l'ANCIEN script (sans synchro), car le VPS n'avait pas encore le nouveau `deploy-ci.sh` au moment de son execution. Une derniere synchro manuelle du VPS a donc ete necessaire pour installer le nouveau script. A partir du deploiement suivant, la synchro est automatique.
+>
+> **Validation** : `bash -n scripts/deploy-ci.sh` OK, CI verte (PR #99). Preuve en conditions reelles : la prochaine promotion vers preprod affichera les lignes « >>> Synchronisation du depot sur <sha> » dans les logs du pipeline.
+
 **Détecté** : 01/07/2026, lors du deploiement preprod de [[DT-32]].
 **Constat** : le pipeline `deploy-preprod.yml` (et par extension `deploy-prod.yml`) tire l'image applicative depuis GHCR et recree uniquement les services `app`/`worker`. Il ne met PAS a jour le fichier `compose.prod.yml` present sur le VPS (le repo du VPS restait sur un ancien commit) et ne recree PAS le conteneur `db`. Consequence : toute modification de la configuration du service `db` dans `compose.prod.yml` (comme le flag [[DT-32]]) n'est jamais appliquee automatiquement au deploiement ; il faut intervenir manuellement sur le serveur (`git reset` + `--force-recreate db`). Le probleme se reproduira a chaque changement de config `db`.
 **Impact** : les changements de configuration d'infrastructure `db` (flags MySQL, variables, volumes) necessitent une intervention manuelle sur le VPS ; risque d'echec de deploiement silencieux (le pipeline reussit mais la config attendue n'est pas active).
