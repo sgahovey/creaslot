@@ -76,7 +76,7 @@ class DemoFixtures extends Fixture implements DependentFixtureInterface, Fixture
                         ->setEstActif(true)
                         ->setService($service)
                         ->setMotDePasseHash(
-                            $this->passwordHasher->hashPassword($utilisateur, 'password'),
+                            $this->passwordHasher->hashPassword($utilisateur, 'Motdepasse123!'),
                         );
             $manager->persist($utilisateur);
             $personnels[] = $utilisateur;
@@ -105,7 +105,7 @@ class DemoFixtures extends Fixture implements DependentFixtureInterface, Fixture
                         ->setRole(RoleUtilisateur::AUDITEUR)
                         ->setEstActif(true)
                         ->setMotDePasseHash(
-                            $this->passwordHasher->hashPassword($utilisateur, 'password'),
+                            $this->passwordHasher->hashPassword($utilisateur, 'Motdepasse123!'),
                         );
             $manager->persist($utilisateur);
             $auditeurs[] = $utilisateur;
@@ -127,7 +127,7 @@ class DemoFixtures extends Fixture implements DependentFixtureInterface, Fixture
               ->setRole(RoleUtilisateur::SUPER_ADMIN)
               ->setEstActif(true)
               ->setMotDePasseHash(
-                  $this->passwordHasher->hashPassword($admin, 'password'),
+                  $this->passwordHasher->hashPassword($admin, 'Motdepasse123!'),
               );
         $manager->persist($admin);
     }
