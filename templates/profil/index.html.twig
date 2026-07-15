@@ -93,5 +93,28 @@
         <a href="{{ path('app_mes_donnees') }}">Consulter et exporter mes données personnelles</a>
     </p>
 
+    {# ── Zone de danger : suppression de compte (RGPD art. 17) ────────────── #}
+    {% if is_granted(constant('App\\Security\\UtilisateurVoter::ANONYMISER'), app.user) %}
+        <section class="card border border-danger shadow-sm mt-4"
+                 style="border-radius: var(--cs-radius-lg);"
+                 aria-labelledby="cs-profil-danger-titre">
+            <div class="card-body p-3 p-md-4">
+                <h2 id="cs-profil-danger-titre" class="h5 mb-2 text-danger"
+                    style="font-weight: var(--cs-fw-semibold);">
+                    Supprimer mon compte
+                </h2>
+                <p class="text-secondary mb-3" style="font-size: var(--cs-fs-small);">
+                    La suppression anonymise définitivement vos données personnelles.
+                    Cette action est irréversible.
+                </p>
+                <a href="{{ path('app_mon_profil_suppression') }}"
+                   class="btn btn-outline-danger d-inline-flex align-items-center gap-1">
+                    <i class="bi bi-trash3" aria-hidden="true"></i>
+                    Supprimer mon compte
+                </a>
+            </div>
+        </section>
+    {% endif %}
+
 </div>
 {% endblock %}
