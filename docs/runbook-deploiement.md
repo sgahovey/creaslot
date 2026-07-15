@@ -87,12 +87,12 @@ basic_auth). On ne promeut vers `main` qu'une fois la préprod validée (*promot
    curl -s -o /dev/null -w "%{http_code}\n" https://creaslot.re/connexion   # attendu 200
    curl -s -o /dev/null -w "%{http_code}\n" https://creaslot.re/health       # attendu 200
    ```
-2. Créer le tag de version et la release GitHub (depuis `main` à jour) :
+2. Créer le tag de version et la release GitHub (depuis `main` à jour). Remplacer `vX.Y.Z` par le numero de version reel (ex. `v1.1.0`) :
    ```bash
    git checkout main && git pull --ff-only
-   git tag v1.0.0                # adapter le numero de version
-   git push origin v1.0.0
-   gh release create v1.0.0 --title "CreaSlot v1.0.0" --notes "Version finale."
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   gh release create vX.Y.Z --title "CreaSlot vX.Y.Z" --notes "Notes de version."
    ```
 
 ### 3.2 Procédure de secours — déploiement manuel sur le VPS
