@@ -134,7 +134,7 @@ docker compose -f compose.prod.yml --env-file .env.deploy.local logs <service> -
 ## 8. Sauvegarde et restauration de la base
 
 ### Sauvegarde
-- Script versionné : `scripts/backup-db.sh`. Lancement **manuel** depuis le VPS :
+- Script versionné : `scripts/backup-db.sh`, **automatisé par cron** (quotidien, 02h30 UTC — cf. `docs/cron-backup.md`). Lancement **manuel** possible à tout moment depuis le VPS :
 ```bash
   cd ~/creaslot && ./scripts/backup-db.sh
 ```
@@ -173,10 +173,12 @@ DUMP=~/backups/creaslot/creaslot_creaslot_prod_AAAAMMJJ_HHMMSS.sql.gz   # choisi
 > intégrité vérifiée : 10/10 tables, comptes de lignes conformes). Un backup non testé n'est pas un backup.
 
 ### Limites et évolutions
+- **Automatisation par cron** : en place (sauvegarde quotidienne à 02h30 UTC — cf. `docs/cron-backup.md`).
+  Le lancement manuel reste possible.
 - Dumps stockés **localement sur le VPS** : **point unique de défaillance** (perte du serveur = perte des
   sauvegardes). Limite assumée à ce stade.
-- Évolutions : copie **hors-VPS** (`scp` avant une échéance importante, ou stockage objet chiffré) et
-  **automatisation par cron** quotidien — le script est déjà prêt pour cela (une ligne de crontab suffit).
+- **Évolution encore ouverte** : copie **hors-VPS** (`scp` avant une échéance importante, ou stockage objet
+  chiffré) pour lever ce point unique de défaillance.
 
 ## 9. Rollback simple
 ```bash
@@ -196,5 +198,5 @@ Les chantiers initialement listés ici ont été livrés :
 
 Restent ouvertes, par ordre de priorité :
 
-- **Sauvegarde automatisée** : passer le script manuel `scripts/backup-db.sh` en tâche planifiée (cron), avec politique de rétention et copie hors-VPS.
+- **Copie hors-VPS des sauvegardes** : la sauvegarde quotidienne par cron est en place (cf. `docs/cron-backup.md`) ; reste à externaliser une copie chiffrée (`scp` ou stockage objet) pour lever le point unique de défaillance.
 - **Supervision applicative** : route `/health` (état app + base + file Messenger) et extension des healthchecks à l'ensemble des services (aujourd'hui sur `db`).
