@@ -929,3 +929,69 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 **Hors périmètre** : les autres constantes du Voter (`VIEW`/`EDIT`/`DEACTIVATE`/`CHANGE_ROLE`/`ACTIVATE`/`ANONYMISER`, toutes utilisées) ; `CreneauVoter::DELETE` (autre Voter, bien utilisé — inchangé).
 
 **Priorité** : 🟢 basse (nettoyage cosmétique de code mort ; aucun impact fonctionnel ni sécurité).
+
+## DT-36 — Rectification d'email non self-service (art. 16 RGPD satisfait par voie administrative) (🟢 BAS) — ✅ CLÔTURÉE (LIMITE ASSUMÉE) (15/07/2026)
+
+> **✅ CLÔTURÉE le 15/07/2026 (LIMITE ASSUMÉE)** — décision de NE PAS implémenter le changement d'email en self-service à ce stade.
+>
+> **Origine** : dans l'espace self-service `MonProfil`, l'utilisateur peut rectifier son prénom et son nom, mais **pas son adresse email** (lecture seule ; `MonProfilType` ne mappe que `prenom`/`nom`, choix documenté anti-escalade de privilège). Le changement d'email n'est possible que par un super-administrateur (`CompteController` / `UtilisateurAdminType`). Le droit de rectification (art. 16) est donc **partiellement** self-service.
+>
+> **Décision & justification** : (1) **Conformité** — l'art. 16 n'impose pas d'UI self-service ; il impose que le responsable de traitement rectifie sans délai **sur demande**. Le changement d'email **médié par l'admin** (Cnam, avec vérification d'identité) **satisfait l'art. 16** → pas de non-conformité, seulement une commodité UX non implémentée. (2) **Sécurité** — l'email est **l'identifiant de connexion** (`security.yaml` `property: email`, `getUserIdentifier()`) **et** le canal de reset password : un self-service naïf exposerait à la **prise de contrôle de compte** (session détournée → changement vers l'email de l'attaquant → reset) et au **verrouillage du vrai propriétaire** (email erroné → plus de connexion ni de reset). Sous deadline, le rapport risque/bénéfice est défavorable.
+>
+> **Évolution future (si un jour)** : changement d'email à **double confirmation**, en **réutilisant le pattern verify-email d'US-12.4** : ré-authentification par mot de passe, email de confirmation au **nouvel** email (application différée jusqu'au clic), **notification à l'ancien** email, contrôle d'unicité et gestion de la session (`isEqualTo`). Estimé ~10-14 fichiers + migration (colonne `email_en_attente`).
+
+**Détecté** : 15/07/2026, lors de l'audit final RGPD (couverture des droits art. 15-22).
+
+**Constat** : rectification nom/prénom = self-service ; rectification email = via admin uniquement.
+
+**Fichiers concernés** : `src/Form/MonProfilType.php` (email non mappé, lecture seule) ; `src/Controller/Admin/CompteController.php` + `src/Form/UtilisateurAdminType.php` (changement d'email par l'admin).
+
+**Action réalisée** : décision documentée de conserver l'email en lecture seule côté self-service ; **aucune modification de code**.
+
+**Hors périmètre** : la rectification nom/prénom (déjà self-service) ; le changement d'email par l'admin (déjà fonctionnel).
+
+**Priorité** : 🟢 basse (commodité UX ; conformité RGPD déjà assurée par voie administrative ; risque de sécurité si implémenté naïvement).
+
+## DT-37 — Email journalisé en clair dans LoginFailureListener sur échec de connexion (🟢 BAS) — ⏳ OUVERTE (basse priorité) (15/07/2026)
+
+> **⏳ OUVERTE (basse priorité)** — identifiée le 15/07/2026, correction différée.
+>
+> **Origine** : `LoginFailureListener` journalise l'adresse email saisie (`['email' => $email]`) sur les échecs de connexion (compte désactivé, identifiants invalides), pour la traçabilité des tentatives (OWASP A09). C'est une **donnée personnelle en clair** dans le canal de logs `security`, en **légère tension avec la minimisation** : le reste de l'application journalise l'identifiant numérique (jamais l'email), et `NotificationService` ne loggue qu'un **hash partiel** de l'adresse.
+>
+> **Nuance** : l'email est ici l'entrée d'une tentative (pas nécessairement un compte existant), et sa journalisation sert la détection d'attaques ; le risque est faible (canal `security` à accès restreint). Mais la cohérence avec le reste de l'app plaide pour une pseudonymisation.
+>
+> **Évolution proposée** : pseudonymiser l'email dans ce listener (hash partiel SHA-256 tronqué, comme `NotificationService`, ou troncature type `j***@domaine`), pour conserver la valeur de corrélation sans exposer l'adresse en clair.
+
+**Détecté** : 15/07/2026, lors de l'audit final RGPD (revue de la journalisation).
+
+**Constat** : `LoginFailureListener` écrit l'email en clair dans le canal `security`, contrairement au reste de l'app (identifiants numériques / hash partiel).
+
+**Fichiers concernés** : `src/EventListener/LoginFailureListener.php`.
+
+**Action proposée** : pseudonymiser l'email (hash partiel ou troncature) tout en conservant la traçabilité des tentatives.
+
+**Hors périmètre** : la journalisation des autres événements (déjà sur identifiants numériques) ; le mécanisme de throttling (inchangé).
+
+**Priorité** : 🟢 basse (tension mineure avec la minimisation ; logs à accès restreint ; aucun impact fonctionnel).
+
+## DT-38 — Faux positif schema:validate sur la table historique_utilisateur (trigger US-12.1, non mappée Doctrine) (🟢 BAS) — ✅ CLÔTURÉE (NOTE TECHNIQUE) (15/07/2026)
+
+> **✅ CLÔTURÉE le 15/07/2026 (NOTE TECHNIQUE)** — comportement attendu, documenté pour lever toute ambiguïté (notamment au jury).
+>
+> **Origine** : `php bin/console doctrine:schema:validate` signale « The database schema is not in sync with the current mapping file », et `doctrine:schema:update --dump-sql` propose un unique `DROP TABLE historique_utilisateur`. Ce n'est **pas** un désalignement réel : la table `historique_utilisateur` est créée par la migration `Version20260629120000` (US-12.1) avec un **trigger** + une **procédure stockée**, et elle est **volontairement non mappée** par l'ORM (alimentée par le trigger SQL, jamais par Doctrine).
+>
+> **Conséquence** : Doctrine, ne connaissant pas cette table côté mapping, la considère « en trop » et propose de la supprimer. Il ne faut **jamais** appliquer ce `DROP` (il détruirait la traçabilité US-12.1). Le seul écart de `schema:validate` est ce faux positif ; le mapping des entités est par ailleurs déclaré correct (« mapping files are correct »).
+>
+> **Décision** : aucune action de code. Vigilance à la génération des migrations : `make:migration` inclut ce `DROP TABLE historique_utilisateur` parasite → il doit être **retiré manuellement** de toute migration générée (fait pour la migration US-12.4, cf. son en-tête).
+
+**Détecté** : 29/06/2026 (mise en place du trigger US-12.1), re-confirmé le 15/07/2026 lors des audits.
+
+**Constat** : `schema:validate` « not in sync » = uniquement `DROP TABLE historique_utilisateur` (table du trigger, non mappée par choix).
+
+**Fichiers concernés** : `migrations/Version20260629120000.php` (création table + trigger + procédure) ; note applicable à toute future `make:migration`.
+
+**Action réalisée** : note technique documentée ; retrait systématique du `DROP` parasite dans les migrations générées.
+
+**Hors périmètre** : le mapping des 8 entités métier (correct) ; la logique du trigger (inchangée).
+
+**Priorité** : 🟢 basse (faux positif cosmétique ; aucun impact — sauf à appliquer le `DROP` par erreur).
