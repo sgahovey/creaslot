@@ -7,6 +7,8 @@ namespace App\Controller;
 use App\Entity\Utilisateur;
 use App\Enum\RoleUtilisateur;
 use App\Form\InscriptionType;
+use App\Security\EmailNonVerifieException;
+use App\Service\VerificationEmailService;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -21,6 +23,7 @@ class SecurityController extends AbstractController
     public function __construct(
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly EntityManagerInterface $entityManager,
+        private readonly VerificationEmailService $verificationEmailService,
     ) {
     }
 
@@ -31,9 +34,14 @@ class SecurityController extends AbstractController
             return $this->redirectToRoute('app_home');
         }
 
+        $erreur = $authenticationUtils->getLastAuthenticationError();
+
         return $this->render('auth/connexion.html.twig', [
             'dernierEmail' => $authenticationUtils->getLastUsername(),
-            'erreur'       => $authenticationUtils->getLastAuthenticationError(),
+            'erreur'       => $erreur,
+            // Cas « email non confirmé » (US-12.4) : la page affiche un message ciblé
+            // + un lien de renvoi, au lieu du générique « Identifiants incorrects. ».
+            'emailNonVerifie' => $erreur instanceof EmailNonVerifieException,
         ]);
     }
 
@@ -71,7 +79,11 @@ class SecurityController extends AbstractController
 
         $utilisateur
             ->setRole(RoleUtilisateur::AUDITEUR)
+            // Compte créé actif mais NON confirmé (US-12.4) : la connexion reste
+            // bloquée par UserChecker tant que l'email n'est pas vérifié. est_actif
+            // reste vrai (réservé au contrôle admin), email_verifie porte l'état.
             ->setEstActif(true)
+            ->setEmailVerifie(false)
             ->setMotDePasseHash(
                 $this->passwordHasher->hashPassword($utilisateur, $motDePasseEnClair),
             );
@@ -86,8 +98,10 @@ class SecurityController extends AbstractController
             return $this->redirectToRoute('app_inscription');
         }
 
-        $this->addFlash('success', 'Votre compte a été créé. Vous pouvez maintenant vous connecter.');
+        // Envoi du lien signé de confirmation, puis page neutre « vérifiez votre boîte
+        // mail » (anti-énumération : aucune révélation de l'existence du compte).
+        $this->verificationEmailService->envoyerLienConfirmation($utilisateur);
 
-        return $this->redirectToRoute('app_login');
+        return $this->redirectToRoute('app_inscription_email_envoye');
     }
 }

@@ -32,6 +32,14 @@ final class UserChecker implements UserCheckerInterface
             // les comptes désactivés sans révéler l'état du compte à l'utilisateur.
             throw new DisabledException('Compte désactivé.');
         }
+
+        if (!$user->isEmailVerifie()) {
+            // Distinct du compte désactivé (US-12.4) : message clair invitant à
+            // confirmer l'adresse email. Un lien de renvoi est proposé sur la page
+            // de connexion. L'exception dédiée permet ce ciblage sans confondre
+            // « non confirmé » et « désactivé par un admin ».
+            throw new EmailNonVerifieException("Votre adresse email n'est pas encore confirmée.");
+        }
     }
 
     public function checkPostAuth(UserInterface $user, ?TokenInterface $token = null): void

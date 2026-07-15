@@ -1,0 +1,53 @@
+{#
+ # Template email — Confirmation d'adresse à l'inscription (US-12.4).
+ #
+ # Envoyé via NotificationService::envoyer(). Le sujet est construit côté PHP ;
+ # ce template ne porte que le corps.
+ #
+ # Le lien signé (signedUrl) est déjà une URL absolue générée par le VerifyEmailBundle.
+ #
+ # Variables :
+ #   prenom     Prénom de l'auditeur (personnalisation, non sensible)
+ #   signedUrl  URL absolue signée de confirmation (expire au bout de 24 h)
+ #}
+{% extends 'emails/_layout.html.twig' %}
+
+{% block titre %}Confirmez votre adresse email — CreaSlot{% endblock %}
+
+{% block sous_titre %}Confirmation de votre inscription{% endblock %}
+
+{% block contenu %}
+
+                            <p style="margin: 0 0 16px 0; color: #333333; font-size: 15px; font-family: Arial, sans-serif;">
+                                Bonjour {{ prenom }},
+                            </p>
+
+                            <p style="margin: 0 0 24px 0; color: #333333; font-size: 14px; line-height: 1.5; font-family: Arial, sans-serif;">
+                                Bienvenue sur CreaSlot. Pour activer votre compte, veuillez confirmer votre
+                                adresse email en cliquant sur le bouton ci-dessous.
+                            </p>
+
+                            {# ── CTA "Confirmer" ───────────────────────── #}
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0"
+                                   style="margin: 8px auto 24px auto;">
+                                <tr>
+                                    <td align="center" style="background-color: #1A3E6F; border-radius: 4px;">
+                                        <a href="{{ signedUrl }}"
+                                           style="display: inline-block; padding: 12px 28px; color: #ffffff; font-size: 14px; font-weight: bold; font-family: Arial, sans-serif; text-decoration: none;">
+                                            Confirmer mon adresse email
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="margin: 0 0 24px 0; color: #555555; font-size: 13px; line-height: 1.5; font-family: Arial, sans-serif;">
+                                Ce lien expirera dans 24 heures. Si le bouton ne fonctionne pas, copiez-collez
+                                cette adresse dans votre navigateur&nbsp;:<br>
+                                <span style="color: #1A3E6F; word-break: break-all;">{{ signedUrl }}</span>
+                            </p>
+
+                            <p style="margin: 0; color: #555555; font-size: 13px; line-height: 1.5; font-family: Arial, sans-serif;">
+                                Si vous n'êtes pas à l'origine de cette inscription, ignorez simplement cet email.
+                            </p>
+
+{% endblock %}

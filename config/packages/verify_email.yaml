@@ -1,0 +1,8 @@
+# Vérification d'email à l'auto-inscription auditeur (US-12.4).
+#
+# Durée de validité du lien signé de confirmation : 24 heures (86400 s). Volontairement
+# plus long que le jeton de réinitialisation de mot de passe (1 h), car consulter sa
+# boîte de réception peut prendre du temps. Le lien est stateless (signature dans l'URL,
+# aucune table) : rien à purger côté base.
+symfonycasts_verify_email:
+    lifetime: 86400

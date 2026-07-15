@@ -58,6 +58,22 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface, 
     private bool $estActif = true;
 
     /**
+     * Confirmation de l'adresse email (US-12.4).
+     *
+     * DISTINCT de est_actif, volontairement : est_actif = contrôle administratif
+     * (activation/désactivation par le super-admin) ; email_verifie = confirmation
+     * self-service de l'adresse à l'auto-inscription auditeur. Les séparer évite de
+     * confondre « compte non confirmé » et « compte désactivé par un admin ».
+     *
+     * Défaut true : les comptes existants (migration DEFAULT 1), les fixtures et les
+     * comptes créés par le super-admin sont vérifiés d'office. Seule l'auto-inscription
+     * auditeur (SecurityController) crée un compte à false, débloqué par le clic sur le
+     * lien de confirmation.
+     */
+    #[ORM\Column(name: 'email_verifie', options: ['default' => true])]
+    private bool $emailVerifie = true;
+
+    /**
      * Préférences notifications US-4.8 — canal EMAIL uniquement (B2).
      *
      * La notification in-app reste TOUJOURS persistée (audit trail) ; seul l'envoi
@@ -270,6 +286,18 @@ class Utilisateur implements UserInterface, PasswordAuthenticatedUserInterface, 
     public function setEstActif(bool $estActif): static
     {
         $this->estActif = $estActif;
+
+        return $this;
+    }
+
+    public function isEmailVerifie(): bool
+    {
+        return $this->emailVerifie;
+    }
+
+    public function setEmailVerifie(bool $emailVerifie): static
+    {
+        $this->emailVerifie = $emailVerifie;
 
         return $this;
     }
