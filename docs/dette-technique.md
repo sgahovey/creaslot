@@ -907,3 +907,25 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 **Action proposée** : faire en sorte que le pipeline (a) synchronise `compose.prod.yml` sur le VPS (via `git pull`/`reset` du repo de deploiement, ou copie du fichier), et (b) recree le conteneur `db` quand sa configuration change (`docker compose up -d --force-recreate db`, volume preserve). A cadrer : detecter le changement de config `db` pour eviter une micro-coupure `db` a chaque deploiement.
 **Hors périmètre** : la refonte complete de la strategie de deploiement.
 **Priorité** : 🟡 moyenne (fiabilite du deploiement ; contourne manuellement a ce jour).
+
+## DT-35 — Constante morte `UtilisateurVoter::DELETE` jamais branchée (🟢 BAS) — ✅ RÉSOLUE (15/07/2026)
+
+> **✅ RÉSOLUE le 15/07/2026** sur branche `chore/nettoyer-constante-delete-morte` (PR #107).
+>
+> **Origine** : la constante `UtilisateurVoter::DELETE` (`= 'UTILISATEUR_DELETE'`) avait été définie dès la mise en place du Voter, en anticipation d'une suppression de compte réservée au SUPER_ADMIN. Cette suppression n'a jamais été implémentée : le droit à l'effacement (US-12.3) a été réalisé par **anonymisation self-service** via la constante `ANONYMISER`. `DELETE` restait donc définie, avec sa règle dans le `match`, mais n'était invoquée par aucun `denyAccessUnlessGranted` — code mort résiduel.
+>
+> **Résumé fix** : suppression de la constante `DELETE`, de son entrée dans le tableau `ATTRIBUTS` et de son bras de `match`, après vérification par grep qu'elle n'était référencée nulle part dans `src/` ni `templates/`. Retrait des deux tests unitaires qui la couvraient (`test_super_admin_peut_supprimer_un_utilisateur`, `test_non_super_admin_ne_peut_pas_supprimer`).
+>
+> **Validation** : grep sans référence résiduelle (hors définition), 326 tests verts (les 2 tests de la constante morte retirés), PHPStan niveau 8 = 0, PHP-CS-Fixer conforme.
+
+**Détecté** : 15/07/2026, lors de l'audit final de complétude (revue du code mort du Voter, après l'implémentation du droit à l'effacement US-12.3).
+
+**Constat** : `UtilisateurVoter::DELETE` était définie mais jamais branchée ; l'effacement de compte passe par `ANONYMISER`, rendant `DELETE` inutilisée (code mort résiduel).
+
+**Fichiers concernés** : `src/Security/UtilisateurVoter.php`, `tests/Security/UtilisateurVoterTest.php`.
+
+**Action réalisée** : suppression de la constante, de son entrée `ATTRIBUTS`, de son bras de `match` et des deux tests associés, après vérification d'absence de référence.
+
+**Hors périmètre** : les autres constantes du Voter (`VIEW`/`EDIT`/`DEACTIVATE`/`CHANGE_ROLE`/`ACTIVATE`/`ANONYMISER`, toutes utilisées) ; `CreneauVoter::DELETE` (autre Voter, bien utilisé — inchangé).
+
+**Priorité** : 🟢 basse (nettoyage cosmétique de code mort ; aucun impact fonctionnel ni sécurité).
