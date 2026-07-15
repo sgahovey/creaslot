@@ -26,9 +26,10 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
  * persist()/flush() écrivent réellement en BDD. Ce test comble cette limite via
  * le vrai NotificationService + EntityManager réel.
  *
- * On teste 1 méthode représentative (notifierAuditeurReservation) : le helper
- * persisterNotification() étant commun aux 5 méthodes Auditeur, sa preuve sur
- * une méthode couvre le pattern.
+ * On teste des méthodes représentatives côté Auditeur (notifierAuditeurReservation)
+ * et côté Personnel (notifierPersonnelReservation / notifierPersonnelAnnulationReservation,
+ * US-11.1) : le helper persisterNotification() étant commun à toutes les méthodes,
+ * sa preuve sur ces méthodes couvre le pattern pour les deux destinataires.
  *
  * @see NotificationService::persisterNotification()
  */
@@ -86,6 +87,68 @@ final class NotificationServicePersistTest extends KernelTestCase
         self::assertSame('Réservation confirmée', $notification->getTitre());
         self::assertStringContainsString($personnel->getNomComplet(), $notification->getMessage());
         self::assertFalse($notification->isLu(), 'Une nouvelle notification est non lue par défaut.');
+    }
+
+    public function test_notifier_personnel_reservation_persiste_une_notification_in_app(): void
+    {
+        // GIVEN
+        $auditeur = $this->creerUtilisateur(RoleUtilisateur::AUDITEUR);
+        $personnel = $this->creerUtilisateur(RoleUtilisateur::PERSONNEL);
+        $creneau = $this->creerCreneau($personnel);
+        $reservation = $this->creerReservationActive($creneau, $auditeur);
+
+        self::assertSame(0, $this->notificationRepository->countNonLues($personnel), 'Aucune notification pour le Personnel avant l\'appel.');
+
+        // WHEN — vrai service, mailer null:// (aucun envoi réseau).
+        $this->service->notifierPersonnelReservation($reservation);
+
+        // THEN — la notification va au Personnel (propriétaire du créneau), pas à l'Auditeur.
+        $paginator = $this->notificationRepository->findByDestinatairePaginated($personnel, 1);
+        self::assertCount(1, $paginator, 'Exactement 1 notification persistée pour le Personnel.');
+
+        $notifications = array_values(iterator_to_array($paginator));
+        self::assertNotEmpty($notifications);
+        $notification = $notifications[0];
+        self::assertSame(TypeNotification::CONFIRMATION_RESERVATION, $notification->getType());
+        self::assertSame($personnel, $notification->getDestinataire());
+        self::assertSame($reservation, $notification->getReservation());
+        self::assertSame('Nouvelle réservation', $notification->getTitre());
+        self::assertStringContainsString($auditeur->getNomComplet(), $notification->getMessage());
+        self::assertFalse($notification->isLu(), 'Une nouvelle notification est non lue par défaut.');
+
+        // Anti-régression : la notification du Personnel ne doit PAS aller à l'Auditeur.
+        self::assertSame(0, $this->notificationRepository->countNonLues($auditeur), 'L\'Auditeur ne reçoit pas la notification destinée au Personnel.');
+    }
+
+    public function test_notifier_personnel_annulation_persiste_une_notification_in_app(): void
+    {
+        // GIVEN
+        $auditeur = $this->creerUtilisateur(RoleUtilisateur::AUDITEUR);
+        $personnel = $this->creerUtilisateur(RoleUtilisateur::PERSONNEL);
+        $creneau = $this->creerCreneau($personnel);
+        $reservation = $this->creerReservationActive($creneau, $auditeur);
+
+        self::assertSame(0, $this->notificationRepository->countNonLues($personnel), 'Aucune notification pour le Personnel avant l\'appel.');
+
+        // WHEN — vrai service, mailer null:// (aucun envoi réseau).
+        $this->service->notifierPersonnelAnnulationReservation($reservation);
+
+        // THEN — la notification va au Personnel (propriétaire du créneau), pas à l'Auditeur.
+        $paginator = $this->notificationRepository->findByDestinatairePaginated($personnel, 1);
+        self::assertCount(1, $paginator, 'Exactement 1 notification persistée pour le Personnel.');
+
+        $notifications = array_values(iterator_to_array($paginator));
+        self::assertNotEmpty($notifications);
+        $notification = $notifications[0];
+        self::assertSame(TypeNotification::ANNULATION_RESERVATION, $notification->getType());
+        self::assertSame($personnel, $notification->getDestinataire());
+        self::assertSame($reservation, $notification->getReservation());
+        self::assertSame('Réservation annulée', $notification->getTitre());
+        self::assertStringContainsString($auditeur->getNomComplet(), $notification->getMessage());
+        self::assertFalse($notification->isLu(), 'Une nouvelle notification est non lue par défaut.');
+
+        // Anti-régression : la notification du Personnel ne doit PAS aller à l'Auditeur.
+        self::assertSame(0, $this->notificationRepository->countNonLues($auditeur), 'L\'Auditeur ne reçoit pas la notification destinée au Personnel.');
     }
 
     // ---------------------------------------------------------------------

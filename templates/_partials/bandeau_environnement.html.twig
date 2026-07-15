@@ -1,14 +1,15 @@
 {#
  # Bandeau de différenciation environnement
  #
- # Affiché automatiquement hors production via la variable Twig "pre_production"
- # (définie dans config/packages/twig.yaml depuis APP_PREPROD dans .env).
+ # Piloté par la variable Twig "app_environment_label" (définie dans
+ # config/packages/twig.yaml depuis APP_ENVIRONMENT_LABEL).
  #
- # - En développement local (APP_ENV=dev)          : bandeau bleu "DÉVELOPPEMENT"
- # - En pré-production (APP_ENVIRONMENT_LABEL=preprod) : bandeau orange "PRÉ-PRODUCTION"
- # - En production (APP_PREPROD=false, APP_ENV=prod)   : aucun bandeau
+ # - APP_ENVIRONMENT_LABEL=preprod    : bandeau orange "PRÉ-PRODUCTION"
+ # - APP_ENV=dev (sans label preprod) : bandeau bleu "DÉVELOPPEMENT"
+ # - APP_ENVIRONMENT_LABEL=prod       : aucun bandeau
  #
- # Pour désactiver en production Railway : APP_PREPROD=false dans les variables Railway.
+ # À ne pas confondre avec APP_PREPROD, qui pilote le préfixe [PRÉPROD] du <title>
+ # et la classe CSS du <body> (cf. base.html.twig), et non ce bandeau.
  #}
 {% if app_environment_label is defined and app_environment_label == 'preprod' %}
     <div class="cs-env-banner cs-env-banner--preprod" role="status" aria-label="Environnement pré-production">

@@ -123,6 +123,29 @@ class ReservationRepository extends ServiceEntityRepository
     }
 
     /**
+     * Indique si l'Auditeur a au moins une réservation ACTIVE sur un créneau à venir
+     * (créneau pas encore commencé). Sert de garde-fou au droit à l'effacement
+     * (US-12.3, RGPD art. 17) : l'anonymisation est refusée tant qu'un engagement
+     * futur subsiste. Agrégat scalaire (COUNT) : aucune entité hydratée.
+     */
+    public function aReservationActiveAVenir(Utilisateur $auditeur, \DateTimeImmutable $maintenant): bool
+    {
+        $count = (int) $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->innerJoin('r.creneau', 'c')
+            ->andWhere('r.utilisateur = :auditeur')
+            ->andWhere('r.statut = :statutActif')
+            ->andWhere('c.dateDebut > :maintenant')
+            ->setParameter('auditeur', $auditeur)
+            ->setParameter('statutActif', StatutReservation::ACTIVE)
+            ->setParameter('maintenant', $maintenant)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $count > 0;
+    }
+
+    /**
      * Retourne les réservations d'un Auditeur, paginées et filtrées.
      * JOINs eager pour éviter le N+1 (créneau, type RDV, personnel, service).
      *

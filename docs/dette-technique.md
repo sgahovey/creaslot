@@ -1,6 +1,6 @@
 # Dette technique CreaSlot — Suivi
 
-Date dernière mise à jour : 23 juin 2026.
+Date dernière mise à jour : 1er juillet 2026.
 Convention : DT-N = Dette Technique numéro N.
 
 ---
@@ -508,7 +508,15 @@ Chaque `notifier*()` passe son **message et ses identifiants métier propres** (
 
 ---
 
-## DT-17 — Mutualisation des helpers Chart.js entre les deux contrôleurs Stimulus (🟡 MOYEN) — 🟠 OUVERTE
+## DT-17 — Mutualisation des helpers Chart.js entre les deux contrôleurs Stimulus (🟡 MOYEN) — ✅ RÉSOLUE (29/06/2026)
+
+> **✅ RÉSOLUE le 29/06/2026**. **Constat de clôture** : la factorisation était déjà en place dans le code (module `assets/chartjs_helpers.js`, créé le 25/06/2026), mais l'entrée de suivi n'avait pas été fermée.
+>
+> **Résumé** : les deux helpers dupliqués sont extraits dans `assets/chartjs_helpers.js` et importés par `graphique_occupation_controller.js` et `statistiques_controller.js` : `couleurToken(nomToken, repli)` (lecture d'un token de charte `--cs-*` avec repli) et `chartEstDisponible()` (garde `window.Chart`, logue et retourne `false` si le bundle UMD n'est pas chargé).
+>
+> **Décision assumée** : le cycle `connect()`/`disconnect()` n'est **pas** factorisé dans une classe de base. Les deux contrôleurs gèrent un nombre différent de graphiques (1 pour le dashboard, 2 pour les statistiques) ; mutualiser le cycle de vie via une classe de base Stimulus ajouterait une abstraction pour un gain marginal (cohérent avec l'évitement de l'abstraction spéculative appliqué en DT-7 et DT-16). Seuls les helpers purs et réutilisables sont partagés.
+>
+> **Validation** : les deux contrôleurs importent bien le module (vérifié par grep), comportement inchangé (refacto pur), graphiques dashboard + statistiques rendus à l'identique.
 
 **Détecté** : 04/06/2026, lors de l'implémentation d'US-5.8 (statistiques par service / type).
 
@@ -678,3 +686,312 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 **Action proposée** : brancher le préfixe sur `APP_ENVIRONMENT_LABEL` (source unique partagée avec le corps), via injection au constructeur de `NotificationService` ; mettre à jour les docblocks.
 
 **Priorité** : 🟢 basse (cosmétique ; aucun impact fonctionnel ni sécurité).
+
+---
+
+## DT-25 — Absence d'indicateur visuel de chargement sur l'agenda (🟢 BAS) — ✅ RÉSOLUE (25/06/2026)
+
+> **✅ RÉSOLUE le 25/06/2026** sur branche `feature/DT-25-spinner-agenda`.
+>
+> **Origine** : recommandation issue d'une revue (retour formateur) sur l'expérience utilisateur, pas un défaut détecté en audit interne.
+>
+> **Résumé fix** : ajout d'un spinner Bootstrap 5 (`.spinner-border`, natif, sans dépendance) en overlay du calendrier FullCalendar de l'agenda Personnel. Le hook `loading` de FullCalendar était déjà branché (il positionnait `aria-busy` pour l'accessibilité) mais n'avait aucun retour visuel : le spinner est désormais affiché pendant le chargement des créneaux et masqué à la fin.
+>
+> **Couverture** : tous les chargements de créneaux déclenchés par le hook `loading` (changements de vue jour/semaine/mois, aujourd'hui, prev/next) + l'appel réseau séparé du bouton « Mes prochains RDV » (géré manuellement, masquage en `.finally()` avec garde sur `aria-busy` pour ne pas couper un refetch FullCalendar déclenché par `changeView`).
+>
+> **Accessibilité (RGAA)** : `role=status`, `aria-live=polite`, libellé `.visually-hidden`, `spinner-border` natif Bootstrap.
+>
+> **Validation** : 288 tests verts (non-régression ; front pur sans test automatisé), validation visuelle navigateur (spinner affiché puis masqué proprement sur changement de période et sur Mes prochains RDV). Commit de code : `489c66a`.
+
+**Détecté** : 25/06/2026, lors d'une revue UX (retour formateur).
+
+**Constat** : le hook `loading` de FullCalendar dans `assets/controllers/agenda_controller.js` positionnait déjà `aria-busy` sur le calendrier, mais aucun retour visuel n'était présenté à l'utilisateur pendant le chargement des créneaux (calendrier figé sans indication).
+
+**Fichiers concernés** : `templates/personnel/creneau/agenda.html.twig` (overlay spinner + règle CSS `.cs-agenda-loading-overlay`), `assets/controllers/agenda_controller.js` (cible Stimulus `loadingOverlay`, pilotage dans le hook `loading` et dans `allerVersProchainsRdvReserve`).
+
+**Action réalisée** : overlay spinner Bootstrap piloté par le hook `loading` existant ; couverture de l'appel séparé Mes prochains RDV avec coordination anti-conflit via `aria-busy`.
+
+**Hors périmètre** : les écrans d'administration (occupation, statistiques) qui chargent des données en asynchrone feront l'objet d'une dette dédiée (DT-26) si pertinent.
+
+**Priorité** : 🟢 basse (amélioration UX ; aucun impact fonctionnel ni sécurité).
+
+---
+
+## DT-26 — Absence d'indicateur visuel de chargement sur le calendrier d'occupation (admin) (🟢 BAS) — ✅ RÉSOLUE (25/06/2026)
+
+> **✅ RÉSOLUE le 25/06/2026** sur branche `feature/DT-26-spinner-admin`.
+>
+> **Origine** : extension du retour visuel introduit en DT-25 (spinner agenda) à la vue d'occupation admin, suite à la même revue UX (retour formateur).
+>
+> **Résumé fix** : ajout d'un spinner Bootstrap 5 (`.spinner-border`, natif) en overlay du calendrier FullCalendar de la vue d'occupation, en répliquant le pattern DT-25. Piloté par le hook `loading` déjà existant d'`occupation_controller.js` (qui positionnait déjà `aria-busy`) : affiché pendant le chargement des évènements d'occupation, masqué à la fin.
+>
+> **Périmètre cadré par audit** : seul le calendrier d'occupation charge en asynchrone (`eventSources` avec `url` + hook `loading`). Les graphiques Chart.js (statistiques par service/type, graphique d'occupation du dashboard) sont EXCLUS : leurs données sont rendues inline par Twig (`lignes.map` / `series.map`), sans aucun appel réseau asynchrone, donc aucun spinner n'est justifié. Aucun fetch séparé à couvrir (pas de bouton type Mes prochains RDV), donc pas de `.finally()` ni de garde `aria-busy` nécessaires (plus simple que DT-25).
+>
+> **Accessibilité (RGAA)** : `role=status`, `aria-live=polite`, libellé `.visually-hidden`, `spinner-border` natif Bootstrap.
+>
+> **Validation** : 288 tests verts (non-régression ; front pur sans test automatisé), validation visuelle navigateur (spinner affiché puis masqué proprement sur changement de période, throttling Slow 3G).
+
+**Détecté** : 25/06/2026, lors de la même revue UX que DT-25 (retour formateur), en étendant la réflexion aux écrans admin.
+
+**Constat** : le calendrier d'occupation (`occupation_controller.js`) positionnait déjà `aria-busy` via son hook `loading`, mais sans retour visuel pendant le chargement des évènements. À l'inverse, les deux contrôleurs Chart.js (`statistiques_controller.js`, `graphique_occupation_controller.js`) lisent des données déjà présentes inline (rendu Twig) : aucun chargement asynchrone, donc hors périmètre.
+
+**Fichiers concernés** : `templates/admin/occupation/index.html.twig` (overlay spinner + wrapper `position-relative` + règle CSS `.cs-occupation-loading-overlay`, calquée sur `.cs-agenda-loading-overlay`), `assets/controllers/occupation_controller.js` (cible Stimulus `loadingOverlay`, pilotage dans le hook `loading`).
+
+**Action réalisée** : overlay spinner Bootstrap piloté par le hook `loading` existant du contrôleur d'occupation, en répliquant le pattern DT-25 ; version simplifiée sans `.finally()` ni garde `aria-busy` (aucun fetch séparé à couvrir).
+
+**Hors périmètre** : les graphiques Chart.js (statistiques par service/type, graphique d'occupation du dashboard), dont les données sont rendues inline par Twig sans appel réseau asynchrone — aucun spinner justifié.
+
+**Priorité** : 🟢 basse (amélioration UX ; aucun impact fonctionnel ni sécurité).
+
+---
+
+## DT-27 — Page d'accueil de squelette exposant la stack technique (🟡 MOYEN) — ✅ RÉSOLUE (25/06/2026)
+
+> **✅ RÉSOLUE le 25/06/2026** sur branche `feature/DT-27-page-accueil`.
+>
+> **Origine** : constat lors d'une vérification de la page d'accueil servie aux utilisateurs connectés.
+>
+> **Résumé fix** : la route racine `/` (`HomeController`) rendait une page de squelette Symfony affichant en clair la version PHP (8.4.22), la version Symfony (8.0.13), l'`APP_ENV`, le mode debug, les extensions PHP chargées et une mention « Prochaine étape : US-1.3 ». Cette page est la destination post-login (`default_target_path: /` dans security.yaml), donc vue par tout utilisateur connecté. `HomeController` est transformé en aiguilleur : `/` redirige selon le rôle, du plus spécifique au plus général (`ROLE_SUPER_ADMIN` → `app_admin_dashboard` `/admin` ; `ROLE_PERSONNEL` → `app_creneau_agenda` `/creneau/agenda` ; `ROLE_AUDITEUR` → `app_creneaux_disponibles` `/creneaux-disponibles` ; fallback → `app_login`). Le template `home/index.html.twig` et la méthode morte `collectExtensionsStatus()` sont supprimés.
+>
+> **Sécurité** : suppression d'une divulgation de la stack technique (OWASP A05 — Security Misconfiguration), qui facilitait la reconnaissance de versions vulnérables. Exposition limitée aux utilisateurs déjà authentifiés (la racine est derrière `access_control ^/ IS_AUTHENTICATED_FULLY`), risque donc faible, mais correction nette.
+>
+> **Validation** : 292 tests verts (288 + 4 nouveaux), PHPStan niveau 8 = 0, PHP-CS-Fixer 0. Test fonctionnel `tests/Controller/HomeRedirectionTest.php` couvrant les 3 rôles + le cas non authentifié.
+
+**Détecté** : 25/06/2026, en vérifiant le contenu de la page d'accueil après connexion.
+
+**Constat** : `HomeController::index` rendait `templates/home/index.html.twig`, une page de squelette Symfony exposant versions/extensions/mode debug et la mention « Prochaine étape : US-1.3 ». Page de chantier indigne d'une application finie ET divulgation de stack. Cette page est la cible de `default_target_path: /`.
+
+**Fichiers concernés** : `src/Controller/HomeController.php` (aiguilleur par rôle), `templates/home/index.html.twig` (supprimé), `tests/Controller/HomeRedirectionTest.php` (créé).
+
+**Action réalisée** : `HomeController` réduit à un aiguilleur de redirection par rôle (ordre du plus spécifique au plus général, car la hiérarchie `SUPER_ADMIN ⊃ PERSONNEL ⊃ AUDITEUR` rendrait `isGranted('ROLE_AUDITEUR')` vrai pour tous les rôles) ; suppression du template de chantier et de la méthode morte `collectExtensionsStatus()`.
+
+**Hors périmètre** : la configuration du firewall et de `default_target_path` (inchangée) ; seul le comportement du contrôleur racine est modifié.
+
+**Priorité** : 🟡 moyenne (divulgation de stack — OWASP A05 ; exposition limitée aux utilisateurs authentifiés, donc risque faible mais corrigé).
+
+---
+
+## DT-28 — Bouton afficher/masquer le mot de passe absent des pages connexion et inscription (🟢 BAS) — ✅ RÉSOLUE (25/06/2026)
+
+> **✅ RÉSOLUE le 25/06/2026** sur branche `feature/DT-28-toggle-mot-de-passe`.
+>
+> **Origine** : constat d'incohérence UX. Le composant « œil » afficher/masquer le mot de passe (contrôleur Stimulus `afficher-mot-de-passe` + thème de formulaire `form/champ_mot_de_passe.html.twig`, US-6.1) existait déjà et était utilisé sur la réinitialisation de mot de passe et la page profil, mais PAS sur les pages connexion et inscription.
+>
+> **Résumé fix** : le composant existant est réutilisé sur les 2 pages auth, sans créer de nouveau code. Inscription (Symfony Form `RepeatedType`/`PasswordType`) : application du thème via `{% form_theme formulaire ... 'form/champ_mot_de_passe.html.twig' %}` → les 2 champs (saisie + confirmation) héritent du bouton œil. Connexion (champ HTML brut `name=password` lu par le firewall, donc hors Symfony Form) : câblage manuel d'un `input-group` identique au composant (`data-controller=afficher-mot-de-passe`, cibles `champ`/`icone`, action `basculer`).
+>
+> **Accessibilité (RGAA)** : bouton `type=button` (ne soumet pas le formulaire), `aria-label`, `aria-pressed` reflétant l'état, icône `aria-hidden`. Amélioration progressive : sans JS, le champ reste un mot de passe masqué normal.
+>
+> **Validation** : 297 tests verts (non-régression ; front pur), vérification visuelle navigateur (bascule sur connexion et sur les 2 champs d'inscription).
+
+**Détecté** : 25/06/2026, constat d'absence du bouton œil sur connexion et inscription alors qu'il existe ailleurs.
+
+**Constat** : le composant `afficher-mot-de-passe` (contrôleur Stimulus + thème de formulaire) était déjà livré (US-6.1) et utilisé sur `reset_password/reset.html.twig` et `profil/index.html.twig`, mais pas sur `templates/auth/connexion.html.twig` ni `templates/auth/inscription.html.twig`.
+
+**Fichiers concernés** : `templates/auth/inscription.html.twig` (directive `form_theme`), `templates/auth/connexion.html.twig` (câblage manuel `input-group` sur le champ HTML brut). Aucun code JS/CSS ni le contrôleur modifiés (le composant existait).
+
+**Action réalisée** : réutilisation du composant existant sur les 2 pages, selon leur nature (`form_theme` pour le Symfony Form d'inscription, HTML manuel pour le champ firewall de connexion).
+
+**Hors périmètre** : le contrôleur Stimulus et le thème de formulaire (déjà en place, inchangés).
+
+**Priorité** : 🟢 basse (cohérence UX ; aucun impact fonctionnel ni sécurité — le `name=password` de connexion est préservé pour le firewall).
+
+## DT-29 — Libellé CGU dupliqué et lien mort sur la page d'inscription (🟢 BAS) — ✅ RÉSOLUE (25/06/2026)
+
+> **✅ RÉSOLUE le 25/06/2026** sur branche `feature/DT-29-cgu-inscription`.
+>
+> **Origine** : constat lors de la vérification de la page d'inscription (après ajout du toggle mot de passe en DT-28).
+>
+> **Résumé fix** : le champ CGU présentait deux défauts. (1) Le libellé « J'accepte les conditions générales d'utilisation » s'affichait DEUX FOIS : une fois via le label du widget `CheckboxType` (option `label` dans `InscriptionType`) et une fois via un label manuel dans le template (qui porte le lien). (2) Le lien « conditions générales d'utilisation » pointait vers `href="#"` (lien mort), alors que la vraie page CGU existe depuis US-10.1 (route `app_cgu`).
+>
+> **Correction** : option `label` mise à `false` sur le champ `cgu` de `InscriptionType` (le widget ne rend plus son propre label, on garde le label manuel du template qui porte le lien) ; lien corrigé vers `{{ path('app_cgu') }}` avec `target="_blank"` et `rel="noopener"` (consultation des CGU sans perte de la saisie en cours). La contrainte `IsTrue` (case obligatoire) est préservée.
+>
+> **Validation** : 297 tests verts (le WebTest d'inscription reste vert, le `name` du champ étant inchangé), lint Twig OK, vérification visuelle (libellé unique, lien ouvrant la page CGU, case toujours obligatoire).
+
+**Détecté** : 25/06/2026, sur la page d'inscription (libellé CGU affiché en double et lien non fonctionnel).
+
+**Constat** : double définition du label (widget `CheckboxType` + label manuel du template) et lien `href="#"` alors que la route `app_cgu` existe désormais.
+
+**Fichiers concernés** : `src/Form/InscriptionType.php` (champ `cgu` : `label` mis à `false`), `templates/auth/inscription.html.twig` (lien CGU corrigé vers `app_cgu`, ouverture nouvel onglet).
+
+**Action réalisée** : suppression du doublon de libellé (label du widget désactivé au profit du label manuel cliquable) et câblage du lien vers la vraie page CGU.
+
+**Hors périmètre** : la page CGU elle-même (livrée en US-10.1) ; la contrainte d'acceptation obligatoire (inchangée).
+
+**Priorité** : 🟢 basse (UX / lien fonctionnel ; aucun impact sur la validation, la case reste obligatoire).
+
+## DT-30 — Absence du bandeau d'environnement preprod dans le corps des emails (🟢 BAS) — ✅ RÉSOLUE (29/06/2026)
+
+> **✅ RÉSOLUE le 29/06/2026** sur branche `feature/DT-30-bandeau-preprod-emails`.
+>
+> **Origine** : constat d'incohérence. L'interface web affiche un bandeau orange « PRÉ-PRODUCTION — Les données de cet environnement ne sont pas réelles » (`templates/_partials/bandeau_environnement.html.twig`) en preprod, mais les emails envoyés depuis la preprod n'avaient AUCUN marquage visuel dans leur corps (seul le sujet était préfixé `[PREPROD...]` côté PHP).
+>
+> **Résumé fix** : ajout d'un bandeau preprod dans le layout commun des emails (`templates/emails/_layout.html.twig`), placé après le header et avant le corps. Conditionné par la globale Twig `app_environment_label == 'preprod'` (même condition que le bandeau web). Une seule modif dans le layout couvre les 8 emails qui en héritent. Style inline (contrainte email : pas de CSS externe), couleur `#FD7E14` (token `--cs-warning` du bandeau web) et texte cohérents avec le web. En prod, aucun bandeau.
+>
+> **Validation** : 303 tests verts (front pur), lint Twig OK. Vérification visuelle réelle à faire en preprod (le bandeau ne s'affiche qu'avec `app_environment_label=preprod`).
+
+**Détecté** : 29/06/2026, en consultant un email de notification envoyé depuis la preprod (bandeau présent sur le web, absent du corps de l'email).
+
+**Constat** : le layout email `_layout.html.twig` ne portait pas de marquage d'environnement, alors que la globale Twig `app_environment_label` est accessible dans les emails (déjà utilisée dans `emails/test.html.twig`).
+
+**Fichiers concernés** : `templates/emails/_layout.html.twig` (ajout d'une ligne de bandeau conditionnelle).
+
+**Action réalisée** : réutilisation de la condition et de la couleur du bandeau web, en styles inline adaptés aux emails, dans le layout commun.
+
+**Hors périmètre** : le bandeau web (inchangé) ; le préfixe `[PREPROD]` du sujet et la redirection des emails (mécanisme PHP existant, inchangé).
+
+**Priorité** : 🟢 basse (cohérence du marquage preprod web↔email ; aucun impact fonctionnel ni sécurité).
+
+## DT-31 — Fixtures Doctrine monolithiques : impossible de peupler prod et preprod differemment (🟢 BAS) — ✅ RÉSOLUE (30/06/2026)
+> **✅ RÉSOLUE le 30/06/2026** sur branche `feature/DT-31-fixtures-groupes-reference-demo`.
+>
+> **Origine** : `AppFixtures` etait une classe monolithique chargeant toutes les donnees d'un bloc (services, types de RDV, comptes fictifs, creneaux, reservations, notifications). Impossible de charger uniquement les donnees de reference metier (services + types de RDV) sans charger aussi les faux comptes de demonstration. Or la production ne doit recevoir que les donnees de reference, jamais les donnees de demo.
+>
+> **Résumé fix** : scission de `AppFixtures` en deux classes a groupes. `ReferenceFixtures` (groupe `reference`) : services + types de RDV, exposes via le systeme de references Doctrine (`addReference`, prefixes stables `PREFIXE_SERVICE` / `PREFIXE_TYPE`). `DemoFixtures` (groupe `demo`) : personnel, auditeurs, super-admin de demo, creneaux, reservations, notifications ; implemente `DependentFixtureInterface` (depend de `ReferenceFixtures`) et recupere les donnees de reference via `getReference`. Refacto pur : donnees produites inchangees.
+>
+> **Chargement par environnement** : dev/preprod = `doctrine:fixtures:load` (complet) ; prod = `doctrine:fixtures:load --group=reference --append` (services + types uniquement, sans purge). Le super-admin de prod reste cree par la commande `app:creer-admin` (pas de doublon dans le groupe `reference`).
+>
+> **Validation** : chargement complet identique a l'avant-refacto (3 services, 3 types, 9 comptes, 10 creneaux) ; `--group=reference` seul verifie a 3 services + 3 types + 0 compte + 0 creneau ; `--append` confirme ne pas purger la base. `lint:container` OK, 306 tests verts. Couverture Sonar : `src/DataFixtures/**` exclu du calcul de couverture (donnees de demo non testables unitairement), Quality Gate au vert.
+**Détecté** : 30/06/2026, en preparant le peuplement differencie preprod/prod.
+**Constat** : une seule classe `AppFixtures` melait donnees de reference et donnees de demo, rendant impossible un chargement selectif par environnement.
+**Fichiers concernés** : `src/DataFixtures/ReferenceFixtures.php` (nouveau), `src/DataFixtures/DemoFixtures.php` (nouveau, ex-`AppFixtures`), `src/DataFixtures/AppFixtures.php` (supprime), `sonar-project.properties` (exclusion de couverture).
+**Action réalisée** : separation en deux groupes de fixtures relies par `DependentFixtureInterface` + systeme de references Doctrine ; documentation des commandes de chargement par environnement.
+**Hors périmètre** : la logique des fixtures elle-meme (donnees inchangees) ; le peuplement reel de preprod/prod (realise separement apres promotion, jamais en touchant les serveurs directement).
+**Priorité** : 🟢 basse (amelioration de deployabilite ; aucun impact fonctionnel ni securite).
+
+## DT-32 — Flag log-bin-trust-function-creators absent de compose.prod.yml (bloque la migration du trigger US-12.1) (🟡 MOYEN) — ✅ RÉSOLUE (01/07/2026)
+> **✅ RÉSOLUE le 01/07/2026** (PR #96 mergee, commit `78774a8`).
+>
+> **Origine** : la migration `Version20260629120000` (US-12.1) cree un trigger SQL. MySQL refuse la creation d'un trigger par un utilisateur non-SUPER quand le binary logging est actif (erreur **1419**). Le flag `--log-bin-trust-function-creators=1` etait present dans `docker-compose.yml` (dev) mais absent de `compose.prod.yml` (preprod/prod).
+>
+> **Résumé fix** : ajout de `command: --log-bin-trust-function-creators=1` au service `db` de `compose.prod.yml`.
+>
+> **Intervention manuelle preprod (assumée, documentee honnetement)** : au premier deploiement preprod, la migration a echoue (1419) car le conteneur `db` tournait depuis 13 jours sans le flag et le pipeline ne l'avait pas recree. Correction manuelle sur le VPS : mise a jour du repo (`git reset --hard origin/preprod`), recreation du conteneur `db` (`docker compose up -d --force-recreate db`, volume `mysql_data_prod` preserve, variable MySQL passee de OFF a ON), puis nettoyage d'un etat de migration partiel (le 1er essai avait cree la table `historique_utilisateur` en auto-commit DDL avant de planter au trigger : table presente, trigger et procedure absents, migration non enregistree cote Doctrine) via `DROP TABLE` de la table orpheline, avant relance reussie de la migration (table + trigger + procedure crees, verifies 1/1/1).
+
+**Détecté** : 01/07/2026, lors du premier deploiement preprod de la migration US-12.1 (trigger).
+**Constat** : le flag `--log-bin-trust-function-creators=1`, present sur la db de dev (`docker-compose.yml`), etait absent du service `db` de `compose.prod.yml` — d'ou l'erreur MySQL 1419 au moment de creer le trigger via un utilisateur non-SUPER avec binary logging actif.
+**Fichiers concernés** : `compose.prod.yml` (service `db`).
+**Action réalisée** : ajout du flag `--log-bin-trust-function-creators=1` au service `db` ; en complement, intervention manuelle ponctuelle sur le VPS preprod (recreation de `db` + nettoyage de l'etat de migration partiel) pour debloquer le deploiement en cours.
+**Hors périmètre** : la correction du pipeline lui-meme (il ne synchronise pas `compose.prod.yml` sur le VPS et ne recree pas `db`) — tracee en [[DT-34]].
+**Priorité** : 🟡 moyenne (bloquant le deploiement du trigger ; contourne manuellement).
+
+## DT-33 — Peuplement preprod impossible via doctrine:fixtures:load (image runtime sans Composer ni fixtures-bundle) (🟡 MOYEN) — ✅ RÉSOLUE (01/07/2026)
+> **✅ RÉSOLUE le 01/07/2026** (PR #97 mergee).
+>
+> **Origine** : l'image de prod/preprod est construite en `composer --no-dev` (stage `build` du Dockerfile). Elle n'embarque ni Composer, ni doctrine-fixtures-bundle. La commande `doctrine:fixtures:load` est donc indisponible en preprod (erreur « no commands defined in `doctrine:fixtures` namespace », puis « composer: not found »). Il fallait neanmoins peupler `creaslot_preprod` avec les memes donnees de demo que les fixtures.
+>
+> **Résumé fix** : creation de `scripts/seed-preprod.sql`, equivalent SQL de `ReferenceFixtures` + `DemoFixtures` : 3 services, 3 types de RDV, 9 comptes (3 personnels, 5 auditeurs, 1 super-admin), 10 creneaux, 3 reservations, 5 notifications. Idempotent (purge inverse-FK dans une transaction, `reset_password_request` incluse car FK NON NULL, rejouable), dates de creneaux relatives via `DATE_ADD`/`CURDATE()` (restent futures), mots de passe en argon2id (mot de passe demo : `password`) generes via `security:hash-password` en `APP_ENV=prod` (iso-config, pas la config dev qui est en bcrypt cost-4), preference RGPD de Julie preservee (`email_rappel_j1 = 0`). Colonnes verifiees via la `naming_strategy` underscore + les migrations.
+>
+> **Validation** : teste en local (chargement code retour 0, comptages 3/3/9/10/3/5 conformes, Julie a 0, hash argon2id confirme en base). Execution reelle sur le VPS preprod : a realiser (promotion `develop`→`preprod` puis execution manuelle du seed sur `creaslot_preprod`).
+
+**Détecté** : 01/07/2026, en preparant le peuplement de la preprod (fixtures indisponibles sur l'image runtime).
+**Constat** : l'image runtime `composer --no-dev` n'embarque ni Composer ni doctrine-fixtures-bundle, rendant `doctrine:fixtures:load` inutilisable en preprod ; il fallait un equivalent SQL des fixtures, executable directement sur MySQL.
+**Fichiers concernés** : `scripts/seed-preprod.sql` (nouveau).
+**Action réalisée** : ecriture d'un seed SQL idempotent reproduisant a l'identique `ReferenceFixtures` + `DemoFixtures` (colonnes issues de la `naming_strategy` underscore + migrations, dates relatives `DATE_ADD`/`CURDATE()`, hash argon2id iso-config prod, preference RGPD de Julie preservee).
+**Hors périmètre** : l'automatisation du chargement du seed dans le pipeline (execution manuelle voulue) ; le peuplement de la prod (qui ne recoit jamais les donnees de demo, seulement le groupe `reference` via `--group=reference --append`, cf. [[DT-31]]).
+**Priorité** : 🟡 moyenne (necessaire a la demo preprod ; contourne).
+
+## DT-34 — Le pipeline de déploiement ne synchronise pas compose.prod.yml sur le VPS et ne recrée pas le conteneur db (🟡 MOYEN) — ✅ RÉSOLUE (01/07/2026)
+> **✅ RÉSOLUE le 01/07/2026** (PR #99 mergee, commit `cc521c9`).
+>
+> **Résumé fix** : ajout d'une etape de synchronisation git dans `scripts/deploy-ci.sh`, apres le `cd` dans le repo et avant le pull de l'image : `git fetch --quiet origin` puis `git reset --hard --quiet "$TAG"` (le SHA deja valide par la regex hexadecimale). Le working tree du VPS est desormais amene exactement sur le commit deploye avant tout `docker compose up`, donc les fichiers d'orchestration versionnes (compose.prod.yml, Caddyfile, init-prod.sh) sont toujours a jour. `set -euo pipefail` garantit l'arret avant deploiement si la synchro echoue.
+>
+> **Portee volontairement limitee** : seule la synchro du depot est automatisee. La recreation du conteneur `db` reste MANUELLE et documentee (geste rare, risque de micro-coupure de la prod partagee) — la meilleure pratique theorique (push de config immuable via scp/rsync) a ete ecartee car elle imposerait de revoir la forced command SSH, disproportionne au volume du projet.
+>
+> **Paradoxe de bootstrap (documente honnetement)** : le deploiement qui a livre ce correctif a lui-meme tourne avec l'ANCIEN script (sans synchro), car le VPS n'avait pas encore le nouveau `deploy-ci.sh` au moment de son execution. Une derniere synchro manuelle du VPS a donc ete necessaire pour installer le nouveau script. A partir du deploiement suivant, la synchro est automatique.
+>
+> **Validation** : `bash -n scripts/deploy-ci.sh` OK, CI verte (PR #99). Preuve en conditions reelles : la prochaine promotion vers preprod affichera les lignes « >>> Synchronisation du depot sur <sha> » dans les logs du pipeline.
+
+**Détecté** : 01/07/2026, lors du deploiement preprod de [[DT-32]].
+**Constat** : le pipeline `deploy-preprod.yml` (et par extension `deploy-prod.yml`) tire l'image applicative depuis GHCR et recree uniquement les services `app`/`worker`. Il ne met PAS a jour le fichier `compose.prod.yml` present sur le VPS (le repo du VPS restait sur un ancien commit) et ne recree PAS le conteneur `db`. Consequence : toute modification de la configuration du service `db` dans `compose.prod.yml` (comme le flag [[DT-32]]) n'est jamais appliquee automatiquement au deploiement ; il faut intervenir manuellement sur le serveur (`git reset` + `--force-recreate db`). Le probleme se reproduira a chaque changement de config `db`.
+**Impact** : les changements de configuration d'infrastructure `db` (flags MySQL, variables, volumes) necessitent une intervention manuelle sur le VPS ; risque d'echec de deploiement silencieux (le pipeline reussit mais la config attendue n'est pas active).
+**Action proposée** : faire en sorte que le pipeline (a) synchronise `compose.prod.yml` sur le VPS (via `git pull`/`reset` du repo de deploiement, ou copie du fichier), et (b) recree le conteneur `db` quand sa configuration change (`docker compose up -d --force-recreate db`, volume preserve). A cadrer : detecter le changement de config `db` pour eviter une micro-coupure `db` a chaque deploiement.
+**Hors périmètre** : la refonte complete de la strategie de deploiement.
+**Priorité** : 🟡 moyenne (fiabilite du deploiement ; contourne manuellement a ce jour).
+
+## DT-35 — Constante morte `UtilisateurVoter::DELETE` jamais branchée (🟢 BAS) — ✅ RÉSOLUE (15/07/2026)
+
+> **✅ RÉSOLUE le 15/07/2026** sur branche `chore/nettoyer-constante-delete-morte` (PR #107).
+>
+> **Origine** : la constante `UtilisateurVoter::DELETE` (`= 'UTILISATEUR_DELETE'`) avait été définie dès la mise en place du Voter, en anticipation d'une suppression de compte réservée au SUPER_ADMIN. Cette suppression n'a jamais été implémentée : le droit à l'effacement (US-12.3) a été réalisé par **anonymisation self-service** via la constante `ANONYMISER`. `DELETE` restait donc définie, avec sa règle dans le `match`, mais n'était invoquée par aucun `denyAccessUnlessGranted` — code mort résiduel.
+>
+> **Résumé fix** : suppression de la constante `DELETE`, de son entrée dans le tableau `ATTRIBUTS` et de son bras de `match`, après vérification par grep qu'elle n'était référencée nulle part dans `src/` ni `templates/`. Retrait des deux tests unitaires qui la couvraient (`test_super_admin_peut_supprimer_un_utilisateur`, `test_non_super_admin_ne_peut_pas_supprimer`).
+>
+> **Validation** : grep sans référence résiduelle (hors définition), 326 tests verts (les 2 tests de la constante morte retirés), PHPStan niveau 8 = 0, PHP-CS-Fixer conforme.
+
+**Détecté** : 15/07/2026, lors de l'audit final de complétude (revue du code mort du Voter, après l'implémentation du droit à l'effacement US-12.3).
+
+**Constat** : `UtilisateurVoter::DELETE` était définie mais jamais branchée ; l'effacement de compte passe par `ANONYMISER`, rendant `DELETE` inutilisée (code mort résiduel).
+
+**Fichiers concernés** : `src/Security/UtilisateurVoter.php`, `tests/Security/UtilisateurVoterTest.php`.
+
+**Action réalisée** : suppression de la constante, de son entrée `ATTRIBUTS`, de son bras de `match` et des deux tests associés, après vérification d'absence de référence.
+
+**Hors périmètre** : les autres constantes du Voter (`VIEW`/`EDIT`/`DEACTIVATE`/`CHANGE_ROLE`/`ACTIVATE`/`ANONYMISER`, toutes utilisées) ; `CreneauVoter::DELETE` (autre Voter, bien utilisé — inchangé).
+
+**Priorité** : 🟢 basse (nettoyage cosmétique de code mort ; aucun impact fonctionnel ni sécurité).
+
+## DT-36 — Rectification d'email non self-service (art. 16 RGPD satisfait par voie administrative) (🟢 BAS) — ✅ CLÔTURÉE (LIMITE ASSUMÉE) (15/07/2026)
+
+> **✅ CLÔTURÉE le 15/07/2026 (LIMITE ASSUMÉE)** — décision de NE PAS implémenter le changement d'email en self-service à ce stade.
+>
+> **Origine** : dans l'espace self-service `MonProfil`, l'utilisateur peut rectifier son prénom et son nom, mais **pas son adresse email** (lecture seule ; `MonProfilType` ne mappe que `prenom`/`nom`, choix documenté anti-escalade de privilège). Le changement d'email n'est possible que par un super-administrateur (`CompteController` / `UtilisateurAdminType`). Le droit de rectification (art. 16) est donc **partiellement** self-service.
+>
+> **Décision & justification** : (1) **Conformité** — l'art. 16 n'impose pas d'UI self-service ; il impose que le responsable de traitement rectifie sans délai **sur demande**. Le changement d'email **médié par l'admin** (Cnam, avec vérification d'identité) **satisfait l'art. 16** → pas de non-conformité, seulement une commodité UX non implémentée. (2) **Sécurité** — l'email est **l'identifiant de connexion** (`security.yaml` `property: email`, `getUserIdentifier()`) **et** le canal de reset password : un self-service naïf exposerait à la **prise de contrôle de compte** (session détournée → changement vers l'email de l'attaquant → reset) et au **verrouillage du vrai propriétaire** (email erroné → plus de connexion ni de reset). Sous deadline, le rapport risque/bénéfice est défavorable.
+>
+> **Évolution future (si un jour)** : changement d'email à **double confirmation**, en **réutilisant le pattern verify-email d'US-12.4** : ré-authentification par mot de passe, email de confirmation au **nouvel** email (application différée jusqu'au clic), **notification à l'ancien** email, contrôle d'unicité et gestion de la session (`isEqualTo`). Estimé ~10-14 fichiers + migration (colonne `email_en_attente`).
+
+**Détecté** : 15/07/2026, lors de l'audit final RGPD (couverture des droits art. 15-22).
+
+**Constat** : rectification nom/prénom = self-service ; rectification email = via admin uniquement.
+
+**Fichiers concernés** : `src/Form/MonProfilType.php` (email non mappé, lecture seule) ; `src/Controller/Admin/CompteController.php` + `src/Form/UtilisateurAdminType.php` (changement d'email par l'admin).
+
+**Action réalisée** : décision documentée de conserver l'email en lecture seule côté self-service ; **aucune modification de code**.
+
+**Hors périmètre** : la rectification nom/prénom (déjà self-service) ; le changement d'email par l'admin (déjà fonctionnel).
+
+**Priorité** : 🟢 basse (commodité UX ; conformité RGPD déjà assurée par voie administrative ; risque de sécurité si implémenté naïvement).
+
+## DT-37 — Email journalisé en clair dans LoginFailureListener sur échec de connexion (🟢 BAS) — ⏳ OUVERTE (basse priorité) (15/07/2026)
+
+> **⏳ OUVERTE (basse priorité)** — identifiée le 15/07/2026, correction différée.
+>
+> **Origine** : `LoginFailureListener` journalise l'adresse email saisie (`['email' => $email]`) sur les échecs de connexion (compte désactivé, identifiants invalides), pour la traçabilité des tentatives (OWASP A09). C'est une **donnée personnelle en clair** dans le canal de logs `security`, en **légère tension avec la minimisation** : le reste de l'application journalise l'identifiant numérique (jamais l'email), et `NotificationService` ne loggue qu'un **hash partiel** de l'adresse.
+>
+> **Nuance** : l'email est ici l'entrée d'une tentative (pas nécessairement un compte existant), et sa journalisation sert la détection d'attaques ; le risque est faible (canal `security` à accès restreint). Mais la cohérence avec le reste de l'app plaide pour une pseudonymisation.
+>
+> **Évolution proposée** : pseudonymiser l'email dans ce listener (hash partiel SHA-256 tronqué, comme `NotificationService`, ou troncature type `j***@domaine`), pour conserver la valeur de corrélation sans exposer l'adresse en clair.
+
+**Détecté** : 15/07/2026, lors de l'audit final RGPD (revue de la journalisation).
+
+**Constat** : `LoginFailureListener` écrit l'email en clair dans le canal `security`, contrairement au reste de l'app (identifiants numériques / hash partiel).
+
+**Fichiers concernés** : `src/EventListener/LoginFailureListener.php`.
+
+**Action proposée** : pseudonymiser l'email (hash partiel ou troncature) tout en conservant la traçabilité des tentatives.
+
+**Hors périmètre** : la journalisation des autres événements (déjà sur identifiants numériques) ; le mécanisme de throttling (inchangé).
+
+**Priorité** : 🟢 basse (tension mineure avec la minimisation ; logs à accès restreint ; aucun impact fonctionnel).
+
+## DT-38 — Faux positif schema:validate sur la table historique_utilisateur (trigger US-12.1, non mappée Doctrine) (🟢 BAS) — ✅ CLÔTURÉE (NOTE TECHNIQUE) (15/07/2026)
+
+> **✅ CLÔTURÉE le 15/07/2026 (NOTE TECHNIQUE)** — comportement attendu, documenté pour lever toute ambiguïté (notamment au jury).
+>
+> **Origine** : `php bin/console doctrine:schema:validate` signale « The database schema is not in sync with the current mapping file », et `doctrine:schema:update --dump-sql` propose un unique `DROP TABLE historique_utilisateur`. Ce n'est **pas** un désalignement réel : la table `historique_utilisateur` est créée par la migration `Version20260629120000` (US-12.1) avec un **trigger** + une **procédure stockée**, et elle est **volontairement non mappée** par l'ORM (alimentée par le trigger SQL, jamais par Doctrine).
+>
+> **Conséquence** : Doctrine, ne connaissant pas cette table côté mapping, la considère « en trop » et propose de la supprimer. Il ne faut **jamais** appliquer ce `DROP` (il détruirait la traçabilité US-12.1). Le seul écart de `schema:validate` est ce faux positif ; le mapping des entités est par ailleurs déclaré correct (« mapping files are correct »).
+>
+> **Décision** : aucune action de code. Vigilance à la génération des migrations : `make:migration` inclut ce `DROP TABLE historique_utilisateur` parasite → il doit être **retiré manuellement** de toute migration générée (fait pour la migration US-12.4, cf. son en-tête).
+
+**Détecté** : 29/06/2026 (mise en place du trigger US-12.1), re-confirmé le 15/07/2026 lors des audits.
+
+**Constat** : `schema:validate` « not in sync » = uniquement `DROP TABLE historique_utilisateur` (table du trigger, non mappée par choix).
+
+**Fichiers concernés** : `migrations/Version20260629120000.php` (création table + trigger + procédure) ; note applicable à toute future `make:migration`.
+
+**Action réalisée** : note technique documentée ; retrait systématique du `DROP` parasite dans les migrations générées.
+
+**Hors périmètre** : le mapping des 8 entités métier (correct) ; la logique du trigger (inchangée).
+
+**Priorité** : 🟢 basse (faux positif cosmétique ; aucun impact — sauf à appliquer le `DROP` par erreur).

@@ -73,3 +73,18 @@
 	}
 	file_server
 }
+
+# --- Page de statut / supervision (Uptime Kuma, accès restreint par basic_auth) ---
+{$STATUS_HOST} {
+	tls {$CADDY_TLS}
+
+	import securite
+
+	# Authentification HTTP : le dashboard de supervision n'est pas public.
+	basic_auth {
+		{$STATUS_BASICAUTH_USER} {$STATUS_BASICAUTH_HASH}
+	}
+
+	# Reverse-proxy vers le conteneur Uptime Kuma (réseau Docker partagé).
+	reverse_proxy uptime-kuma:3001
+}

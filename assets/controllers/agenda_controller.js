@@ -36,6 +36,7 @@ export default class extends Controller {
     static targets = [
         'calendar',
         'emptyOverlay',
+        'loadingOverlay',
         'toggle',
         'modal',
         'modalTitre',
@@ -207,6 +208,9 @@ export default class extends Controller {
             this.flashInfoAgenda('Aucun rendez-vous à venir.');
             return;
         }
+        if (this.hasLoadingOverlayTarget) {
+            this.loadingOverlayTarget.hidden = false;
+        }
         fetch(this.urlNextReservedValue, {
             credentials: 'same-origin',
             headers: { Accept: 'application/json' },
@@ -229,6 +233,15 @@ export default class extends Controller {
             })
             .catch(() => {
                 this.flashInfoAgenda('Impossible de retrouver vos prochains rendez-vous. Réessayez plus tard.');
+            })
+            .finally(() => {
+                // Ne pas couper un refetch FullCalendar déclenché par changeView : si le
+                // calendrier charge (aria-busy=true), c'est le hook « loading » qui masquera
+                // l'overlay à la fin de SON chargement. Sinon (échec, ou pas de changement
+                // de période), on masque proprement ici.
+                if (this.hasLoadingOverlayTarget && this.calendarTarget.getAttribute('aria-busy') !== 'true') {
+                    this.loadingOverlayTarget.hidden = true;
+                }
             });
     }
 
@@ -286,6 +299,9 @@ export default class extends Controller {
             ],
             loading: (bool) => {
                 this.calendarTarget.setAttribute('aria-busy', bool ? 'true' : 'false');
+                if (this.hasLoadingOverlayTarget) {
+                    this.loadingOverlayTarget.hidden = !bool;
+                }
                 if (bool && this.hasEmptyOverlayTarget) {
                     this.emptyOverlayTarget.hidden = true;
                     this.emptyOverlayTarget.setAttribute('aria-hidden', 'true');

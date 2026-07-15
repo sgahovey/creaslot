@@ -1,0 +1,20 @@
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:1
+    container_name: uptime-kuma
+    restart: unless-stopped
+    volumes:
+      - uptime_kuma_data:/app/data
+    networks:
+      - creaslot-prod-net
+    # Pas de mapping de port vers l'hote : l'acces se fait UNIQUEMENT via Caddy
+    # (reverse-proxy interne sur le reseau Docker). Uptime Kuma ecoute sur 3001
+    # a l'interieur du reseau, joignable par Caddy via le nom d'hote "uptime-kuma:3001".
+
+volumes:
+  uptime_kuma_data:
+
+networks:
+  creaslot-prod-net:
+    external: true
+    name: creaslot_prod_creaslot-prod-net

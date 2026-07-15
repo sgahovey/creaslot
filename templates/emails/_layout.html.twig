@@ -42,6 +42,17 @@
                         </td>
                     </tr>
 
+                    {# ── Bandeau preprod — coherence avec le bandeau web (cs-env-banner--preprod) ── #}
+                    {% if app_environment_label is defined and app_environment_label == 'preprod' %}
+                    <tr>
+                        <td style="background-color: #FD7E14; padding: 12px 24px; text-align: center;">
+                            <p style="margin: 0; color: #ffffff; font-size: 13px; font-weight: bold; font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: 1px;">
+                                PRÉ-PRODUCTION — Les données de cet email ne sont pas réelles
+                            </p>
+                        </td>
+                    </tr>
+                    {% endif %}
+
                     {# ── Corps ────────────────────────────────────────── #}
                     <tr>
                         <td style="padding: 32px 24px;">

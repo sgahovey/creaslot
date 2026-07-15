@@ -1,0 +1,46 @@
+{#
+ # Page neutre « vérifiez votre boîte mail » (US-12.4).
+ #
+ # Affichée après une inscription OU un renvoi de confirmation. Le message est
+ # volontairement NEUTRE (anti-énumération) : il ne révèle pas si un compte
+ # correspond réellement à l'adresse saisie.
+ #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Vérifiez votre email{% endblock %}
+
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block flash_messages %}{% endblock %}
+
+{% block body %}
+<div class="cs-auth-wrapper">
+    <div class="cs-auth-card">
+
+        <div class="d-flex align-items-center gap-2 mb-4">
+            <i class="bi bi-envelope-check-fill" style="font-size: 1.5rem; color: var(--cs-blue-primary);" aria-hidden="true"></i>
+            <span class="cs-auth-logo">CreaSlot</span>
+        </div>
+
+        <h1 class="cs-auth-title">Vérifiez votre boîte mail</h1>
+        <p class="cs-auth-subtitle">
+            Si un compte en attente de confirmation correspond à cette adresse, un email
+            contenant un lien d'activation vient d'être envoyé. Cliquez sur ce lien pour
+            activer votre compte, puis connectez-vous.
+        </p>
+
+        <div class="alert alert-info d-flex align-items-center gap-2 mb-3" role="note">
+            <i class="bi bi-info-circle-fill" aria-hidden="true"></i>
+            <span>Le lien de confirmation expire dans 24 heures.</span>
+        </div>
+
+        <div class="cs-auth-footer">
+            Vous n'avez rien reçu ?
+            <a href="{{ path('app_renvoyer_confirmation') }}">Renvoyer le lien</a>
+            &middot;
+            <a href="{{ path('app_login') }}">Retour à la connexion</a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

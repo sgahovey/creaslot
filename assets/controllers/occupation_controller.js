@@ -13,7 +13,7 @@ import { escapeHtml, heureSlot, melangerBlanc } from '../fullcalendar_helpers.js
  */
 
 export default class extends Controller {
-    static targets = ['calendar'];
+    static targets = ['calendar', 'loadingOverlay'];
 
     static values = {
         urlApi: String,
@@ -94,6 +94,9 @@ export default class extends Controller {
             ],
             loading: (bool) => {
                 this.calendarTarget.setAttribute('aria-busy', bool ? 'true' : 'false');
+                if (this.hasLoadingOverlayTarget) {
+                    this.loadingOverlayTarget.hidden = !bool;
+                }
             },
             eventClassNames: function (arg) {
                 const p = arg.event.extendedProps || {};

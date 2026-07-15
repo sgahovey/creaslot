@@ -280,6 +280,19 @@ readonly class NotificationService
             'lien_mon_agenda'      => $this->genererLienAbsolu('app_creneau_agenda'),
         ];
 
+        // US-4.7 : persiste la notification in-app AVANT l'envoi email (Q-US47-F).
+        $this->persisterNotification(
+            $personnel,
+            TypeNotification::CONFIRMATION_RESERVATION,
+            'Nouvelle réservation',
+            sprintf(
+                '%s a réservé votre créneau du %s.',
+                $auditeur->getNomComplet(),
+                $this->dateFormatter->pourSujetEmail($creneau->getDateDebut()),
+            ),
+            $reservation,
+        );
+
         $this->envoyerEtTracer(
             $personnel->getEmail(),
             $subject,
@@ -405,6 +418,21 @@ readonly class NotificationService
             'type_rdv_libelle'     => $creneau->getTypeRdv()->getLibelle(),
             'lien_mon_agenda'      => $this->genererLienAbsolu('app_creneau_agenda'),
         ];
+
+        // US-4.7 : persiste la notification in-app AVANT l'envoi email (Q-US47-F).
+        // Le motif d'annulation est volontairement OMIS (minimisation RGPD,
+        // cf. asymétrie documentée dans le docblock de cette méthode).
+        $this->persisterNotification(
+            $personnel,
+            TypeNotification::ANNULATION_RESERVATION,
+            'Réservation annulée',
+            sprintf(
+                '%s a annulé sa réservation du %s.',
+                $auditeur->getNomComplet(),
+                $this->dateFormatter->pourSujetEmail($creneau->getDateDebut()),
+            ),
+            $reservation,
+        );
 
         $this->envoyerEtTracer(
             $personnel->getEmail(),

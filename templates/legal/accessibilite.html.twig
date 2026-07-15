@@ -1,0 +1,97 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Accessibilité (RGAA){% endblock %}
+
+{% block body %}
+<div class="container py-4" style="max-width: 860px;">
+
+    <h1 class="h4 fw-bold mb-4" style="color: var(--cs-text-primary);">
+        <i class="bi bi-universal-access me-2" aria-hidden="true"></i>Accessibilité (RGAA)
+    </h1>
+
+    <p class="text-secondary mb-4">Déclaration établie en juin 2026.</p>
+
+    <div class="alert alert-info" role="note">
+        CreaSlot est un <strong>démonstrateur pédagogique</strong> (projet du titre Concepteur
+        Développeur d'Applications) fonctionnant avec des <strong>données fictives</strong>.
+        L'accessibilité a été prise en compte dès la conception, dans la limite de ce cadre.
+    </div>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">État de conformité</h2>
+    <p>
+        CreaSlot <strong>n'a pas fait l'objet d'un audit RGAA formel</strong> portant sur les
+        106 critères du référentiel. Une démarche d'accessibilité a été appliquée tout au long du
+        développement et fait l'objet d'une auto-évaluation, mais <strong>la conformité au RGAA
+        n'est pas formellement établie</strong> à ce stade. L'application est donc déclarée en
+        conformité partielle ; les éléments mis en œuvre comme les points restant à améliorer sont
+        documentés ci-dessous en toute transparence.
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Démarche d'accessibilité mise en œuvre</h2>
+    <ul>
+        <li>
+            <strong>Langue de la page</strong> déclarée (<code>&lt;html lang="fr"&gt;</code>), pour
+            une restitution correcte par les lecteurs d'écran.
+        </li>
+        <li>
+            <strong>HTML sémantique</strong> : titres hiérarchisés (un seul <code>&lt;h1&gt;</code>
+            par page, sections en <code>&lt;h2&gt;</code>), listes, et formulaires dont chaque champ
+            est associé à un libellé.
+        </li>
+        <li>
+            <strong>Repères de structure (landmarks)</strong> : en-tête (<code>role="banner"</code>),
+            contenu principal (<code>role="main"</code>), pied de page (<code>role="contentinfo"</code>),
+            recherche (<code>role="search"</code>) et régions (<code>role="region"</code>), pour
+            faciliter la navigation par zones.
+        </li>
+        <li>
+            <strong>Attributs ARIA</strong> employés à bon escient : <code>aria-label</code> pour les
+            libellés d'éléments, <code>aria-hidden</code> pour masquer les icônes décoratives,
+            <code>aria-live</code> avec <code>role="status"</code> / <code>role="alert"</code> pour
+            annoncer les messages dynamiques, et des libellés <code>visually-hidden</code> destinés
+            aux lecteurs d'écran.
+        </li>
+        <li>
+            <strong>Indicateurs de chargement accessibles</strong> : les spinners des calendriers
+            (agenda et vue d'occupation) associent <code>role="status"</code>,
+            <code>aria-live="polite"</code> et un libellé <code>visually-hidden</code>, afin
+            d'annoncer l'état de chargement.
+        </li>
+        <li>
+            <strong>Composants interactifs balisés</strong> : modales (<code>role="dialog"</code>),
+            interrupteurs (<code>role="switch"</code>) et groupes de contrôles
+            (<code>role="group"</code>).
+        </li>
+    </ul>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Points connus restant à améliorer</h2>
+    <ul>
+        <li>absence d'un lien d'évitement (« Aller au contenu principal ») en début de page ;</li>
+        <li>absence d'un audit RGAA formel des 106 critères (seule une auto-évaluation a été menée) ;</li>
+        <li>vérification systématique des contrastes de couleurs à compléter ;</li>
+        <li>tests avec lecteurs d'écran à approfondir.</li>
+    </ul>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Technologies utilisées</h2>
+    <p>
+        Cette accessibilité s'appuie sur les technologies suivantes : HTML, CSS, JavaScript
+        (via Stimulus) et Bootstrap.
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Retour d'information et contact</h2>
+    <p>
+        Si vous rencontrez un défaut d'accessibilité vous empêchant d'accéder à un contenu ou à une
+        fonctionnalité, vous pouvez nous le signaler à l'adresse
+        <a href="mailto:contact@cnam-reunion.fr">contact@cnam-reunion.fr</a>. Nous nous efforcerons
+        de vous répondre et de corriger le problème.
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Voie de recours</h2>
+    <p>
+        Dans le cadre d'une exploitation réelle, et à défaut de réponse satisfaisante, toute personne
+        pourrait saisir le Défenseur des droits (www.defenseurdesdroits.fr). CreaSlot étant à ce stade
+        un projet pédagogique, cette voie de recours est mentionnée à titre informatif.
+    </p>
+
+</div>
+{% endblock %}

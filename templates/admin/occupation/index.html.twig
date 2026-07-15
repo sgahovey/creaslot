@@ -11,6 +11,29 @@
 
 {% block title %}Occupation globale{% endblock %}
 
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        /* Overlay spinner du calendrier d'occupation — calqué sur l'agenda (DT-25). */
+        .cs-occupation-loading-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 13;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--cs-space-md);
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(1px);
+            border-radius: var(--cs-radius-lg);
+        }
+
+        .cs-occupation-loading-overlay[hidden] {
+            display: none !important;
+        }
+    </style>
+{% endblock %}
+
 {% block admin_contenu %}
 
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
@@ -67,9 +90,19 @@
          data-occupation-url-api-value="{{ path('app_admin_occupation_evenements') }}"
          data-occupation-filtre-service-value="{{ serviceActif }}"
          data-occupation-filtre-type-value="{{ typeActif }}">
-        <div data-occupation-target="calendar"
-             role="region"
-             aria-label="Calendrier d'occupation globale"></div>
+        <div class="cs-occupation-calendar-wrap position-relative">
+            <div data-occupation-target="calendar"
+                 role="region"
+                 aria-label="Calendrier d'occupation globale"></div>
+            <div class="cs-occupation-loading-overlay"
+                 data-occupation-target="loadingOverlay"
+                 hidden
+                 role="status"
+                 aria-live="polite">
+                <div class="spinner-border text-primary" aria-hidden="true"></div>
+                <span class="visually-hidden">Chargement du calendrier en cours…</span>
+            </div>
+        </div>
     </div>
 
     {# ── Légende texte (jamais la couleur seule) ────────────────────────── #}

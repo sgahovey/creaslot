@@ -1,0 +1,66 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mentions légales{% endblock %}
+
+{% block body %}
+<div class="container py-4" style="max-width: 860px;">
+
+    <h1 class="h4 fw-bold mb-4" style="color: var(--cs-text-primary);">
+        <i class="bi bi-file-text me-2" aria-hidden="true"></i>Mentions légales
+    </h1>
+
+    <p class="text-secondary mb-4">Dernière mise à jour : juin 2026.</p>
+
+    <div class="alert alert-info" role="note">
+        CreaSlot est un <strong>démonstrateur pédagogique</strong> réalisé dans le cadre
+        du titre professionnel Concepteur Développeur d'Applications (CDA, niveau 6).
+        Les données présentées sont <strong>fictives</strong> et l'application n'est pas
+        exploitée commercialement à ce stade.
+    </div>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Éditeur du site</h2>
+    <p>
+        Le site CreaSlot, accessible à l'adresse <span class="fw-semibold">creaslot.re</span>,
+        est édité par Saint-George AHOVEY, alternant Concepteur Développeur d'Applications
+        (promotion CDA 8). Il est réalisé à titre de projet pédagogique, dans le cadre de
+        la formation au titre professionnel CDA, et constitue un démonstrateur non exploité
+        à des fins commerciales.
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Directeur de la publication</h2>
+    <p>Saint-George AHOVEY.</p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Hébergement</h2>
+    <p>
+        Le site est hébergé par OVH SAS, 2 rue Kellermann, 59100 Roubaix, France.
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Contact</h2>
+    <p>
+        Pour toute question relative au site, vous pouvez écrire à
+        <a href="mailto:contact@cnam-reunion.fr">contact@cnam-reunion.fr</a>.
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Propriété intellectuelle</h2>
+    <p>
+        Le code source, les contenus et les éléments graphiques de CreaSlot ont été produits
+        dans un cadre de formation. Sauf mention contraire, ils restent la propriété de leur
+        auteur ; tous droits réservés. Toute reproduction ou réutilisation hors contexte
+        pédagogique requiert son accord préalable.
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Données personnelles</h2>
+    <p>
+        Le traitement des données dans le cadre de ce démonstrateur est décrit dans la
+        <a href="{{ path('app_confidentialite') }}">politique de confidentialité</a>.
+    </p>
+
+    <h2 class="h5 fw-semibold mt-4 mb-2" style="color: var(--cs-text-primary);">Perspective d'évolution</h2>
+    <p>
+        CreaSlot a vocation à devenir un outil de gestion de rendez-vous pour le Cnam La Réunion.
+        Le cas échéant, le Cnam en deviendrait l'éditeur et le responsable de traitement, et les
+        présentes mentions seraient mises à jour en conséquence.
+    </p>
+
+</div>
+{% endblock %}

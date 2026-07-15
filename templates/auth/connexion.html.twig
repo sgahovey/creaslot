@@ -40,8 +40,17 @@
             </div>
         {% endfor %}
 
-        {# Erreur d'authentification — message générique (OWASP : ne jamais révéler si c'est l'email ou le mot de passe) #}
-        {% if erreur %}
+        {# Email non confirmé (US-12.4) : message ciblé + lien de renvoi. #}
+        {% if emailNonVerifie|default(false) %}
+            <div class="alert alert-warning d-flex align-items-start gap-2 mb-3" role="alert">
+                <i class="bi bi-envelope-exclamation-fill mt-1" aria-hidden="true"></i>
+                <span>
+                    Votre adresse email n'est pas encore confirmée.
+                    <a href="{{ path('app_renvoyer_confirmation') }}">Renvoyer le lien de confirmation</a>.
+                </span>
+            </div>
+        {% elseif erreur %}
+            {# Erreur d'authentification — message générique (OWASP : ne jamais révéler si c'est l'email ou le mot de passe) #}
             <div class="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
                 <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
                 <span>Identifiants incorrects.</span>
@@ -77,15 +86,24 @@
                 <label for="password" class="form-label">
                     Mot de passe
                 </label>
-                <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    class="form-control"
-                    placeholder="Votre mot de passe"
-                    autocomplete="current-password"
-                    required
-                >
+                <div class="input-group" data-controller="afficher-mot-de-passe">
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        class="form-control"
+                        placeholder="Votre mot de passe"
+                        autocomplete="current-password"
+                        required
+                        data-afficher-mot-de-passe-target="champ"
+                    >
+                    <button class="btn btn-outline-secondary" type="button"
+                            data-action="afficher-mot-de-passe#basculer"
+                            aria-label="Afficher le mot de passe"
+                            aria-pressed="false">
+                        <i class="bi bi-eye" aria-hidden="true" data-afficher-mot-de-passe-target="icone"></i>
+                    </button>
+                </div>
                 <div class="text-end mt-2">
                     <a href="{{ path('app_mot_de_passe_oublie') }}" style="font-size: var(--cs-fs-small);">Mot de passe oublié ?</a>
                 </div>
