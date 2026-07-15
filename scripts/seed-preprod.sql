@@ -16,7 +16,7 @@
 -- DONNÉES FICTIVES
 --   Tous les comptes sont des comptes de démonstration (adresses
 --   creaslotdemo+*@gmail.com). Le mot de passe de TOUS les comptes est
---   « password » (hash argon2id ci-dessous). NE JAMAIS UTILISER EN PRODUCTION.
+--   « Motdepasse123! » (hash argon2id ci-dessous). NE JAMAIS UTILISER EN PRODUCTION.
 --
 -- CIBLE
 --   Base `creaslot_preprod`. À exécuter par exemple :
@@ -79,7 +79,7 @@ INSERT INTO type_rdv (id, code, libelle, couleur_hex, icone, description, est_ac
 -- =============================================================================
 -- 3. UTILISATEURS  (DemoFixtures::creerPersonnel / creerAuditeurs / creerAdmin)
 -- -----------------------------------------------------------------------------
---   Mot de passe « password » pour tous — hash argon2id partagé.
+--   Mot de passe « Motdepasse123! » pour tous — hash argon2id partagé.
 --   date_creation = NOW() ; derniere_connexion = NULL ; est_actif = 1.
 --   email_modification_commentaire / email_rappel_j1 : défaut 1 (opt-out RGPD).
 --   RGPD (US-4.8) : Julie Potier a désactivé le rappel J-1 → email_rappel_j1 = 0.
@@ -88,17 +88,17 @@ INSERT INTO utilisateur
     (id, email, mot_de_passe_hash, nom, prenom, role, date_creation, derniere_connexion, est_actif, email_modification_commentaire, email_rappel_j1, id_service)
 VALUES
     -- Personnel (ROLE_PERSONNEL), rattaché à un service
-    (1, 'creaslotdemo+marie@gmail.com',    '$argon2id$v=19$m=65536,t=4,p=1$4W+bav4/SVQQAertE/QRFg$DeB0YiGOiU2SZAR6cj+E1GeNtHXIp/04FRIV32hmIHk', 'Dupont',   'Marie',  'ROLE_PERSONNEL',   NOW(), NULL, 1, 1, 1, 1),
-    (2, 'creaslotdemo+jean@gmail.com',     '$argon2id$v=19$m=65536,t=4,p=1$4W+bav4/SVQQAertE/QRFg$DeB0YiGOiU2SZAR6cj+E1GeNtHXIp/04FRIV32hmIHk', 'Martin',   'Jean',   'ROLE_PERSONNEL',   NOW(), NULL, 1, 1, 1, 2),
-    (3, 'creaslotdemo+sophie@gmail.com',   '$argon2id$v=19$m=65536,t=4,p=1$4W+bav4/SVQQAertE/QRFg$DeB0YiGOiU2SZAR6cj+E1GeNtHXIp/04FRIV32hmIHk', 'Lefevre',  'Sophie', 'ROLE_PERSONNEL',   NOW(), NULL, 1, 1, 1, 3),
+    (1, 'creaslotdemo+marie@gmail.com',    '$argon2id$v=19$m=65536,t=4,p=1$x31K+h6WE4+OUSLrmuEalg$0gXRednFODGM0gE+kcRFTZRkfyFd2RNuCqjHUxRJzFw', 'Dupont',   'Marie',  'ROLE_PERSONNEL',   NOW(), NULL, 1, 1, 1, 1),
+    (2, 'creaslotdemo+jean@gmail.com',     '$argon2id$v=19$m=65536,t=4,p=1$x31K+h6WE4+OUSLrmuEalg$0gXRednFODGM0gE+kcRFTZRkfyFd2RNuCqjHUxRJzFw', 'Martin',   'Jean',   'ROLE_PERSONNEL',   NOW(), NULL, 1, 1, 1, 2),
+    (3, 'creaslotdemo+sophie@gmail.com',   '$argon2id$v=19$m=65536,t=4,p=1$x31K+h6WE4+OUSLrmuEalg$0gXRednFODGM0gE+kcRFTZRkfyFd2RNuCqjHUxRJzFw', 'Lefevre',  'Sophie', 'ROLE_PERSONNEL',   NOW(), NULL, 1, 1, 1, 3),
     -- Auditeurs (ROLE_AUDITEUR), sans service ; Julie (id 5) : email_rappel_j1 = 0
-    (4, 'creaslotdemo+xavier@gmail.com',   '$argon2id$v=19$m=65536,t=4,p=1$4W+bav4/SVQQAertE/QRFg$DeB0YiGOiU2SZAR6cj+E1GeNtHXIp/04FRIV32hmIHk', 'Dijoux',   'Xavier', 'ROLE_AUDITEUR',    NOW(), NULL, 1, 1, 1, NULL),
-    (5, 'creaslotdemo+julie@gmail.com',    '$argon2id$v=19$m=65536,t=4,p=1$4W+bav4/SVQQAertE/QRFg$DeB0YiGOiU2SZAR6cj+E1GeNtHXIp/04FRIV32hmIHk', 'Potier',   'Julie',  'ROLE_AUDITEUR',    NOW(), NULL, 1, 1, 0, NULL),
-    (6, 'creaslotdemo+timothee@gmail.com', '$argon2id$v=19$m=65536,t=4,p=1$4W+bav4/SVQQAertE/QRFg$DeB0YiGOiU2SZAR6cj+E1GeNtHXIp/04FRIV32hmIHk', 'Perez',    'Timothée', 'ROLE_AUDITEUR',  NOW(), NULL, 1, 1, 1, NULL),
-    (7, 'creaslotdemo+celina@gmail.com',   '$argon2id$v=19$m=65536,t=4,p=1$4W+bav4/SVQQAertE/QRFg$DeB0YiGOiU2SZAR6cj+E1GeNtHXIp/04FRIV32hmIHk', 'Pasquier', 'Célina', 'ROLE_AUDITEUR',    NOW(), NULL, 1, 1, 1, NULL),
-    (8, 'creaslotdemo+margot@gmail.com',   '$argon2id$v=19$m=65536,t=4,p=1$4W+bav4/SVQQAertE/QRFg$DeB0YiGOiU2SZAR6cj+E1GeNtHXIp/04FRIV32hmIHk', 'Robin',    'Margot', 'ROLE_AUDITEUR',    NOW(), NULL, 1, 1, 1, NULL),
+    (4, 'creaslotdemo+xavier@gmail.com',   '$argon2id$v=19$m=65536,t=4,p=1$x31K+h6WE4+OUSLrmuEalg$0gXRednFODGM0gE+kcRFTZRkfyFd2RNuCqjHUxRJzFw', 'Dijoux',   'Xavier', 'ROLE_AUDITEUR',    NOW(), NULL, 1, 1, 1, NULL),
+    (5, 'creaslotdemo+julie@gmail.com',    '$argon2id$v=19$m=65536,t=4,p=1$x31K+h6WE4+OUSLrmuEalg$0gXRednFODGM0gE+kcRFTZRkfyFd2RNuCqjHUxRJzFw', 'Potier',   'Julie',  'ROLE_AUDITEUR',    NOW(), NULL, 1, 1, 0, NULL),
+    (6, 'creaslotdemo+timothee@gmail.com', '$argon2id$v=19$m=65536,t=4,p=1$x31K+h6WE4+OUSLrmuEalg$0gXRednFODGM0gE+kcRFTZRkfyFd2RNuCqjHUxRJzFw', 'Perez',    'Timothée', 'ROLE_AUDITEUR',  NOW(), NULL, 1, 1, 1, NULL),
+    (7, 'creaslotdemo+celina@gmail.com',   '$argon2id$v=19$m=65536,t=4,p=1$x31K+h6WE4+OUSLrmuEalg$0gXRednFODGM0gE+kcRFTZRkfyFd2RNuCqjHUxRJzFw', 'Pasquier', 'Célina', 'ROLE_AUDITEUR',    NOW(), NULL, 1, 1, 1, NULL),
+    (8, 'creaslotdemo+margot@gmail.com',   '$argon2id$v=19$m=65536,t=4,p=1$x31K+h6WE4+OUSLrmuEalg$0gXRednFODGM0gE+kcRFTZRkfyFd2RNuCqjHUxRJzFw', 'Robin',    'Margot', 'ROLE_AUDITEUR',    NOW(), NULL, 1, 1, 1, NULL),
     -- Super-administrateur de démo (ROLE_SUPER_ADMIN)
-    (9, 'creaslotdemo+admin@gmail.com',    '$argon2id$v=19$m=65536,t=4,p=1$4W+bav4/SVQQAertE/QRFg$DeB0YiGOiU2SZAR6cj+E1GeNtHXIp/04FRIV32hmIHk', 'Admin',    'Super',  'ROLE_SUPER_ADMIN', NOW(), NULL, 1, 1, 1, NULL);
+    (9, 'creaslotdemo+admin@gmail.com',    '$argon2id$v=19$m=65536,t=4,p=1$x31K+h6WE4+OUSLrmuEalg$0gXRednFODGM0gE+kcRFTZRkfyFd2RNuCqjHUxRJzFw', 'Admin',    'Super',  'ROLE_SUPER_ADMIN', NOW(), NULL, 1, 1, 1, NULL);
 
 -- =============================================================================
 -- 4. CRÉNEAUX  (DemoFixtures::creerCreneaux)
@@ -157,7 +157,7 @@ VALUES
 COMMIT;
 
 -- =============================================================================
--- Fin du seed. Comptes de démo (mot de passe « password ») :
+-- Fin du seed. Comptes de démo (mot de passe « Motdepasse123! ») :
 --   Personnel      : creaslotdemo+marie@gmail.com / +jean / +sophie
 --   Auditeurs      : creaslotdemo+xavier@gmail.com / +julie / +timothee / +celina / +margot
 --   Super-admin    : creaslotdemo+admin@gmail.com
