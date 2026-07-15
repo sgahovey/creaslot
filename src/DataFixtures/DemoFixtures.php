@@ -27,6 +27,9 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
  */
 class DemoFixtures extends Fixture implements DependentFixtureInterface, FixtureGroupInterface
 {
+    /** Mot de passe (en clair) commun aux comptes de démonstration — haché au chargement. */
+    private const string MOT_DE_PASSE_DEMO = 'Motdepasse123!';
+
     public function __construct(
         private readonly UserPasswordHasherInterface $passwordHasher,
     ) {
@@ -76,7 +79,7 @@ class DemoFixtures extends Fixture implements DependentFixtureInterface, Fixture
                         ->setEstActif(true)
                         ->setService($service)
                         ->setMotDePasseHash(
-                            $this->passwordHasher->hashPassword($utilisateur, 'password'),
+                            $this->passwordHasher->hashPassword($utilisateur, self::MOT_DE_PASSE_DEMO),
                         );
             $manager->persist($utilisateur);
             $personnels[] = $utilisateur;
@@ -105,7 +108,7 @@ class DemoFixtures extends Fixture implements DependentFixtureInterface, Fixture
                         ->setRole(RoleUtilisateur::AUDITEUR)
                         ->setEstActif(true)
                         ->setMotDePasseHash(
-                            $this->passwordHasher->hashPassword($utilisateur, 'password'),
+                            $this->passwordHasher->hashPassword($utilisateur, self::MOT_DE_PASSE_DEMO),
                         );
             $manager->persist($utilisateur);
             $auditeurs[] = $utilisateur;
@@ -127,7 +130,7 @@ class DemoFixtures extends Fixture implements DependentFixtureInterface, Fixture
               ->setRole(RoleUtilisateur::SUPER_ADMIN)
               ->setEstActif(true)
               ->setMotDePasseHash(
-                  $this->passwordHasher->hashPassword($admin, 'password'),
+                  $this->passwordHasher->hashPassword($admin, self::MOT_DE_PASSE_DEMO),
               );
         $manager->persist($admin);
     }

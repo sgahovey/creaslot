@@ -40,8 +40,17 @@
             </div>
         {% endfor %}
 
-        {# Erreur d'authentification — message générique (OWASP : ne jamais révéler si c'est l'email ou le mot de passe) #}
-        {% if erreur %}
+        {# Email non confirmé (US-12.4) : message ciblé + lien de renvoi. #}
+        {% if emailNonVerifie|default(false) %}
+            <div class="alert alert-warning d-flex align-items-start gap-2 mb-3" role="alert">
+                <i class="bi bi-envelope-exclamation-fill mt-1" aria-hidden="true"></i>
+                <span>
+                    Votre adresse email n'est pas encore confirmée.
+                    <a href="{{ path('app_renvoyer_confirmation') }}">Renvoyer le lien de confirmation</a>.
+                </span>
+            </div>
+        {% elseif erreur %}
+            {# Erreur d'authentification — message générique (OWASP : ne jamais révéler si c'est l'email ou le mot de passe) #}
             <div class="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
                 <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
                 <span>Identifiants incorrects.</span>

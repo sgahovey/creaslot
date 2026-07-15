@@ -82,32 +82,6 @@ final class UtilisateurVoterTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // DELETE
-    // -------------------------------------------------------------------------
-
-    public function test_super_admin_peut_supprimer_un_utilisateur(): void
-    {
-        $superAdmin = $this->creerUtilisateur(99, RoleUtilisateur::SUPER_ADMIN);
-        $auditeur = $this->creerUtilisateur(1, RoleUtilisateur::AUDITEUR);
-
-        $this->assertSame(
-            VoterInterface::ACCESS_GRANTED,
-            $this->voter->vote($this->creerToken($superAdmin), $auditeur, [UtilisateurVoter::DELETE]),
-        );
-    }
-
-    public function test_non_super_admin_ne_peut_pas_supprimer(): void
-    {
-        $personnel = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
-        $auditeur = $this->creerUtilisateur(2, RoleUtilisateur::AUDITEUR);
-
-        $this->assertSame(
-            VoterInterface::ACCESS_DENIED,
-            $this->voter->vote($this->creerToken($personnel), $auditeur, [UtilisateurVoter::DELETE]),
-        );
-    }
-
-    // -------------------------------------------------------------------------
     // DEACTIVATE
     // -------------------------------------------------------------------------
 
@@ -213,6 +187,51 @@ final class UtilisateurVoterTest extends TestCase
         $this->assertSame(
             VoterInterface::ACCESS_DENIED,
             $this->voter->vote($this->creerToken($auditeur), $cible, [UtilisateurVoter::ACTIVATE]),
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // ANONYMISER (droit à l'effacement RGPD, US-12.3)
+    // -------------------------------------------------------------------------
+
+    public function test_auditeur_peut_anonymiser_son_propre_compte(): void
+    {
+        $auditeur = $this->creerUtilisateur(1, RoleUtilisateur::AUDITEUR);
+
+        $this->assertSame(
+            VoterInterface::ACCESS_GRANTED,
+            $this->voter->vote($this->creerToken($auditeur), $auditeur, [UtilisateurVoter::ANONYMISER]),
+        );
+    }
+
+    public function test_personnel_peut_anonymiser_son_propre_compte(): void
+    {
+        $personnel = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
+
+        $this->assertSame(
+            VoterInterface::ACCESS_GRANTED,
+            $this->voter->vote($this->creerToken($personnel), $personnel, [UtilisateurVoter::ANONYMISER]),
+        );
+    }
+
+    public function test_super_admin_ne_peut_pas_anonymiser_son_compte(): void
+    {
+        $superAdmin = $this->creerUtilisateur(99, RoleUtilisateur::SUPER_ADMIN);
+
+        $this->assertSame(
+            VoterInterface::ACCESS_DENIED,
+            $this->voter->vote($this->creerToken($superAdmin), $superAdmin, [UtilisateurVoter::ANONYMISER]),
+        );
+    }
+
+    public function test_utilisateur_ne_peut_pas_anonymiser_le_compte_dautrui(): void
+    {
+        $utilisateur = $this->creerUtilisateur(1, RoleUtilisateur::AUDITEUR);
+        $cible = $this->creerUtilisateur(2, RoleUtilisateur::AUDITEUR);
+
+        $this->assertSame(
+            VoterInterface::ACCESS_DENIED,
+            $this->voter->vote($this->creerToken($utilisateur), $cible, [UtilisateurVoter::ANONYMISER]),
         );
     }
 

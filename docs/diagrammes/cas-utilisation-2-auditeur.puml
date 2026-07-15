@@ -1,0 +1,86 @@
+@startuml cas-utilisation-2-auditeur
+' =====================================================================
+' CreaSlot — Cas d'utilisation 2/4 : espace Auditeur
+'
+' Fidele au code : routes protegees par #[IsGranted('ROLE_AUDITEUR')]
+' au niveau des classes de src/Controller/Auditeur/, completees par des
+' autorisations contextuelles via ReservationVoter.
+'
+' L'Auditeur est le socle des roles metier authentifies : il herite de
+' l'Utilisateur authentifie (IS_AUTHENTICATED_FULLY). Le Personnel heritera
+' a son tour de l'Auditeur (voir diagramme 3).
+'
+' Sources : CreneauDisponibleController, ReservationController,
+'           ReservationListeController, ReservationDetailController,
+'           ReservationAnnulationController, PreferencesController.
+' =====================================================================
+
+left to right direction
+skinparam shadowing false
+skinparam actorStyle awesome
+
+title Cas d'utilisation — Espace Auditeur
+
+actor "Utilisateur authentifié" as UTILISATEUR
+actor "Auditeur" as AUDITEUR
+
+AUDITEUR --|> UTILISATEUR
+
+rectangle CreaSlot {
+
+    package "Auditeur" {
+        usecase "Consulter les créneaux\ndisponibles"     as UC_CRENEAUX_DISPO
+        usecase "Réserver un créneau"                     as UC_RESERVER
+        usecase "Consulter ses réservations"              as UC_MES_RESERVATIONS
+        usecase "Consulter le détail\nd'une réservation"  as UC_RESA_DETAIL
+        usecase "Annuler une réservation"                 as UC_RESA_ANNULER
+        usecase "Régler ses préférences\nde notification" as UC_PREFERENCES
+    }
+
+    usecase "Notifier les utilisateurs\nconcernés" as UC_NOTIFIER
+}
+
+' Associations — Auditeur (ROLE_AUDITEUR)
+AUDITEUR -- UC_CRENEAUX_DISPO
+AUDITEUR -- UC_RESERVER
+AUDITEUR -- UC_MES_RESERVATIONS
+AUDITEUR -- UC_RESA_DETAIL
+AUDITEUR -- UC_RESA_ANNULER
+AUDITEUR -- UC_PREFERENCES
+
+' Include — ReservationService::reserver() appelle notifierAuditeurReservation()
+' et notifierPersonnelReservation().
+UC_RESERVER ..> UC_NOTIFIER : <<include>>
+
+' Include — ReservationService::annuler() appelle
+' notifierAuditeurAnnulationReservation() et notifierPersonnelAnnulationReservation().
+UC_RESA_ANNULER ..> UC_NOTIFIER : <<include>>
+
+note right of UC_RESA_DETAIL
+  ReservationVoter::VIEW
+  Seul le propriétaire de la réservation
+  (ou le Super-administrateur) peut la consulter.
+end note
+
+note right of UC_RESA_ANNULER
+  ReservationVoter::CANCEL
+  Annulation possible uniquement si la réservation
+  est encore active et le créneau à venir.
+end note
+
+note top of UTILISATEUR
+  Acteur abstrait : représente tout compte
+  authentifié, quel que soit son rôle
+  (IS_AUTHENTICATED_FULLY).
+end note
+
+legend right
+  | **Élément** | **Signification** |
+  | Acteur | Rôle qui interagit avec le système |
+  | Cas d'utilisation | Fonctionnalité offerte par le système |
+  | Association (--) | L'acteur déclenche le cas d'utilisation |
+  | Héritage (--|>) | L'acteur fils hérite des cas du parent |
+  | <<include>> | Le cas source déclenche toujours le cas cible |
+endlegend
+
+@enduml

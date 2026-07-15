@@ -1,0 +1,75 @@
+flowchart TB
+
+    PR["Pull request vers develop, preprod ou main"]
+
+    subgraph QUALITE["Workflow d integration : ci.yml"]
+        CS["Style<br/>PHP-CS-Fixer<br/>fix --dry-run --diff"]
+        STAN["Analyse statique<br/>PHPStan niveau 8<br/>SANS baseline"]
+        TESTS["Tests<br/>PHPUnit + couverture<br/>service MySQL 8 reel<br/>migrations + fixtures<br/><br/>derniere etape du job :<br/>analyse SonarCloud"]
+    end
+
+    GATE{"PROTECTION DE BRANCHE : ruleset<br/>les 3 controles exiges AU VERT<br/>BLOQUANT"}
+
+    REFUS["Merge IMPOSSIBLE<br/>tant qu un controle est rouge"]
+
+    MERGE["Merge par pull request<br/>en squash uniquement"]
+
+    DEVELOP["Fusion sur develop<br/>AUCUNE image construite"]
+
+    PROMO["Fusion sur preprod ou main<br/>declenche la promotion"]
+
+    subgraph CONSTRUCTION["Construction et publication : build-push.yml"]
+        IMAGE["docker build --target runtime<br/>Publication sur GHCR<br/>ghcr.io/OWNER/creaslot:SHA<br/>tag = SHA du commit"]
+    end
+
+    subgraph DEPLOIEMENT["Deploiement : deploy-preprod.yml / deploy-prod.yml"]
+        SSH["Connexion SSH au VPS<br/>cle a COMMANDE FORCEE :<br/>elle ne peut lancer QUE le script<br/>ni shell, ni commande arbitraire"]
+        VALID["Le script valide ses entrees<br/>environnement : liste blanche<br/>SHA : format strict"]
+        SYNC["git reset sur le SHA deploye<br/>docker compose pull puis up -d<br/>app et worker de CET environnement"]
+        MIGR["doctrine:migrations:migrate"]
+        SMOKE{"SMOKE TEST BLOQUANT<br/>requete sur la page de connexion<br/>preprod : 401 attendu<br/>prod : 200 attendu"}
+    end
+
+    OK["Deploiement REUSSI"]
+    KO["Deploiement ECHOUE<br/>le pipeline s interrompt"]
+
+    PR --> CS
+    PR --> STAN
+    PR --> TESTS
+
+    CS --> GATE
+    STAN --> GATE
+    TESTS --> GATE
+
+    GATE -->|"un controle rouge"| REFUS
+    GATE ==>|"les 3 controles verts"| MERGE
+
+    MERGE --> DEVELOP
+    MERGE ==> PROMO
+
+    PROMO ==> IMAGE
+    IMAGE ==> SSH
+    SSH --> VALID
+    VALID --> SYNC
+    SYNC --> MIGR
+    MIGR --> SMOKE
+
+    SMOKE ==>|"code attendu"| OK
+    SMOKE -->|"code inattendu"| KO
+
+    classDef entree fill:#f1f3f5,stroke:#868e96,stroke-width:1px,color:#212529
+    classDef qualite fill:#a5d8ff,stroke:#1971c2,stroke-width:1px,color:#212529
+    classDef bloquant fill:#ffd8a8,stroke:#e8590c,stroke-width:3px,color:#212529
+    classDef build fill:#d0bfff,stroke:#7048e8,stroke-width:2px,color:#212529
+    classDef deploie fill:#b2f2bb,stroke:#2f9e44,stroke-width:1px,color:#212529
+    classDef succes fill:#b2f2bb,stroke:#2f9e44,stroke-width:3px,color:#212529
+    classDef echec fill:#ffc9c9,stroke:#e03131,stroke-width:2px,color:#212529
+
+    class PR entree
+    class CS,STAN,TESTS qualite
+    class GATE,SMOKE bloquant
+    class REFUS,KO echec
+    class MERGE,DEVELOP,PROMO entree
+    class IMAGE build
+    class SSH,VALID,SYNC,MIGR deploie
+    class OK succes

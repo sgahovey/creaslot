@@ -1,0 +1,49 @@
+{#
+ # Page de renvoi de l'email de confirmation (US-12.4).
+ #
+ # Saisie d'une adresse email. Le contrôleur répond toujours de manière neutre
+ # (redirection vers la page « email envoyé »), qu'un compte non confirmé existe ou non.
+ #}
+{% extends 'base.html.twig' %}
+
+{% form_theme formulaire 'bootstrap_5_layout.html.twig' %}
+
+{% block title %}Renvoyer la confirmation{% endblock %}
+
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block flash_messages %}{% endblock %}
+
+{% block body %}
+<div class="cs-auth-wrapper">
+    <div class="cs-auth-card">
+
+        <div class="d-flex align-items-center gap-2 mb-4">
+            <i class="bi bi-envelope-arrow-up-fill" style="font-size: 1.5rem; color: var(--cs-blue-primary);" aria-hidden="true"></i>
+            <span class="cs-auth-logo">CreaSlot</span>
+        </div>
+
+        <h1 class="cs-auth-title">Renvoyer la confirmation</h1>
+        <p class="cs-auth-subtitle">
+            Indiquez l'adresse email utilisée à l'inscription. Si un compte en attente de
+            confirmation lui correspond, un nouveau lien vous sera envoyé.
+        </p>
+
+        {{ form_start(formulaire, { attr: { novalidate: 'novalidate' } }) }}
+            {{ form_row(formulaire.email) }}
+
+            <div class="d-grid mt-3">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-send" aria-hidden="true"></i>
+                    Renvoyer le lien
+                </button>
+            </div>
+        {{ form_end(formulaire) }}
+
+        <div class="cs-auth-footer">
+            <a href="{{ path('app_login') }}">Retour à la connexion</a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

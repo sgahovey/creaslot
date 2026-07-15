@@ -15,6 +15,7 @@ enum TypeActionJournal: string
     case COMPTE_ACTIVATION = 'COMPTE_ACTIVATION';
     case COMPTE_DESACTIVATION = 'COMPTE_DESACTIVATION';
     case COMPTE_EXPORT = 'COMPTE_EXPORT';
+    case COMPTE_ANONYMISATION = 'COMPTE_ANONYMISATION';
 
     /**
      * Libellé français de l'action, pour l'affichage (badges, filtre).
@@ -28,6 +29,7 @@ enum TypeActionJournal: string
             self::COMPTE_ACTIVATION      => 'Réactivation de compte',
             self::COMPTE_DESACTIVATION   => 'Désactivation de compte',
             self::COMPTE_EXPORT          => 'Export des données',
+            self::COMPTE_ANONYMISATION   => 'Anonymisation de compte',
         };
     }
 }
