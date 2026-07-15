@@ -21,7 +21,7 @@ Trois types de RDV : présentiel, téléphone, visio.
 | Templates | Twig |
 | Front | Bootstrap 5 |
 | Conteneurisation | Docker + Docker Compose |
-| Déploiement | Railway (preprod + prod) |
+| Déploiement | VPS OVH (Ubuntu) — Docker Compose + Caddy (preprod + prod) |
 | CI/CD | GitHub Actions |
 | Qualité code | SonarCloud |
 | Emails | Brevo via Symfony Mailer |
@@ -154,8 +154,8 @@ docker compose exec app php bin/phpunit --coverage-html var/coverage
 | Environnement | URL |
 |---|---|
 | Développement local | http://localhost:8000 |
-| Pré-production (Railway) | https://preprod.creaslot.re |
-| Production (Railway) | https://creaslot.re |
+| Pré-production (VPS, accès restreint) | https://preprod.creaslot.re |
+| Production (VPS) | https://creaslot.re |
 
 ---
 
@@ -204,7 +204,7 @@ Voir `.env.example` pour la liste complète avec commentaires.
 | Branche | Rôle |
 |---|---|
 | `main` | Livraison finale (fin de projet uniquement) |
-| `preprod` | Pré-production déployée sur Railway |
+| `preprod` | Pré-production déployée sur le VPS |
 | `develop` | Intégration quotidienne |
 | `devops` | Expérimentations infrastructure |
 | `feature/US-X.Y-*` | Développement d'une user story |
