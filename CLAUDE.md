@@ -103,7 +103,7 @@ $em->refresh($creneau);
 // puis persist + flush + commit, sinon rollback
 ```
 
-Voir `src/Controller/Auditeur/ReservationController::enregistrerReservation()`. Toute modification du chemin de réservation doit préserver ce pattern (transaction explicite + `PESSIMISTIC_WRITE` + re-check après refresh).
+Voir `src/Service/ReservationService::reserver()` (déplacé du contrôleur vers le service, DT-19). Toute modification du chemin de réservation doit préserver ce pattern (transaction explicite + `PESSIMISTIC_WRITE` + re-check après refresh).
 
 Pour les créneaux côté Personnel, `SlotService::detecteChevauchements()` interroge `CreneauRepository::findChevauchements()` (intersection stricte `]debut, fin[`) pour empêcher la création de créneaux qui se chevauchent pour un même Personnel.
 
