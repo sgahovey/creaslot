@@ -1,0 +1,51 @@
+flowchart TB
+
+    NAV["Navigateur"]
+
+    NAV -->|"HTTPS 443"| CADDY
+    NAV -.->|"HTTP 80 : redirige vers HTTPS"| CADDY
+
+    subgraph RESEAU["Reseau Docker interne unique : creaslot-prod-net"]
+
+        CADDY["caddy - caddy:2-alpine<br/>SEUL conteneur expose au monde<br/>ports 80 et 443<br/>Terminaison TLS automatique via ACME Lets Encrypt<br/>En-tetes de securite : HSTS, X-Frame-Options<br/>AUCUNE CSP : posee par l application, nonce par requete<br/>Sert les fichiers statiques directement : file_server"]
+
+        subgraph PROD["Environnement PRODUCTION"]
+            APPPROD["app-prod<br/>PHP-FPM, port 9000<br/>utilisateur non-root, uid 1000<br/>non expose"]
+            WPROD["worker-prod<br/>messenger consume async<br/>traitement asynchrone des mails<br/>non expose"]
+        end
+
+        subgraph PREPROD["Environnement PREPRODUCTION"]
+            APPPRE["app-preprod<br/>PHP-FPM, port 9000<br/>utilisateur non-root, uid 1000<br/>non expose"]
+            WPRE["worker-preprod<br/>messenger consume async<br/>traitement asynchrone des mails<br/>non expose"]
+        end
+
+        subgraph SUP["Supervision"]
+            KUMA["uptime-kuma<br/>port 3001 interne<br/>non expose"]
+        end
+
+        subgraph BDD["Base de donnees : instance UNIQUE, NON exposee"]
+            DB[("db - mysql:8.0<br/>base creaslot_prod : user creaslot_prod<br/>base creaslot_preprod : user creaslot_preprod<br/>chaque user borne a SA seule base")]
+        end
+
+    end
+
+    CADDY -->|"creaslot.re - public<br/>php_fastcgi vers 9000"| APPPROD
+    CADDY -->|"preprod.creaslot.re - basic_auth<br/>php_fastcgi vers 9000"| APPPRE
+    CADDY -->|"domaine de supervision - basic_auth<br/>reverse_proxy vers 3001"| KUMA
+
+    APPPROD -->|"PDO 3306"| DB
+    WPROD -->|"PDO 3306"| DB
+    APPPRE -->|"PDO 3306"| DB
+    WPRE -->|"PDO 3306"| DB
+
+    classDef navigateur fill:#f1f3f5,stroke:#868e96,stroke-width:1px,color:#212529
+    classDef expose fill:#ffd8a8,stroke:#e8590c,stroke-width:3px,color:#212529
+    classDef interne fill:#a5d8ff,stroke:#1971c2,stroke-width:1px,color:#212529
+    classDef supervision fill:#d0bfff,stroke:#7048e8,stroke-width:1px,color:#212529
+    classDef base fill:#b2f2bb,stroke:#2f9e44,stroke-width:2px,color:#212529
+
+    class NAV navigateur
+    class CADDY expose
+    class APPPROD,WPROD,APPPRE,WPRE interne
+    class KUMA supervision
+    class DB base

@@ -1,0 +1,48 @@
+flowchart TB
+
+    COMPOSER["image officielle composer:2.7<br/>fournit uniquement le binaire composer"]
+
+    subgraph SOCLE["Socle commun"]
+        BASE["stage : base<br/>FROM php:8.4-fpm-alpine<br/>Extensions : pdo_mysql, intl, zip, opcache<br/>Utilisateur app non-root, uid 1000<br/>var/cache et var/log inscriptibles<br/><br/>Ses couches sont reprises par runtime et dev"]
+    end
+
+    subgraph CONSTRUCTION["Etape de CONSTRUCTION : JETABLE, absente de l image finale"]
+        BUILD["stage : build<br/>FROM php:8.4-cli-alpine<br/>APP_ENV=prod, APP_DEBUG=0<br/><br/>composer install --no-dev<br/>composer dump-autoload --optimize<br/>importmap:install<br/>asset-map:compile<br/>cache:warmup<br/><br/>CONTIENT Composer et les outils de build"]
+    end
+
+    subgraph PRODUCTION["Image de PRODUCTION"]
+        RUNTIME["stage : runtime<br/>FROM base<br/>php-prod.ini : OPcache fige<br/>entrypoint.sh<br/>USER app : non-root<br/>EXPOSE 9000"]
+        OUI["CE QU ELLE CONTIENT<br/>le code applicatif<br/>les dependances de production<br/>les assets compiles<br/>le cache prechauffe"]
+        NON["CE QU ELLE NE CONTIENT PAS<br/>Composer<br/>les outils de build<br/>les dependances de dev<br/>aucun debogueur"]
+    end
+
+    subgraph DEVELOPPEMENT["Image de DEVELOPPEMENT : distincte de la production"]
+        DEV["stage : dev<br/>FROM base<br/>+ git, unzip, Composer<br/>Aucun COPY du code :<br/>il arrive par bind-mount<br/>USER app : non-root"]
+    end
+
+    COMPOSER -->|"COPY --from=composer:2.7"| BUILD
+    COMPOSER -->|"COPY --from=composer:2.7"| DEV
+
+    BASE -->|"FROM base"| RUNTIME
+    BASE -->|"FROM base"| DEV
+
+    BUILD ==>|"COPY --from=build --chown=app:app<br/>/var/www/html<br/>code + vendor + public/assets + var/cache<br/>SEUL le resultat traverse"| RUNTIME
+
+    RUNTIME --- OUI
+    RUNTIME --- NON
+
+    classDef socle fill:#f1f3f5,stroke:#868e96,stroke-width:1px,color:#212529
+    classDef jetable fill:#ffd8a8,stroke:#e8590c,stroke-width:2px,stroke-dasharray: 6 4,color:#212529
+    classDef prod fill:#b2f2bb,stroke:#2f9e44,stroke-width:3px,color:#212529
+    classDef dev fill:#a5d8ff,stroke:#1971c2,stroke-width:1px,color:#212529
+    classDef outil fill:#d0bfff,stroke:#7048e8,stroke-width:1px,color:#212529
+    classDef contenu fill:#d3f9d8,stroke:#2f9e44,stroke-width:1px,color:#212529
+    classDef exclu fill:#ffc9c9,stroke:#e03131,stroke-width:1px,color:#212529
+
+    class BASE socle
+    class BUILD jetable
+    class RUNTIME prod
+    class OUI contenu
+    class NON exclu
+    class DEV dev
+    class COMPOSER outil
