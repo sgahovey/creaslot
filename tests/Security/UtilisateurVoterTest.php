@@ -82,32 +82,6 @@ final class UtilisateurVoterTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // DELETE
-    // -------------------------------------------------------------------------
-
-    public function test_super_admin_peut_supprimer_un_utilisateur(): void
-    {
-        $superAdmin = $this->creerUtilisateur(99, RoleUtilisateur::SUPER_ADMIN);
-        $auditeur = $this->creerUtilisateur(1, RoleUtilisateur::AUDITEUR);
-
-        $this->assertSame(
-            VoterInterface::ACCESS_GRANTED,
-            $this->voter->vote($this->creerToken($superAdmin), $auditeur, [UtilisateurVoter::DELETE]),
-        );
-    }
-
-    public function test_non_super_admin_ne_peut_pas_supprimer(): void
-    {
-        $personnel = $this->creerUtilisateur(1, RoleUtilisateur::PERSONNEL);
-        $auditeur = $this->creerUtilisateur(2, RoleUtilisateur::AUDITEUR);
-
-        $this->assertSame(
-            VoterInterface::ACCESS_DENIED,
-            $this->voter->vote($this->creerToken($personnel), $auditeur, [UtilisateurVoter::DELETE]),
-        );
-    }
-
-    // -------------------------------------------------------------------------
     // DEACTIVATE
     // -------------------------------------------------------------------------
 

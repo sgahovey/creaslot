@@ -23,9 +23,6 @@ final class UtilisateurVoter extends Voter
     /** Un utilisateur peut modifier son propre profil. SUPER_ADMIN peut tout modifier. */
     public const string EDIT = 'UTILISATEUR_EDIT';
 
-    /** Seul le SUPER_ADMIN peut supprimer un compte (action rare, irréversible). */
-    public const string DELETE = 'UTILISATEUR_DELETE';
-
     /**
      * Seul le SUPER_ADMIN peut désactiver un compte.
      * Un SUPER_ADMIN ne peut pas se désactiver lui-même.
@@ -54,7 +51,7 @@ final class UtilisateurVoter extends Voter
      */
     public const string ANONYMISER = 'UTILISATEUR_ANONYMISER';
 
-    private const array ATTRIBUTS = [self::VIEW, self::EDIT, self::DELETE, self::DEACTIVATE, self::CHANGE_ROLE, self::ACTIVATE, self::ANONYMISER];
+    private const array ATTRIBUTS = [self::VIEW, self::EDIT, self::DEACTIVATE, self::CHANGE_ROLE, self::ACTIVATE, self::ANONYMISER];
 
     protected function supports(string $attribute, mixed $subject): bool
     {
@@ -74,7 +71,6 @@ final class UtilisateurVoter extends Voter
         return match ($attribute) {
             self::VIEW        => $this->peutVoir($subject, $utilisateur),
             self::EDIT        => $this->peutModifier($subject, $utilisateur),
-            self::DELETE      => $utilisateur->getRole() === RoleUtilisateur::SUPER_ADMIN,
             self::DEACTIVATE  => $this->peutDesactiver($subject, $utilisateur),
             self::CHANGE_ROLE => $this->peutChangerRole($subject, $utilisateur),
             self::ACTIVATE    => $this->peutActiver($utilisateur),
