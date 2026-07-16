@@ -29,7 +29,7 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
  *
  * L'invariant "1 seule Reservation ACTIVE par Creneau" est préservé
  * applicativement via PESSIMISTIC_WRITE dans
- * ReservationController::enregistrerReservation (hors scope ici).
+ * ReservationService::reserver() (ligne 67, hors scope ici).
  *
  * Pattern : KernelTestCase + EntityManager + transaction rollback en tearDown,
  * pour isoler le test sans nécessiter une BDD test séparée (le projet partage
