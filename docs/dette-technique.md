@@ -996,9 +996,9 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 
 **Priorité** : 🟢 basse (faux positif cosmétique ; aucun impact — sauf à appliquer le `DROP` par erreur).
 
-## DT-39 — Deux lacunes de test sur la couche d'accès aux données de la réservation (🟢 BAS) — ⏳ OUVERTE (basse priorité) (16/07/2026)
+## DT-39 — Deux lacunes de test sur la couche d'accès aux données de la réservation (🟢 BAS) — ✅ RÉSOLUE (16/07/2026)
 
-> **⏳ OUVERTE (basse priorité)** — identifiée le 16/07/2026, lors de la rédaction de la section 7.3 du dossier CDA (revue de la couverture de tests de la couche d'accès aux données).
+> **✅ RÉSOLUE le 16/07/2026** — identifiée puis comblée le même jour, lors de la rédaction de la section 7.3 du dossier CDA (revue de la couverture de tests de la couche d'accès aux données).
 >
 > **Origine** : deux méthodes d'accès aux données de la réservation sont exercées en production mais insuffisamment couvertes en test unitaire.
 > 1. `ReservationRepository::existeReservationActiveEnChevauchement()` (`src/Repository/ReservationRepository.php:47`) : **pas de test dédié**. Elle est appelée en production via `ReservationService::aReservationChevauchante()`, elle-même invoquée par `ReservationController`, mais aucun test n'asserte spécifiquement le **rejet du chevauchement de deux réservations du même auditeur**. Le parcours fonctionnel couvre un cas voisin mais distinct (créneau déjà réservé par un tiers, via `isReserve()`).
@@ -1006,15 +1006,15 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 >
 > **Nuance** : aucune de ces deux méthodes n'est défaillante ; elles sont correctes et exercées de bout en bout par le parcours fonctionnel. Il s'agit d'une lacune de **couverture de test unitaire ciblé**, pas d'un défaut fonctionnel.
 >
-> **Évolution proposée** : (1) un test assertant que `existeReservationActiveEnChevauchement()` retourne vrai sur un chevauchement du même auditeur et faux sinon ; (2) enrichir le test de `findDisponibles()` avec des assertions de résultat (créneau réservé ACTIVE exclu, réapparition après annulation, exclusion des créneaux passés ou à propriétaire inactif).
+> **Résumé fix** : (1) nouveau fichier `tests/Integration/ReservationRepositoryQueriesTest.php` (6 tests) assertant le résultat de `existeReservationActiveEnChevauchement()` : chevauchement partiel et plage identique → vrai ; absence de chevauchement, adjacence bord à bord, réservation ANNULEE, réservation d'un autre auditeur → faux. (2) `CreneauRepositoryQueriesTest` enrichi d'un test de résultat de `findDisponibles()` (créneau réservé ACTIVE exclu, redevenu disponible après annulation, passé exclu, propriétaire inactif exclu), isolé des fixtures par un filtre `serviceId` dédié. Aucune modification du code métier (repositories inchangés).
 
 **Détecté** : 16/07/2026, lors de la rédaction de la section 7.3 du dossier CDA.
 
 **Constat** : `existeReservationActiveEnChevauchement()` sans test dédié (exercée seulement via le flux) ; test de `findDisponibles()` limité à la validité DQL, sans assertions de résultat métier exhaustives.
 
-**Fichiers concernés** : `src/Repository/ReservationRepository.php` (`existeReservationActiveEnChevauchement`, l.47) ; `tests/Integration/CreneauRepositoryQueriesTest.php` (`test_find_disponibles_executes_sans_erreur_dql`, l.117).
+**Fichiers concernés** : `tests/Integration/ReservationRepositoryQueriesTest.php` (nouveau) ; `tests/Integration/CreneauRepositoryQueriesTest.php` (test de résultat ajouté). Méthodes testées, inchangées : `ReservationRepository::existeReservationActiveEnChevauchement` et `CreneauRepository::findDisponibles`.
 
-**Action proposée** : ajouter les tests ciblés décrits ci-dessus (rejet du chevauchement auditeur ; cas de résultat métier de `findDisponibles`).
+**Action réalisée** : tests ciblés ajoutés (rejet du chevauchement auditeur dans un fichier dédié ; cas de résultat métier de `findDisponibles` dans le test d'intégration existant). DoD verte (PHPUnit, PHPStan niveau 8, PHP-CS-Fixer).
 
 **Hors périmètre** : la logique des requêtes elle-même (correcte, paramétrée, exercée en production) ; le parcours fonctionnel existant (`ReservationParcoursControllerTest`), qui reste la couverture end-to-end.
 
