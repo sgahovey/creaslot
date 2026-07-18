@@ -44,6 +44,10 @@ services:
       STATUS_HOST: ${STATUS_HOST}
       STATUS_BASICAUTH_USER: ${STATUS_BASICAUTH_USER}
       STATUS_BASICAUTH_HASH: ${STATUS_BASICAUTH_HASH}
+      CREAPRET_PREPROD_HOST: ${CREAPRET_PREPROD_HOST}
+      CREAPRET_PROD_HOST: ${CREAPRET_PROD_HOST}
+      CREAPRET_PREPROD_BASICAUTH_USER: ${CREAPRET_PREPROD_BASICAUTH_USER}
+      CREAPRET_PREPROD_BASICAUTH_HASH: ${CREAPRET_PREPROD_BASICAUTH_HASH}
     volumes:
       - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -51,6 +55,9 @@ services:
       # Assets compilés de chaque env (peuplés par l'entrypoint des apps), servis par file_server.
       - assets_preprod:/srv/preprod:ro
       - assets_prod:/srv/prod:ro
+# Assets de CreaPret, seconde application servie par ce proxy.
+      - creapret_assets_preprod:/srv/creapret-preprod:ro
+      - creapret_assets_prod:/srv/creapret-prod:ro
     depends_on:
       - app-preprod
       - app-prod
@@ -136,6 +143,12 @@ volumes:
   mysql_data_prod:
   caddy_data:
   caddy_config:
+  creapret_assets_preprod:
+    external: true
+    name: creapret_prod_assets_preprod
+  creapret_assets_prod:
+    external: true
+    name: creapret_prod_assets_prod
 
 networks:
   creaslot-prod-net:

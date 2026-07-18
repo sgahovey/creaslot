@@ -88,3 +88,46 @@
 	# Reverse-proxy vers le conteneur Uptime Kuma (réseau Docker partagé).
 	reverse_proxy uptime-kuma:3001
 }
+# --- Snippet allege pour CreaPret : son application pose elle-meme la politique de
+#     securite de contenu, le transport securise strict, la protection contre le
+#     typage devine, la politique de provenance et l'interdiction d'affichage en cadre.
+#     Ce snippet ne pose donc que ce que l'application ne peut pas poser.
+(securite-creapret) {
+	header {
+		Permissions-Policy "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), usb=()"
+		-Server
+	}
+
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+}
+
+# --- CreaPret, preproduction (acces restreint) ---
+{$CREAPRET_PREPROD_HOST} {
+	tls {$CADDY_TLS}
+
+	root * /srv/creapret-preprod
+	import securite-creapret
+
+	basic_auth {
+		{$CREAPRET_PREPROD_BASICAUTH_USER} {$CREAPRET_PREPROD_BASICAUTH_HASH}
+	}
+
+	php_fastcgi creapret-app-preprod:9000 {
+		root /var/www/html/public
+	}
+	file_server
+}
+
+# --- CreaPret, production ---
+{$CREAPRET_PROD_HOST} {
+	tls {$CADDY_TLS}
+
+	root * /srv/creapret-prod
+	import securite-creapret
+
+	php_fastcgi creapret-app-prod:9000 {
+		root /var/www/html/public
+	}
+	file_server
+}
