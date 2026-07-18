@@ -131,3 +131,35 @@
 	}
 	file_server
 }
+
+# --- Page de statut CreaPret : instance de supervision dediee a cette application ---
+{$CREAPRET_STATUS_HOST} {
+	tls {$CADDY_TLS}
+	import securite-creapret
+
+	# Les taches planifiees signalent leur reussite sur ce chemin : il reste
+	# accessible sans authentification, sinon aucune sonde ne serait alimentee.
+	handle /api/push/* {
+		reverse_proxy creapret-supervision:3001
+	}
+
+	# Tout le reste, dont l'interface, exige une authentification.
+	handle {
+		basic_auth {
+			{$CREAPRET_PREPROD_BASICAUTH_USER} {$CREAPRET_PREPROD_BASICAUTH_HASH}
+		}
+		reverse_proxy creapret-supervision:3001
+	}
+}
+
+# --- Journaux applicatifs CreaPret : consultation restreinte ---
+{$CREAPRET_LOGS_HOST} {
+	tls {$CADDY_TLS}
+	import securite-creapret
+
+	basic_auth {
+		{$CREAPRET_PREPROD_BASICAUTH_USER} {$CREAPRET_PREPROD_BASICAUTH_HASH}
+	}
+
+	reverse_proxy creapret-journaux:8080
+}
