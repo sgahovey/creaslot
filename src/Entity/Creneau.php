@@ -174,7 +174,7 @@ class Creneau
      * (créneau libre ou toutes les Reservations passées sont annulées).
      *
      * Invariant garanti : au plus 1 Reservation ACTIVE par Creneau, grâce au
-     * lock PESSIMISTIC_WRITE dans ReservationController::enregistrerReservation
+     * lock PESSIMISTIC_WRITE dans ReservationService::reserver() (ligne 67)
      * (cf. Doctrine\DBAL\LockMode::PESSIMISTIC_WRITE).
      *
      * Utilisé par : isReserve(), getAuditeurReservation(), templates Twig,

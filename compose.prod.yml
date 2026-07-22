@@ -27,45 +27,6 @@ x-app-base: &app-base
       condition: service_healthy
 
 services:
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    logging: *default-logging
-    ports:
-      - "${CADDY_HTTPS_PORT:-8443}:443"
-      - "${CADDY_HTTP_PORT:-8081}:80"
-    environment:
-      PREPROD_HOST: ${PREPROD_HOST}
-      PROD_HOST: ${PROD_HOST}
-      CADDY_TLS: ${CADDY_TLS}
-      CADDY_ACME_CA: ${CADDY_ACME_CA:-https://acme-v02.api.letsencrypt.org/directory}
-      PREPROD_BASICAUTH_USER: ${PREPROD_BASICAUTH_USER}
-      PREPROD_BASICAUTH_HASH: ${PREPROD_BASICAUTH_HASH}
-      STATUS_HOST: ${STATUS_HOST}
-      STATUS_BASICAUTH_USER: ${STATUS_BASICAUTH_USER}
-      STATUS_BASICAUTH_HASH: ${STATUS_BASICAUTH_HASH}
-      CREAPRET_PREPROD_HOST: ${CREAPRET_PREPROD_HOST}
-      CREAPRET_PROD_HOST: ${CREAPRET_PROD_HOST}
-      CREAPRET_PREPROD_BASICAUTH_USER: ${CREAPRET_PREPROD_BASICAUTH_USER}
-      CREAPRET_PREPROD_BASICAUTH_HASH: ${CREAPRET_PREPROD_BASICAUTH_HASH}
-      CREAPRET_STATUS_HOST: ${CREAPRET_STATUS_HOST}
-      CREAPRET_LOGS_HOST: ${CREAPRET_LOGS_HOST}
-    volumes:
-      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-      # Assets compilés de chaque env (peuplés par l'entrypoint des apps), servis par file_server.
-      - assets_preprod:/srv/preprod:ro
-      - assets_prod:/srv/prod:ro
-      # Assets de CreaPret, seconde application servie par ce proxy.
-      - creapret_assets_preprod:/srv/creapret-preprod:ro
-      - creapret_assets_prod:/srv/creapret-prod:ro
-    depends_on:
-      - app-preprod
-      - app-prod
-    networks:
-      - creaslot-prod-net
-
   db:
     image: mysql:8.0
     # --log-bin-trust-function-creators=1 requis pour creer le trigger d'audit US-12.1
@@ -101,6 +62,7 @@ services:
       - assets_preprod:/srv-assets
     networks:
       - creaslot-prod-net
+      - web
 
   app-prod:
     <<: *app-base
@@ -116,6 +78,7 @@ services:
       - assets_prod:/srv-assets
     networks:
       - creaslot-prod-net
+      - web
 
   worker-preprod:
     <<: *app-base
@@ -143,14 +106,15 @@ volumes:
   assets_preprod:
   assets_prod:
   mysql_data_prod:
-  caddy_data:
-  caddy_config:
-  creapret_assets_preprod:
-    external: true
-    name: creapret_prod_assets_preprod
-  creapret_assets_prod:
-    external: true
-    name: creapret_prod_assets_prod
+
 networks:
   creaslot-prod-net:
     driver: bridge
+  # Reseau du reverse proxy mutualise (stack infra-proxy, depot dedie).
+  # Declare EXTERNAL : cree une seule fois sur l'hote (`docker network create web`),
+  # partage avec les autres applications servies par le meme Caddy. Compose y pose
+  # automatiquement le nom du service comme alias reseau (app-prod, app-preprod),
+  # qui est exactement ce que le Caddyfile cible en php_fastcgi.
+  web:
+    external: true
+    name: web
