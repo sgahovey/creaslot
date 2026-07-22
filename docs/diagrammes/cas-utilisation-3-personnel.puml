@@ -51,14 +51,15 @@ PERSONNEL -- UC_CRENEAU_MODIFIER
 PERSONNEL -- UC_CRENEAU_SUPPRIMER
 PERSONNEL -- UC_COLLEGUES
 
-' Include — CreneauController : suppression d'un creneau reserve declenche
-' notifierAuditeurSuppressionCreneau().
-UC_CRENEAU_SUPPRIMER ..> UC_NOTIFIER : <<include>>
+' Extend — la notification est CONDITIONNELLE (relation <<extend>> : le cas
+' d'extension pointe vers le cas de base).
+' Suppression : notifierAuditeurSuppressionCreneau() declenchee UNIQUEMENT
+' si le creneau etait reserve.
+UC_NOTIFIER ..> UC_CRENEAU_SUPPRIMER : <<extend>>
 
-' Include — CreneauController : modification declenche
-' notifierAuditeurCommentaireCreneau() lorsque le commentaire visible
-' par l'auditeur a change.
-UC_CRENEAU_MODIFIER ..> UC_NOTIFIER : <<include>>
+' Modification : notifierAuditeurCommentaireCreneau() declenchee UNIQUEMENT
+' si le creneau est reserve ET que le commentaire visible par l'auditeur change.
+UC_NOTIFIER ..> UC_CRENEAU_MODIFIER : <<extend>>
 
 note right of UC_CRENEAU_MODIFIER
   CreneauVoter::EDIT
@@ -90,7 +91,7 @@ legend right
   | Cas d'utilisation | Fonctionnalité offerte par le système |
   | Association (--) | L'acteur déclenche le cas d'utilisation |
   | Héritage (--|>) | L'acteur fils hérite des cas du parent |
-  | <<include>> | Le cas source déclenche toujours le cas cible |
+  | <<extend>> | Le cas d'extension s'exécute sous condition |
 endlegend
 
 @enduml

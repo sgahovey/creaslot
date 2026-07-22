@@ -11,21 +11,10 @@ classDiagram
         emailVerifie : booléen
         emailModificationCommentaire : booléen
         emailRappelJ1 : booléen
-        dateCreation : date
-        derniereConnexion : date
     }
 
     class Service {
         nom : texte
-        description : texte
-        estActif : booléen
-    }
-
-    class TypeRdv {
-        code : texte
-        libelle : texte
-        couleurHex : texte
-        icone : texte
         description : texte
         estActif : booléen
     }
@@ -35,7 +24,13 @@ classDiagram
         dateFin : date
         commentaireAuditeur : texte
         estActif : booléen
-        dateCreation : date
+    }
+
+    class TypeRdv {
+        code : texte
+        libelle : texte
+        couleurHex : texte
+        estActif : booléen
     }
 
     class Reservation {
@@ -44,7 +39,6 @@ classDiagram
         commentaireAuditeur : texte
         dateAnnulation : date
         motifAnnulation : texte
-        rappelEnvoyeLe : date
     }
 
     class Notification {
@@ -52,7 +46,6 @@ classDiagram
         titre : texte
         message : texte
         lu : booléen
-        dateCreation : date
     }
 
     class ResetPasswordRequest {
@@ -66,7 +59,6 @@ classDiagram
         typeAction : énuméré
         acteurLibelle : texte
         cibleLibelle : texte
-        details : texte
     }
 
     Service "0..1" -- "*" Utilisateur : rattache
@@ -78,4 +70,4 @@ classDiagram
     Reservation "0..1" -- "*" Notification : concerne
     Utilisateur "1" -- "*" ResetPasswordRequest : demande
 
-    note for JournalAdmin "Classe isolée, sans association (choix délibéré). Acteur et cible sont figés en libellés (append-only) : la trace survit à la suppression des comptes — immuabilité RGPD."
+    note for JournalAdmin "Classe isolée, sans association (choix délibéré). Acteur et cible figés en libellés (append-only) : la trace survit à la suppression des comptes — immuabilité RGPD."
