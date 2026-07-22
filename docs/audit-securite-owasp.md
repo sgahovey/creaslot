@@ -15,7 +15,7 @@ Ce document présente l'audit de sécurité applicatif de CreaSlot, conduit selo
    catégorie : mécanisme en place, état, trou éventuel (§3).
 
 **Périmètre** : le code applicatif (`src/`), la configuration de sécurité (`config/packages/security.yaml`),
-les en-têtes du reverse proxy (`docker/nginx/default.conf`) et les dépendances (`composer.lock`).
+les en-têtes du reverse proxy (`docker/caddy/Caddyfile`) et les dépendances (`composer.lock`).
 **Hors périmètre** (§5) : test d'intrusion externe et audit de configuration du serveur de production.
 
 **Rattachement CDA** : compétences **CP3 « Développer des composants métier »** (bloc 1) et **CP8
@@ -29,6 +29,9 @@ autorisation par Voter, throttling, accès anonyme) ne sont **pas redétaillées
 ---
 
 ## 2. Vulnérabilités de dépendances
+
+> **Note** : les décomptes de tests indiqués dans ce document (247, 271, 274) correspondent à l'état du projet
+> au moment de chaque itération datée. Le total final est de **333 tests** (voir section 9 du dossier).
 
 **Constat initial** (avant remédiation) : `composer audit` signalait **38 avis de sécurité affectant 15
 paquets**, exclusivement des composants **Symfony** (8.0.8/8.0.9) et **Twig** (3.24.0). Les correctifs étaient
