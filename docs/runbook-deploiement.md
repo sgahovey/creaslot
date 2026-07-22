@@ -27,34 +27,73 @@ des échecs de connexion (OWASP A09).
 
 ## 3. Mise à jour de code (procédure courante)
 
-### 3.1 Procédure nominale — pipeline CI/CD
+### 3.1 Procédure nominale (pipeline CI/CD via Pull Request)
 
-En exploitation normale, on ne se connecte pas au VPS : on **promeut une branche**
+En exploitation normale, on ne se connecte pas au VPS : on **promeut une branche par Pull Request**
 et le pipeline GitHub Actions déploie (détail : `docs/architecture-deploiement.md` §5).
 
-**Préproduction** — déploiement automatique :
+> **Branches permanentes** : `develop`, `preprod` et `main` ne se suppriment JAMAIS après un merge.
+> Ignorer le message GitHub « branch can be safely deleted », qui ne concerne que les branches de feature.
 
-```bash
-git checkout preprod && git pull --ff-only
-git merge --ff-only develop
-git push origin preprod
-```
+**Pourquoi une PR et pas un push direct** : les branches `preprod` et `main` sont protégées par un
+ruleset qui **refuse le push direct** et impose une **Pull Request mergée en squash**
+(`allowed_merge_methods: ["squash"]`, 3 contrôles requis au vert). La promotion se fait donc par PR.
+L'ancienne méthode `git merge --ff-only` + `git push origin <branche>` est désormais **bloquée** par le ruleset.
 
-Le push déclenche le workflow *Deploiement preprod* (build de l'image au SHA puis
-déploiement) ; smoke attendu **401**. Aucune action manuelle sur le VPS.
+> **Le squash ne casse PAS la cohérence du SHA** : chaque workflow de déploiement **reconstruit
+> l'image au SHA du push** (`build-push.yml` est appelé par le job de deploy). Le tag d'image et le
+> SHA déployé valent tous deux `github.sha` du push, donc build et deploy sont toujours cohérents,
+> et le code déployé est identique à celui de la branche source. Aucun besoin d'un SHA identique
+> d'un environnement à l'autre.
 
-**Production** — déploiement après approbation manuelle :
+**Préproduction (déploiement automatique)** :
 
-```bash
-git checkout main && git pull --ff-only
-git merge --ff-only preprod
-git push origin main
-```
+1. Créer la PR de `develop` vers `preprod` :
+   ```bash
+   gh pr create --base preprod --head develop --title "deploy: promotion develop vers preprod"
+   ```
+2. Attendre les **3 contrôles verts** (PHP-CS-Fixer, PHPStan, PHPUnit) **et SonarCloud**.
+3. Merger en squash :
+   ```bash
+   gh pr merge <NUM> --squash
+   ```
 
-Le push déclenche *Deploiement prod*, qui se met en pause sur *Review deployments*.
-La mise en production part après **Actions → run concerné → Review deployments →
-Approve and deploy** ; smoke attendu **200**. On ne promeut vers `main` qu'une fois
-la préprod validée (*promote-on-green*).
+Le merge pousse sur `preprod` et déclenche le workflow *Deploiement preprod* (build de l'image au
+SHA, puis deploy SSH). Smoke test attendu **401** (la préprod est protégée par le basic_auth Caddy,
+qui répond 401 avant l'application). Aucune action manuelle sur le VPS.
+
+**Production (déploiement après approbation manuelle)** :
+
+1. Créer la PR de `preprod` vers `main` :
+   ```bash
+   gh pr create --base main --head preprod --title "deploy: mise en production"
+   ```
+2. Attendre les **3 contrôles verts**.
+3. Merger en squash :
+   ```bash
+   gh pr merge <NUM> --squash
+   ```
+
+Le merge pousse sur `main` et déclenche *Deploiement prod*. Le job `build` construit l'image, puis
+le job `deploy` **se met en pause** sur l'approbation manuelle (`environment: production`). Approuver
+via **Actions → run « Deploiement prod » → Review deployments → cocher `production` → Approve and
+deploy**. Après approbation : deploy SSH, puis smoke test attendu **200** (la prod n'a pas de
+basic_auth). On ne promeut vers `main` qu'une fois la préprod validée (*promote-on-green*).
+
+**Après le déploiement prod** :
+
+1. Vérifier que le site répond :
+   ```bash
+   curl -s -o /dev/null -w "%{http_code}\n" https://creaslot.re/connexion   # attendu 200
+   curl -s -o /dev/null -w "%{http_code}\n" https://creaslot.re/health       # attendu 200
+   ```
+2. Créer le tag de version et la release GitHub (depuis `main` à jour). Remplacer `vX.Y.Z` par le numero de version reel (ex. `v1.1.0`) :
+   ```bash
+   git checkout main && git pull --ff-only
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   gh release create vX.Y.Z --title "CreaSlot vX.Y.Z" --notes "Notes de version."
+   ```
 
 ### 3.2 Procédure de secours — déploiement manuel sur le VPS
 
