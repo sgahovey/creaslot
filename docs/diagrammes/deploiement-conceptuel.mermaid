@@ -1,0 +1,53 @@
+---
+title: "Diagramme de déploiement : topologie conceptuelle"
+---
+flowchart TB
+
+    NAV["Navigateur de l'utilisateur<br/>(réseau public, à l'extérieur)"]
+
+    FACADE["Façade unique<br/>SEUL point exposé au réseau public<br/>· reçoit les requêtes<br/>· chiffre les échanges<br/>· applique les en-têtes de sécurité<br/>· sert les ressources statiques"]
+
+    NAV -->|"requêtes chiffrées"| FACADE
+
+    subgraph INTERNE["Réseau interne fermé, non accessible de l'extérieur"]
+        direction TB
+
+        subgraph PREPROD["Environnement de préproduction"]
+            APRE["Application"]
+            WPRE["Composant de traitement<br/>des envois différés"]
+            APRE --- WPRE
+        end
+
+        subgraph PROD["Environnement de production"]
+            APROD["Application"]
+            WPROD["Composant de traitement<br/>des envois différés"]
+            APROD --- WPROD
+        end
+
+        BDD[("Base de données unique<br/>Deux jeux de données cloisonnés<br/>un par environnement")]
+
+        SONDE["Sonde de supervision<br/>surveille la disponibilité du service"]
+    end
+
+    FACADE -->|"achemine vers l'environnement"| APRE
+    FACADE -->|"achemine vers l'environnement"| APROD
+
+    APRE -->|"lecture / écriture"| BDD
+    WPRE --> BDD
+    APROD -->|"lecture / écriture"| BDD
+    WPROD --> BDD
+
+    SONDE -.->|"vérifie la disponibilité"| APROD
+    SONDE -.->|"vérifie la disponibilité"| APRE
+
+    classDef public fill:#f1f3f5,stroke:#868e96,stroke-width:1px,color:#212529
+    classDef expose fill:#ffd8a8,stroke:#e8590c,stroke-width:3px,color:#212529
+    classDef app fill:#a5d8ff,stroke:#1971c2,stroke-width:1px,color:#212529
+    classDef base fill:#b2f2bb,stroke:#2f9e44,stroke-width:2px,color:#212529
+    classDef supervision fill:#d0bfff,stroke:#7048e8,stroke-width:1px,color:#212529
+
+    class NAV public
+    class FACADE expose
+    class APRE,WPRE,APROD,WPROD app
+    class BDD base
+    class SONDE supervision
