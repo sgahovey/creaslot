@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wireframes lo-fi — CreaSlot (section 5.3)</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,Arial,sans-serif; background:#fff; color:#444; font-size:14px; line-height:1.5; }
+  .wrap { max-width:1000px; margin:0 auto; padding:40px 20px 60px; }
+  h1 { color:#444; font-size:22px; margin:0 0 4px; }
+  .sub { color:#999; margin:0 0 28px; font-size:13px; }
+  .group { margin:26px 0 8px; color:#999; font-size:12px; text-transform:uppercase; letter-spacing:.08em; border-bottom:1px dashed #ccc; padding-bottom:6px; }
+  ul { list-style:none; }
+  a.item { display:flex; align-items:center; gap:12px; text-decoration:none; color:#444; border:1px solid #ccc; border-radius:8px; padding:12px 16px; margin:8px 0; background:#fff; }
+  a.item:hover { background:#eee; }
+  .num { width:26px; height:26px; flex:0 0 auto; border:1px solid #999; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; }
+  .name { font-weight:600; }
+  .path { color:#999; font-size:12px; margin-left:auto; }
+  .note { margin-top:30px; color:#999; font-size:12px; border-top:1px dashed #ccc; padding-top:14px; font-style:italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Wireframes lo-fi — CreaSlot</h1>
+  <p class="sub">Maquettes basse fidélité des écrans principaux (dossier de conception, section 5.3). Gris uniquement, structure sans contenu réel. Destinées à l'import Figma via html.to.design.</p>
+
+  <div class="group">Commun / visiteur</div>
+  <ul>
+    <li><a class="item" href="01-connexion.html"><span class="num">1</span><span class="name">Connexion</span><span class="path">auth/connexion</span></a></li>
+    <li><a class="item" href="02-inscription.html"><span class="num">2</span><span class="name">Inscription</span><span class="path">auth/inscription</span></a></li>
+    <li><a class="item" href="03-mot-de-passe-oublie.html"><span class="num">3</span><span class="name">Mot de passe oublié (demande)</span><span class="path">reset_password/request</span></a></li>
+    <li><a class="item" href="16-reinitialisation-mot-de-passe.html"><span class="num">16</span><span class="name">Réinitialisation du mot de passe (saisie après lien)</span><span class="path">reset_password/reset</span></a></li>
+    <li><a class="item" href="18-page-legale.html"><span class="num">18</span><span class="name">Page légale (gabarit : mentions · CGU · confidentialité · accessibilité)</span><span class="path">legal/*</span></a></li>
+  </ul>
+
+  <div class="group">Auditeur</div>
+  <ul>
+    <li><a class="item" href="04-auditeur-creneaux-disponibles.html"><span class="num">4</span><span class="name">Créneaux disponibles (filtres + grille)</span><span class="path">auditeur/creneau/disponibles</span></a></li>
+    <li><a class="item" href="05-auditeur-reservation-confirmer.html"><span class="num">5</span><span class="name">Confirmer ma réservation</span><span class="path">auditeur/reservation/nouveau</span></a></li>
+    <li><a class="item" href="06-auditeur-mes-reservations.html"><span class="num">6</span><span class="name">Mes réservations</span><span class="path">auditeur/reservation/liste</span></a></li>
+    <li><a class="item" href="07-notifications.html"><span class="num">7</span><span class="name">Mes notifications</span><span class="path">notification/liste</span></a></li>
+    <li><a class="item" href="08-profil.html"><span class="num">8</span><span class="name">Mon profil (self-service RGPD)</span><span class="path">profil/index</span></a></li>
+    <li><a class="item" href="17-mes-donnees-personnelles.html"><span class="num">17</span><span class="name">Mes données personnelles (RGPD art. 15 + export art. 20)</span><span class="path">export/mes_donnees</span></a></li>
+  </ul>
+
+  <div class="group">Personnel</div>
+  <ul>
+    <li><a class="item" href="09-personnel-agenda.html"><span class="num">9</span><span class="name">Mon agenda</span><span class="path">personnel/creneau/agenda</span></a></li>
+    <li><a class="item" href="10-personnel-creneau-nouveau.html"><span class="num">10</span><span class="name">Nouveau créneau</span><span class="path">personnel/creneau/nouveau</span></a></li>
+  </ul>
+
+  <div class="group">Super-administrateur</div>
+  <ul>
+    <li><a class="item" href="11-admin-tableau-de-bord.html"><span class="num">11</span><span class="name">Tableau de bord</span><span class="path">admin/dashboard/index</span></a></li>
+    <li><a class="item" href="12-admin-comptes.html"><span class="num">12</span><span class="name">Gestion des comptes</span><span class="path">admin/compte/liste</span></a></li>
+    <li><a class="item" href="13-admin-journal.html"><span class="num">13</span><span class="name">Journal d'administration</span><span class="path">admin/journal/liste</span></a></li>
+  </ul>
+
+  <div class="group">Vues mobiles (~375px)</div>
+  <ul>
+    <li><a class="item" href="mobile/14-auditeur-creneaux-disponibles-mobile.html"><span class="num">14</span><span class="name">Créneaux disponibles — mobile (burger + filtres en accordéon + cartes empilées)</span><span class="path">auditeur/creneau/disponibles</span></a></li>
+    <li><a class="item" href="mobile/15-personnel-agenda-mobile.html"><span class="num">15</span><span class="name">Mon agenda — mobile (burger + calendrier en vue jour/liste)</span><span class="path">personnel/creneau/agenda</span></a></li>
+  </ul>
+
+  <p class="note">La route « / » ne rend aucune page : elle redirige selon le rôle (HomeController) — il n'y a donc pas d'écran d'accueil à maquetter.</p>
+</div>
+</body>
+</html>

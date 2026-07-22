@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wireframe lo-fi — Mes données personnelles</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,Arial,sans-serif; background:#fff; color:#444; font-size:14px; line-height:1.5; }
+  .wf-shell { max-width:1000px; margin:0 auto; padding:16px; }
+  header.wf-header, footer.wf-footer { background:#eee; border:1px solid #ccc; border-radius:8px; }
+  .wf-header-inner { display:flex; align-items:center; gap:18px; padding:14px 18px; }
+  .wf-logo { display:flex; align-items:center; gap:8px; font-weight:700; color:#444; }
+  .wf-icon { width:18px; height:18px; border:1px solid #999; border-radius:4px; display:inline-block; flex:0 0 auto; }
+  nav.wf-nav ul { list-style:none; display:flex; gap:14px; flex-wrap:wrap; }
+  nav.wf-nav li { width:78px; height:10px; background:#ccc; border-radius:4px; }
+  .wf-tools { margin-left:auto; display:flex; align-items:center; gap:16px; }
+  .wf-bell { position:relative; }
+  .wf-badge { position:absolute; top:-7px; right:-9px; min-width:16px; height:16px; padding:0 4px; border-radius:8px; background:#999; color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; }
+  .wf-avatar { width:28px; height:28px; border:1px solid #999; border-radius:50%; background:#ccc; }
+  .wf-user { width:90px; height:10px; background:#ccc; border-radius:4px; }
+  main.wf-main { padding:24px 2px; max-width:860px; }
+  .wf-topbar { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:22px; }
+  .wf-h1 { display:flex; align-items:center; gap:10px; }
+  .wf-h1 .bar { height:18px; width:250px; background:#999; border-radius:4px; }
+  .wf-h1 .wf-icon { width:22px; height:22px; }
+  .wf-topbar .actions { display:flex; gap:10px; flex-wrap:wrap; }
+  .wf-btn { display:inline-flex; align-items:center; gap:6px; border:1px solid #999; border-radius:6px; background:#eee; color:#444; padding:9px 14px; font-size:13px; }
+  .bar { background:#ccc; border-radius:4px; }
+  .wf-card { border:1px solid #ccc; border-radius:8px; background:#fff; padding:20px; margin-bottom:18px; }
+  .wf-card-title { height:12px; width:150px; background:#999; border-radius:4px; margin-bottom:16px; }
+  /* section Profil : liste de paires clé/valeur */
+  .wf-dl .row2 { display:flex; gap:16px; padding:8px 0; border-bottom:1px solid #eee; }
+  .wf-dl .row2:last-child { border-bottom:0; }
+  .wf-dl .dt { width:210px; flex:0 0 auto; }
+  .wf-dl .dt .bar { height:9px; width:80%; }
+  .wf-dl .dd { flex:1; }
+  .wf-dl .dd .bar { height:9px; width:55%; }
+  /* sections tableaux */
+  table.wf-table { width:100%; border-collapse:collapse; }
+  .wf-table thead th { text-align:left; padding:10px 12px; border-bottom:1px solid #ccc; }
+  .wf-table thead th .bar { height:9px; width:60px; background:#999; }
+  .wf-table tbody td { padding:10px 12px; border-bottom:1px solid #eee; }
+  .wf-table tbody tr:last-child td { border-bottom:0; }
+  .wf-cell { height:9px; background:#ccc; border-radius:4px; }
+  .wf-footer-inner { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; padding:22px 18px; }
+  .wf-cap { text-align:center; color:#999; font-size:12px; font-style:italic; margin-top:14px; padding-top:12px; border-top:1px dashed #ccc; }
+</style>
+</head>
+<body>
+<div class="wf-shell">
+
+  <header class="wf-header">
+    <div class="wf-header-inner">
+      <div class="wf-logo"><span class="wf-icon"></span><span>CreaSlot</span></div>
+      <nav class="wf-nav" aria-label="Navigation"><ul><li></li><li></li><li></li></ul></nav>
+      <div class="wf-tools">
+        <div class="wf-bell"><span class="wf-icon"></span><span class="wf-badge">2</span></div>
+        <span class="wf-avatar"></span><span class="wf-user"></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="wf-main">
+    <!-- Titre + actions (imprimer / exporter) -->
+    <div class="wf-topbar">
+      <div class="wf-h1"><span class="wf-icon"></span><span class="bar"></span></div>
+      <div class="actions">
+        <button type="button" class="wf-btn">Imprimer</button>
+        <button type="button" class="wf-btn">Exporter mes données (JSON)</button>
+      </div>
+    </div>
+
+    <!-- Section Profil : paires clé / valeur (données minimisées) -->
+    <section class="wf-card" aria-label="Profil">
+      <div class="wf-card-title"></div>
+      <div class="wf-dl">
+        <div class="row2"><div class="dt"><div class="bar"></div></div><div class="dd"><div class="bar"></div></div></div>
+        <div class="row2"><div class="dt"><div class="bar"></div></div><div class="dd"><div class="bar"></div></div></div>
+        <div class="row2"><div class="dt"><div class="bar"></div></div><div class="dd"><div class="bar"></div></div></div>
+        <div class="row2"><div class="dt"><div class="bar"></div></div><div class="dd"><div class="bar"></div></div></div>
+        <div class="row2"><div class="dt"><div class="bar"></div></div><div class="dd"><div class="bar"></div></div></div>
+        <div class="row2"><div class="dt"><div class="bar"></div></div><div class="dd"><div class="bar"></div></div></div>
+        <div class="row2"><div class="dt"><div class="bar"></div></div><div class="dd"><div class="bar"></div></div></div>
+        <div class="row2"><div class="dt"><div class="bar"></div></div><div class="dd"><div class="bar"></div></div></div>
+      </div>
+    </section>
+
+    <!-- Section Mes rendez-vous : tableau -->
+    <section class="wf-card" aria-label="Mes rendez-vous">
+      <div class="wf-card-title"></div>
+      <table class="wf-table">
+        <thead>
+          <tr><th><span class="bar"></span></th><th><span class="bar"></span></th><th><span class="bar"></span></th><th><span class="bar"></span></th><th><span class="bar"></span></th></tr>
+        </thead>
+        <tbody>
+          <tr><td><div class="wf-cell" style="width:80px"></div></td><td><div class="wf-cell" style="width:80px"></div></td><td><div class="wf-cell" style="width:70px"></div></td><td><div class="wf-cell" style="width:90px"></div></td><td><div class="wf-cell" style="width:60px"></div></td></tr>
+          <tr><td><div class="wf-cell" style="width:80px"></div></td><td><div class="wf-cell" style="width:80px"></div></td><td><div class="wf-cell" style="width:70px"></div></td><td><div class="wf-cell" style="width:90px"></div></td><td><div class="wf-cell" style="width:60px"></div></td></tr>
+          <tr><td><div class="wf-cell" style="width:80px"></div></td><td><div class="wf-cell" style="width:80px"></div></td><td><div class="wf-cell" style="width:70px"></div></td><td><div class="wf-cell" style="width:90px"></div></td><td><div class="wf-cell" style="width:60px"></div></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Section Mes notifications : tableau -->
+    <section class="wf-card" aria-label="Mes notifications">
+      <div class="wf-card-title"></div>
+      <table class="wf-table">
+        <thead>
+          <tr><th><span class="bar"></span></th><th><span class="bar"></span></th><th><span class="bar"></span></th><th><span class="bar"></span></th></tr>
+        </thead>
+        <tbody>
+          <tr><td><div class="wf-cell" style="width:90px"></div></td><td><div class="wf-cell" style="width:70px"></div></td><td><div class="wf-cell" style="width:120px"></div></td><td><div class="wf-cell" style="width:50px"></div></td></tr>
+          <tr><td><div class="wf-cell" style="width:90px"></div></td><td><div class="wf-cell" style="width:70px"></div></td><td><div class="wf-cell" style="width:120px"></div></td><td><div class="wf-cell" style="width:50px"></div></td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer class="wf-footer">
+    <div class="wf-footer-inner">
+      <div>
+        <div class="wf-logo" style="margin-bottom:8px"><span class="wf-icon"></span><span>CreaSlot</span></div>
+        <div class="bar" style="height:8px;width:90%;margin:6px 0"></div>
+        <div class="bar" style="height:8px;width:75%;margin:6px 0"></div>
+      </div>
+      <div>
+        <div class="bar" style="height:11px;width:120px;background:#999;margin-bottom:10px"></div>
+        <div class="bar" style="height:8px;width:70%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:80%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:65%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:72%;margin:7px 0"></div>
+      </div>
+      <div>
+        <div class="bar" style="height:11px;width:80px;background:#999;margin-bottom:10px"></div>
+        <div class="bar" style="height:8px;width:85%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:60%;margin:7px 0"></div>
+      </div>
+    </div>
+  </footer>
+
+  <footer class="wf-cap">Wireframe lo-fi — Mes données personnelles (RGPD art. 15 + export art. 20)</footer>
+</div>
+</body>
+</html>

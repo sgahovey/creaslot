@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wireframe lo-fi — Gestion des comptes</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,Arial,sans-serif; background:#fff; color:#444; font-size:14px; line-height:1.5; }
+  .wf-shell { max-width:1000px; margin:0 auto; padding:16px; }
+  header.wf-header, footer.wf-footer { background:#eee; border:1px solid #ccc; border-radius:8px; }
+  .wf-header-inner { display:flex; align-items:center; gap:18px; padding:14px 18px; }
+  .wf-logo { display:flex; align-items:center; gap:8px; font-weight:700; color:#444; }
+  .wf-icon { width:18px; height:18px; border:1px solid #999; border-radius:4px; display:inline-block; flex:0 0 auto; }
+  nav.wf-nav ul { list-style:none; display:flex; gap:12px; flex-wrap:wrap; }
+  nav.wf-nav li { width:64px; height:10px; background:#ccc; border-radius:4px; }
+  .wf-tools { margin-left:auto; display:flex; align-items:center; gap:16px; }
+  .wf-bell { position:relative; }
+  .wf-badge { position:absolute; top:-7px; right:-9px; min-width:16px; height:16px; padding:0 4px; border-radius:8px; background:#999; color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; }
+  .wf-avatar { width:28px; height:28px; border:1px solid #999; border-radius:50%; background:#ccc; }
+  .wf-user { width:90px; height:10px; background:#ccc; border-radius:4px; }
+  main.wf-main { padding:24px 2px; }
+  .wf-h1 { display:flex; align-items:center; gap:10px; margin-bottom:22px; }
+  .wf-h1 .bar { height:20px; width:200px; background:#999; border-radius:4px; }
+  .wf-h1 .wf-icon { width:24px; height:24px; }
+  .bar { background:#ccc; border-radius:4px; }
+  .wf-toolbar { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+  .wf-toolbar .left { display:flex; align-items:center; gap:8px; }
+  .wf-toolbar .left .bar { height:12px; width:110px; background:#999; }
+  .wf-toolbar .right { display:flex; align-items:center; gap:14px; }
+  .wf-toolbar .right .count { height:9px; width:70px; background:#ccc; border-radius:4px; }
+  .wf-btn { display:inline-flex; align-items:center; gap:6px; border:1px solid #999; border-radius:6px; background:#eee; color:#444; padding:8px 14px; font-size:13px; }
+  .wf-btn--primary { background:#999; color:#fff; }
+  .wf-btn--sm { padding:5px 10px; font-size:12px; }
+  .wf-search { display:flex; align-items:flex-end; gap:10px; margin-bottom:16px; }
+  .wf-search .fieldwrap { flex:1; max-width:420px; }
+  .wf-label { display:block; font-size:12px; color:#999; margin-bottom:6px; }
+  .wf-field { border:1px solid #ccc; border-radius:6px; height:34px; background:#fff; }
+  .wf-tablecard { border:1px solid #ccc; border-radius:8px; overflow:hidden; }
+  table.wf-table { width:100%; border-collapse:collapse; }
+  .wf-table thead th { text-align:left; padding:12px 14px; border-bottom:1px solid #ccc; background:#fafafa; }
+  .wf-table thead th .bar { height:9px; width:70px; background:#999; }
+  .wf-table tbody td { padding:12px 14px; border-bottom:1px solid #eee; vertical-align:middle; }
+  .wf-table tbody tr:last-child td { border-bottom:0; }
+  .wf-cell { height:9px; background:#ccc; border-radius:4px; }
+  .wf-pill { height:18px; width:64px; background:#ccc; border-radius:9px; }
+  .wf-pill--sm { width:40px; }
+  .wf-rowactions { display:flex; gap:6px; justify-content:flex-end; }
+  .wf-pagination { display:flex; gap:8px; justify-content:center; margin-top:20px; }
+  .wf-page { width:34px; height:34px; border:1px solid #ccc; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#999; }
+  .wf-page--active { background:#999; color:#fff; border-color:#999; }
+  .wf-footer-inner { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; padding:22px 18px; }
+  .wf-cap { text-align:center; color:#999; font-size:12px; font-style:italic; margin-top:14px; padding-top:12px; border-top:1px dashed #ccc; }
+</style>
+</head>
+<body>
+<div class="wf-shell">
+
+  <header class="wf-header">
+    <div class="wf-header-inner">
+      <div class="wf-logo"><span class="wf-icon"></span><span>CreaSlot</span></div>
+      <nav class="wf-nav" aria-label="Navigation super-admin"><ul><li></li><li></li><li></li><li></li><li></li><li></li></ul></nav>
+      <div class="wf-tools">
+        <div class="wf-bell"><span class="wf-icon"></span><span class="wf-badge">2</span></div>
+        <span class="wf-avatar"></span><span class="wf-user"></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="wf-main">
+    <div class="wf-h1"><span class="wf-icon"></span><span class="bar"></span></div>
+
+    <!-- Barre de section : titre + count + bouton -->
+    <div class="wf-toolbar">
+      <div class="left"><span class="wf-icon"></span><span class="bar"></span></div>
+      <div class="right">
+        <span class="count"></span>
+        <button type="button" class="wf-btn wf-btn--primary">Nouveau compte</button>
+      </div>
+    </div>
+
+    <!-- Recherche -->
+    <form class="wf-search" role="search">
+      <div class="fieldwrap">
+        <label class="wf-label">Rechercher (nom, prénom ou email)</label>
+        <div class="wf-field"></div>
+      </div>
+      <button type="button" class="wf-btn">Rechercher</button>
+    </form>
+
+    <!-- Tableau des comptes -->
+    <div class="wf-tablecard">
+      <table class="wf-table">
+        <thead>
+          <tr>
+            <th><span class="bar"></span></th>
+            <th><span class="bar"></span></th>
+            <th><span class="bar"></span></th>
+            <th><span class="bar" style="width:40px"></span></th>
+            <th><span class="bar"></span></th>
+            <th><span class="bar"></span></th>
+            <th><span class="bar" style="width:50px"></span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div class="wf-cell" style="width:120px"></div></td>
+            <td><div class="wf-cell" style="width:150px"></div></td>
+            <td><span class="wf-pill"></span></td>
+            <td><span class="wf-pill wf-pill--sm"></span></td>
+            <td><div class="wf-cell" style="width:70px"></div></td>
+            <td><div class="wf-cell" style="width:70px"></div></td>
+            <td><div class="wf-rowactions"><button type="button" class="wf-btn wf-btn--sm">Modifier</button><button type="button" class="wf-btn wf-btn--sm">Désactiver</button></div></td>
+          </tr>
+          <tr>
+            <td><div class="wf-cell" style="width:110px"></div></td>
+            <td><div class="wf-cell" style="width:160px"></div></td>
+            <td><span class="wf-pill"></span></td>
+            <td><span class="wf-pill wf-pill--sm"></span></td>
+            <td><div class="wf-cell" style="width:70px"></div></td>
+            <td><div class="wf-cell" style="width:70px"></div></td>
+            <td><div class="wf-rowactions"><button type="button" class="wf-btn wf-btn--sm">Modifier</button><button type="button" class="wf-btn wf-btn--sm">Désactiver</button></div></td>
+          </tr>
+          <tr>
+            <td><div class="wf-cell" style="width:130px"></div></td>
+            <td><div class="wf-cell" style="width:140px"></div></td>
+            <td><span class="wf-pill"></span></td>
+            <td><span class="wf-pill wf-pill--sm"></span></td>
+            <td><div class="wf-cell" style="width:70px"></div></td>
+            <td><div class="wf-cell" style="width:70px"></div></td>
+            <td><div class="wf-rowactions"><button type="button" class="wf-btn wf-btn--sm">Modifier</button><button type="button" class="wf-btn wf-btn--sm">Réactiver</button></div></td>
+          </tr>
+          <tr>
+            <td><div class="wf-cell" style="width:115px"></div></td>
+            <td><div class="wf-cell" style="width:155px"></div></td>
+            <td><span class="wf-pill"></span></td>
+            <td><span class="wf-pill wf-pill--sm"></span></td>
+            <td><div class="wf-cell" style="width:70px"></div></td>
+            <td><div class="wf-cell" style="width:70px"></div></td>
+            <td><div class="wf-rowactions"><button type="button" class="wf-btn wf-btn--sm">Modifier</button><button type="button" class="wf-btn wf-btn--sm">Désactiver</button></div></td>
+          </tr>
+          <tr>
+            <td><div class="wf-cell" style="width:125px"></div></td>
+            <td><div class="wf-cell" style="width:145px"></div></td>
+            <td><span class="wf-pill"></span></td>
+            <td><span class="wf-pill wf-pill--sm"></span></td>
+            <td><div class="wf-cell" style="width:70px"></div></td>
+            <td><div class="wf-cell" style="width:70px"></div></td>
+            <td><div class="wf-rowactions"><button type="button" class="wf-btn wf-btn--sm">Modifier</button><button type="button" class="wf-btn wf-btn--sm">Désactiver</button></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <nav class="wf-pagination" aria-label="Pagination">
+      <span class="wf-page">‹</span>
+      <span class="wf-page wf-page--active">1</span>
+      <span class="wf-page">2</span>
+      <span class="wf-page">3</span>
+      <span class="wf-page">›</span>
+    </nav>
+  </main>
+
+  <footer class="wf-footer">
+    <div class="wf-footer-inner">
+      <div>
+        <div class="wf-logo" style="margin-bottom:8px"><span class="wf-icon"></span><span>CreaSlot</span></div>
+        <div class="bar" style="height:8px;width:90%;margin:6px 0"></div>
+        <div class="bar" style="height:8px;width:75%;margin:6px 0"></div>
+      </div>
+      <div>
+        <div class="bar" style="height:11px;width:120px;background:#999;margin-bottom:10px"></div>
+        <div class="bar" style="height:8px;width:70%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:80%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:65%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:72%;margin:7px 0"></div>
+      </div>
+      <div>
+        <div class="bar" style="height:11px;width:80px;background:#999;margin-bottom:10px"></div>
+        <div class="bar" style="height:8px;width:85%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:60%;margin:7px 0"></div>
+      </div>
+    </div>
+  </footer>
+
+  <footer class="wf-cap">Wireframe lo-fi — Gestion des comptes (super-admin)</footer>
+</div>
+</body>
+</html>
