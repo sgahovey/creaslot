@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration;
 
+use App\Entity\Creneau;
+use App\Entity\Reservation;
 use App\Entity\Service;
+use App\Entity\TypeRdv;
 use App\Entity\Utilisateur;
 use App\Enum\RoleUtilisateur;
+use App\Enum\StatutReservation;
 use App\Repository\CreneauRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -27,6 +31,11 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
  * cohérent. Il ne teste PAS la sémantique métier (résultats) — uniquement que
  * la requête s'exécute sans exception Doctrine. Objectif : fermer la faille de
  * couverture qui a permis l'oubli DT-1.
+ *
+ * Complément DT-39 : `test_find_disponibles_retourne_les_creneaux_disponibles_et_exclut_les_autres`
+ * va plus loin que le smoke test et asserte le RÉSULTAT métier de `findDisponibles`
+ * (créneau réservé ACTIVE exclu, redevenu disponible après annulation, passé exclu,
+ * propriétaire inactif exclu), isolé des fixtures par un filtre `serviceId` dédié.
  *
  * Autonome : crée son propre Personnel en transaction (rollback en tearDown),
  * sans dépendre des fixtures chargées en BDD test.
@@ -124,6 +133,46 @@ final class CreneauRepositoryQueriesTest extends KernelTestCase
         self::assertLessThanOrEqual(count($paginator), count(iterator_to_array($paginator)));
     }
 
+    public function test_find_disponibles_retourne_les_creneaux_disponibles_et_exclut_les_autres(): void
+    {
+        // Isolation totale des fixtures : on filtre par un Service de test dédié, donc
+        // seuls les créneaux créés ici (rattachés à ce service) peuvent apparaître.
+        $service = $this->creerServiceDedie();
+        $personnelActif = $this->creerPersonnelDansService($service, estActif: true);
+        $personnelInactif = $this->creerPersonnelDansService($service, estActif: false);
+        $auditeur = $this->creerAuditeur();
+        $typeRdv = $this->trouverOuCreerTypeRdv();
+
+        $futur = (new \DateTimeImmutable('+1 year'))->setTime(9, 0);
+        $passe = (new \DateTimeImmutable('-1 year'))->setTime(9, 0);
+
+        $creneauLibre = $this->creerCreneau($personnelActif, $typeRdv, $futur, $futur->modify('+1 hour'));
+        $creneauActive = $this->creerCreneau($personnelActif, $typeRdv, $futur->setTime(10, 0), $futur->setTime(11, 0));
+        $creneauAnnulee = $this->creerCreneau($personnelActif, $typeRdv, $futur->setTime(11, 0), $futur->setTime(12, 0));
+        $creneauPasse = $this->creerCreneau($personnelActif, $typeRdv, $passe, $passe->modify('+1 hour'));
+        $creneauPersoInactif = $this->creerCreneau($personnelInactif, $typeRdv, $futur->setTime(13, 0), $futur->setTime(14, 0));
+
+        $this->creerReservation($auditeur, $creneauActive, StatutReservation::ACTIVE);
+        $this->creerReservation($auditeur, $creneauAnnulee, StatutReservation::ANNULEE);
+
+        $this->entityManager->flush();
+
+        $paginator = $this->creneauRepository->findDisponibles(null, (int) $service->getId(), null, 1);
+
+        /** @var list<int> $idsRetournes */
+        $idsRetournes = array_map(
+            static fn (Creneau $creneau): int => (int) $creneau->getId(),
+            iterator_to_array($paginator),
+        );
+
+        self::assertCount(2, $paginator, 'Seuls 2 créneaux du service de test sont disponibles.');
+        self::assertContains((int) $creneauLibre->getId(), $idsRetournes, 'Le créneau libre doit apparaître.');
+        self::assertContains((int) $creneauAnnulee->getId(), $idsRetournes, 'Un créneau dont la réservation est ANNULEE redevient disponible.');
+        self::assertNotContains((int) $creneauActive->getId(), $idsRetournes, 'Un créneau réservé ACTIVE est exclu.');
+        self::assertNotContains((int) $creneauPasse->getId(), $idsRetournes, 'Un créneau passé est exclu.');
+        self::assertNotContains((int) $creneauPersoInactif->getId(), $idsRetournes, "Un créneau d'un personnel inactif est exclu.");
+    }
+
     public function test_existe_creneau_actif_futur_ou_en_cours_executes_sans_erreur_dql(): void
     {
         $this->expectNotToPerformAssertions();
@@ -152,5 +201,88 @@ final class CreneauRepositoryQueriesTest extends KernelTestCase
         $this->entityManager->persist($personnel);
 
         return $personnel;
+    }
+
+    private function creerServiceDedie(): Service
+    {
+        $service = new Service();
+        $service->setNom('Service Test Dispo ' . uniqid())->setEstActif(true);
+        $this->entityManager->persist($service);
+
+        return $service;
+    }
+
+    private function creerPersonnelDansService(Service $service, bool $estActif): Utilisateur
+    {
+        $personnel = new Utilisateur();
+        $personnel->setEmail('dispo-personnel-' . uniqid() . '@test.local')
+                  ->setPrenom('Perso')
+                  ->setNom('TestDispo')
+                  ->setRole(RoleUtilisateur::PERSONNEL)
+                  ->setEstActif($estActif)
+                  ->setService($service)
+                  ->setMotDePasseHash('placeholder-not-real');
+        $this->entityManager->persist($personnel);
+
+        return $personnel;
+    }
+
+    private function creerAuditeur(): Utilisateur
+    {
+        $auditeur = new Utilisateur();
+        $auditeur->setEmail('dispo-auditeur-' . uniqid() . '@test.local')
+                 ->setPrenom('Xavier')
+                 ->setNom('TestDispo')
+                 ->setRole(RoleUtilisateur::AUDITEUR)
+                 ->setEstActif(true)
+                 ->setMotDePasseHash('placeholder-not-real');
+        $this->entityManager->persist($auditeur);
+
+        return $auditeur;
+    }
+
+    private function trouverOuCreerTypeRdv(): TypeRdv
+    {
+        $existant = $this->entityManager->getRepository(TypeRdv::class)->findOneBy([]);
+        if ($existant !== null) {
+            return $existant;
+        }
+
+        $typeRdv = new TypeRdv();
+        $typeRdv->setCode('TEST_DISPO_' . substr(uniqid(), -6))
+                ->setLibelle('Test Dispo')
+                ->setCouleurHex('#1A3E6F')
+                ->setEstActif(true);
+        $this->entityManager->persist($typeRdv);
+
+        return $typeRdv;
+    }
+
+    private function creerCreneau(
+        Utilisateur $personnel,
+        TypeRdv $typeRdv,
+        \DateTimeImmutable $debut,
+        \DateTimeImmutable $fin,
+    ): Creneau {
+        $creneau = (new Creneau())
+            ->setUtilisateur($personnel)
+            ->setTypeRdv($typeRdv)
+            ->setDateDebut($debut)
+            ->setDateFin($fin)
+            ->setEstActif(true);
+        $this->entityManager->persist($creneau);
+
+        return $creneau;
+    }
+
+    private function creerReservation(Utilisateur $auditeur, Creneau $creneau, StatutReservation $statut): Reservation
+    {
+        $reservation = (new Reservation())
+            ->setCreneau($creneau)
+            ->setUtilisateur($auditeur)
+            ->setStatut($statut);
+        $this->entityManager->persist($reservation);
+
+        return $reservation;
     }
 }
