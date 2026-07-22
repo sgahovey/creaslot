@@ -1,6 +1,6 @@
 # Dette technique CreaSlot — Suivi
 
-Date dernière mise à jour : 1er juillet 2026.
+Date dernière mise à jour : 22 juillet 2026.
 Convention : DT-N = Dette Technique numéro N.
 
 ---
@@ -1019,3 +1019,29 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 **Hors périmètre** : la logique des requêtes elle-même (correcte, paramétrée, exercée en production) ; le parcours fonctionnel existant (`ReservationParcoursControllerTest`), qui reste la couverture end-to-end.
 
 **Priorité** : 🟢 basse (les deux méthodes sont exercées en production ; lacune de couverture de test unitaire, aucun impact fonctionnel ni sécurité).
+
+## DT-40 — Cron de rappels J-1 cassé par une commande erronée, et absence de supervision des crons CreaSlot (🟡 MOYEN) — ✅ RÉSOLUE (22/07/2026)
+
+> **✅ RÉSOLUE le 22/07/2026**, détectée et corrigée le même jour lors d'une vérification du mécanisme de notifications aux utilisateurs.
+>
+> **Origine** : la ligne du crontab de production appelait `app:prets:rappels-j1`, une commande qui n'existe dans aucun des deux projets hébergés. Le nom mélange la commande CreaPret `app:prets:rappels` et le suffixe CreaSlot `-j1` ; la commande réelle est `app:envoyer-rappels-j1`. La faute a été introduite le 18/07/2026, lors de l'édition manuelle du crontab pour y ajouter les tâches planifiées de CreaPret.
+>
+> **Résumé fix** : ligne du crontab corrigée vers `app:envoyer-rappels-j1`, après sauvegarde horodatée du crontab. Vérification par exécution manuelle dans le conteneur de production : code de sortie 0, sortie `Rappels J-1 : 0 envoyés, 0 erreurs`, plus aucune exception de commande inconnue.
+>
+> **Mesure préventive** : trois sondes Uptime Kuma de type push ajoutées sur les crons CreaSlot (sauvegarde de la base, rappels J-1, purge du journal d'administration), sur le modèle déjà en place côté CreaPret. Chaque ligne cron se termine par un `curl` de battement précédé de `&&`, si bien que le battement n'est émis que lorsque la commande sort en succès. L'ajout a nécessité d'exempter le chemin `/api/push/` du `basic_auth` dans le Caddyfile du proxy mutualisé, par alignement sur le bloc CreaPret existant. Caddyfile validé par `caddy validate`, puis rechargé à chaud par `caddy reload` : aucun redémarrage de conteneur, aucune coupure sur les 7 sites servis. Modification reportée et commitée dans le dépôt versionné `infra-proxy`.
+
+**Détecté** : 22/07/2026, lors d'une vérification du mécanisme de notifications aux utilisateurs.
+
+**Constat** : les rappels J-1 n'ont plus été envoyés du 18/07 au 22/07/2026, soit cinq exécutions en échec, une par soir à 14h00 UTC. Le fichier `~/cron-logs/rappels-j1.log` contenait à chaque fois `There are no commands defined in the "app:prets" namespace`. Les 31 exécutions précédentes, du 18/06 au 17/07, s'étaient déroulées normalement.
+
+**Cause de la détection tardive** : aucune sonde ne surveillait les crons CreaSlot, alors que les trois crons CreaPret poussaient déjà un battement vers Uptime Kuma à chaque exécution. La tâche échouait en silence dans un fichier de log que personne ne consultait, pendant cinq jours. L'instance Uptime Kuma de CreaSlot ne comptait qu'un seul moniteur, sur l'endpoint `/health`.
+
+**Fichiers concernés** : aucun fichier applicatif. Le crontab vit uniquement sur le VPS et n'est versionné nulle part ; `docs/cron-rappels-j1.md` documentait déjà la bonne commande depuis l'origine, seul le crontab du serveur avait dérivé. Le `Caddyfile` du dépôt `infra-proxy` a été modifié pour la mesure préventive.
+
+**Action réalisée** : correction du crontab, vérification par exécution manuelle, ajout de trois sondes Kuma avec validation immédiate de chaque jeton de push, exemption du chemin de push dans le Caddyfile avec rechargement à chaud et contrôle des 7 sites.
+
+**Constat associé** : la base de production ne contient aucune réservation (4 comptes de test, 0 rendez-vous). Aucun rappel réel n'a donc été manqué pendant la panne. La validation de la chaîne d'envoi repose sur la préproduction, qui dispose d'un jeu d'essai, et sur les tests Brevo documentés en [[DT-23]] et [[DT-24]].
+
+**Hors périmètre** : la commande `app:envoyer-rappels-j1` elle-même, correcte et couverte par trois tests unitaires ; le worker Messenger et la file d'envoi, vérifiés sains (aucun message bloqué ni en échec) ; la supervision des crons CreaPret, déjà en place.
+
+**Priorité** : 🟡 moyenne (fonctionnalité de production inopérante pendant cinq jours ; impact réel nul faute de données en base, mais le défaut de supervision qui l'a masquée couvrait aussi la sauvegarde quotidienne).
