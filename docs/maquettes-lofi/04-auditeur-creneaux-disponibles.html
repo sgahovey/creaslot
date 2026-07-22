@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wireframe lo-fi — Créneaux disponibles</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,Arial,sans-serif; background:#fff; color:#444; font-size:14px; line-height:1.5; }
+  .wf-shell { max-width:1000px; margin:0 auto; padding:16px; }
+  header.wf-header, footer.wf-footer { background:#eee; border:1px solid #ccc; border-radius:8px; }
+  .wf-header-inner { display:flex; align-items:center; gap:18px; padding:14px 18px; }
+  .wf-logo { display:flex; align-items:center; gap:8px; font-weight:700; color:#444; }
+  .wf-icon { width:18px; height:18px; border:1px solid #999; border-radius:4px; display:inline-block; flex:0 0 auto; }
+  .wf-icon--round { border-radius:50%; }
+  nav.wf-nav ul { list-style:none; display:flex; gap:14px; flex-wrap:wrap; }
+  nav.wf-nav li { width:78px; height:10px; background:#ccc; border-radius:4px; }
+  .wf-tools { margin-left:auto; display:flex; align-items:center; gap:16px; }
+  .wf-bell { position:relative; }
+  .wf-badge { position:absolute; top:-7px; right:-9px; min-width:16px; height:16px; padding:0 4px; border-radius:8px; background:#999; color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; }
+  .wf-avatar { width:28px; height:28px; border:1px solid #999; border-radius:50%; background:#ccc; }
+  .wf-user { width:90px; height:10px; background:#ccc; border-radius:4px; }
+  main.wf-main { padding:24px 2px; }
+  .wf-h1 { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .wf-h1 .bar { height:18px; width:240px; background:#999; border-radius:4px; }
+  .wf-h1 .wf-icon { width:22px; height:22px; }
+  .wf-subcount { height:9px; width:300px; background:#ccc; border-radius:4px; margin-bottom:22px; }
+  .wf-card { border:1px solid #ccc; border-radius:8px; background:#fff; padding:18px; margin-bottom:18px; }
+  .bar { background:#ccc; border-radius:4px; }
+  .wf-label { display:block; font-size:12px; color:#999; margin-bottom:6px; }
+  .wf-field { border:1px solid #ccc; border-radius:6px; height:36px; background:#fff; }
+  .wf-btn { display:inline-flex; align-items:center; gap:6px; border:1px solid #999; border-radius:6px; background:#eee; color:#444; padding:9px 16px; font-size:13px; }
+  .wf-btn--primary { background:#999; color:#fff; }
+  .wf-btn--block { display:flex; justify-content:center; width:100%; }
+  .wf-row { display:flex; gap:16px; flex-wrap:wrap; }
+  .wf-col { flex:1; min-width:180px; }
+  .wf-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .wf-slot { border:1px solid #ccc; border-left:5px solid #999; border-radius:8px; padding:14px; display:flex; flex-direction:column; gap:9px; }
+  .wf-slot-row { display:flex; align-items:center; gap:8px; }
+  .wf-pagination { display:flex; gap:8px; justify-content:center; margin-top:20px; }
+  .wf-page { width:34px; height:34px; border:1px solid #ccc; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#999; }
+  .wf-page--active { background:#999; color:#fff; border-color:#999; }
+  .wf-footer-inner { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; padding:22px 18px; }
+  .wf-cap { text-align:center; color:#999; font-size:12px; font-style:italic; margin-top:14px; padding-top:12px; border-top:1px dashed #ccc; }
+  /* Bandeau d'environnement préproduction (illustration lo-fi du bandeau réel) */
+  .wf-env-banner { width:100%; background:#ccc; color:#444; text-align:center; font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; padding:8px; border-bottom:1px solid #999; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .wf-env-icon { width:14px; height:14px; border:1px solid #999; border-radius:3px; background:#eee; display:inline-block; flex:0 0 auto; }
+</style>
+</head>
+<body>
+
+<!-- Bandeau d'environnement préproduction : bande pleine largeur au-dessus du header -->
+<div class="wf-env-banner" role="status" aria-label="Environnement pré-production">
+  <span class="wf-env-icon" aria-hidden="true"></span>
+  PRÉ-PRODUCTION
+</div>
+
+<div class="wf-shell">
+
+  <header class="wf-header">
+    <div class="wf-header-inner">
+      <div class="wf-logo"><span class="wf-icon"></span><span>CreaSlot</span></div>
+      <nav class="wf-nav" aria-label="Navigation auditeur"><ul><li></li><li></li><li></li></ul></nav>
+      <div class="wf-tools">
+        <div class="wf-bell"><span class="wf-icon"></span><span class="wf-badge">2</span></div>
+        <span class="wf-avatar"></span><span class="wf-user"></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="wf-main">
+    <div class="wf-h1"><span class="wf-icon"></span><span class="bar"></span></div>
+    <div class="wf-subcount"></div>
+
+    <!-- Formulaire de filtres -->
+    <form class="wf-card" aria-label="Filtres">
+      <div class="wf-row">
+        <div class="wf-col">
+          <label class="wf-label">Type de RDV</label>
+          <div class="wf-field"></div>
+        </div>
+        <div class="wf-col">
+          <label class="wf-label">Service</label>
+          <div class="wf-field"></div>
+        </div>
+        <div class="wf-col">
+          <label class="wf-label">Date</label>
+          <div class="wf-field"></div>
+        </div>
+      </div>
+      <div class="wf-row" style="margin-top:14px">
+        <button type="button" class="wf-btn wf-btn--primary">Filtrer</button>
+        <button type="button" class="wf-btn">Réinitialiser</button>
+      </div>
+    </form>
+
+    <!-- Grille de créneaux -->
+    <div class="wf-grid" aria-label="Liste des créneaux disponibles">
+      <!-- carte de créneau x6 : liseré gauche + infos en barres + bouton -->
+      <article class="wf-slot">
+        <div class="wf-slot-row"><span class="wf-icon wf-icon--round"></span><span class="bar" style="height:9px;width:70px"></span></div>
+        <div class="wf-slot-row"><span class="wf-icon"></span><span class="bar" style="height:11px;width:80%"></span></div>
+        <div class="bar" style="height:9px;width:60%"></div>
+        <div class="wf-slot-row"><span class="wf-avatar"></span><div style="flex:1"><div class="bar" style="height:9px;width:70%;margin-bottom:5px"></div><div class="bar" style="height:8px;width:50%"></div></div></div>
+        <div class="bar" style="height:8px;width:90%"></div>
+        <button type="button" class="wf-btn wf-btn--primary wf-btn--block">Réserver</button>
+      </article>
+      <article class="wf-slot">
+        <div class="wf-slot-row"><span class="wf-icon wf-icon--round"></span><span class="bar" style="height:9px;width:70px"></span></div>
+        <div class="wf-slot-row"><span class="wf-icon"></span><span class="bar" style="height:11px;width:80%"></span></div>
+        <div class="bar" style="height:9px;width:60%"></div>
+        <div class="wf-slot-row"><span class="wf-avatar"></span><div style="flex:1"><div class="bar" style="height:9px;width:70%;margin-bottom:5px"></div><div class="bar" style="height:8px;width:50%"></div></div></div>
+        <div class="bar" style="height:8px;width:75%"></div>
+        <button type="button" class="wf-btn wf-btn--primary wf-btn--block">Réserver</button>
+      </article>
+      <article class="wf-slot">
+        <div class="wf-slot-row"><span class="wf-icon wf-icon--round"></span><span class="bar" style="height:9px;width:70px"></span></div>
+        <div class="wf-slot-row"><span class="wf-icon"></span><span class="bar" style="height:11px;width:80%"></span></div>
+        <div class="bar" style="height:9px;width:60%"></div>
+        <div class="wf-slot-row"><span class="wf-avatar"></span><div style="flex:1"><div class="bar" style="height:9px;width:70%;margin-bottom:5px"></div><div class="bar" style="height:8px;width:50%"></div></div></div>
+        <button type="button" class="wf-btn wf-btn--primary wf-btn--block">Réserver</button>
+      </article>
+      <article class="wf-slot">
+        <div class="wf-slot-row"><span class="wf-icon wf-icon--round"></span><span class="bar" style="height:9px;width:70px"></span></div>
+        <div class="wf-slot-row"><span class="wf-icon"></span><span class="bar" style="height:11px;width:80%"></span></div>
+        <div class="bar" style="height:9px;width:60%"></div>
+        <div class="wf-slot-row"><span class="wf-avatar"></span><div style="flex:1"><div class="bar" style="height:9px;width:70%;margin-bottom:5px"></div><div class="bar" style="height:8px;width:50%"></div></div></div>
+        <div class="bar" style="height:8px;width:85%"></div>
+        <button type="button" class="wf-btn wf-btn--primary wf-btn--block">Réserver</button>
+      </article>
+      <article class="wf-slot">
+        <div class="wf-slot-row"><span class="wf-icon wf-icon--round"></span><span class="bar" style="height:9px;width:70px"></span></div>
+        <div class="wf-slot-row"><span class="wf-icon"></span><span class="bar" style="height:11px;width:80%"></span></div>
+        <div class="bar" style="height:9px;width:60%"></div>
+        <div class="wf-slot-row"><span class="wf-avatar"></span><div style="flex:1"><div class="bar" style="height:9px;width:70%;margin-bottom:5px"></div><div class="bar" style="height:8px;width:50%"></div></div></div>
+        <button type="button" class="wf-btn wf-btn--primary wf-btn--block">Réserver</button>
+      </article>
+      <article class="wf-slot">
+        <div class="wf-slot-row"><span class="wf-icon wf-icon--round"></span><span class="bar" style="height:9px;width:70px"></span></div>
+        <div class="wf-slot-row"><span class="wf-icon"></span><span class="bar" style="height:11px;width:80%"></span></div>
+        <div class="bar" style="height:9px;width:60%"></div>
+        <div class="wf-slot-row"><span class="wf-avatar"></span><div style="flex:1"><div class="bar" style="height:9px;width:70%;margin-bottom:5px"></div><div class="bar" style="height:8px;width:50%"></div></div></div>
+        <div class="bar" style="height:8px;width:80%"></div>
+        <button type="button" class="wf-btn wf-btn--primary wf-btn--block">Réserver</button>
+      </article>
+    </div>
+
+    <nav class="wf-pagination" aria-label="Pagination">
+      <span class="wf-page">‹</span>
+      <span class="wf-page wf-page--active">1</span>
+      <span class="wf-page">2</span>
+      <span class="wf-page">3</span>
+      <span class="wf-page">›</span>
+    </nav>
+  </main>
+
+  <footer class="wf-footer">
+    <div class="wf-footer-inner">
+      <div>
+        <div class="wf-logo" style="margin-bottom:8px"><span class="wf-icon"></span><span>CreaSlot</span></div>
+        <div class="bar" style="height:8px;width:90%;margin:6px 0"></div>
+        <div class="bar" style="height:8px;width:75%;margin:6px 0"></div>
+      </div>
+      <div>
+        <div class="bar" style="height:11px;width:120px;background:#999;margin-bottom:10px"></div>
+        <div class="bar" style="height:8px;width:70%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:80%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:65%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:72%;margin:7px 0"></div>
+      </div>
+      <div>
+        <div class="bar" style="height:11px;width:80px;background:#999;margin-bottom:10px"></div>
+        <div class="bar" style="height:8px;width:85%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:60%;margin:7px 0"></div>
+      </div>
+    </div>
+  </footer>
+
+  <footer class="wf-cap">Wireframe lo-fi — Créneaux disponibles (auditeur)</footer>
+</div>
+</body>
+</html>

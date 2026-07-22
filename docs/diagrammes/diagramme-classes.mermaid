@@ -1,0 +1,73 @@
+classDiagram
+    direction TB
+
+    class Utilisateur {
+        email : texte
+        motDePasse : texte
+        nom : texte
+        prenom : texte
+        role : énuméré
+        estActif : booléen
+        emailVerifie : booléen
+        emailModificationCommentaire : booléen
+        emailRappelJ1 : booléen
+    }
+
+    class Service {
+        nom : texte
+        description : texte
+        estActif : booléen
+    }
+
+    class Creneau {
+        dateDebut : date
+        dateFin : date
+        commentaireAuditeur : texte
+        estActif : booléen
+    }
+
+    class TypeRdv {
+        code : texte
+        libelle : texte
+        couleurHex : texte
+        estActif : booléen
+    }
+
+    class Reservation {
+        dateReservation : date
+        statut : énuméré
+        commentaireAuditeur : texte
+        dateAnnulation : date
+        motifAnnulation : texte
+    }
+
+    class Notification {
+        type : énuméré
+        titre : texte
+        message : texte
+        lu : booléen
+    }
+
+    class ResetPasswordRequest {
+        jetonHache : texte
+        demandeLe : date
+        expireLe : date
+    }
+
+    class JournalAdmin {
+        dateAction : date
+        typeAction : énuméré
+        acteurLibelle : texte
+        cibleLibelle : texte
+    }
+
+    Service "0..1" -- "*" Utilisateur : rattache
+    Utilisateur "1" -- "*" Creneau : publie
+    TypeRdv "1" -- "*" Creneau : caractérise
+    Creneau "1" -- "*" Reservation : porte
+    Utilisateur "1" -- "*" Reservation : réserve
+    Utilisateur "1" -- "*" Notification : destinataire
+    Reservation "0..1" -- "*" Notification : concerne
+    Utilisateur "1" -- "*" ResetPasswordRequest : demande
+
+    note for JournalAdmin "Classe isolée, sans association (choix délibéré). Acteur et cible figés en libellés (append-only) : la trace survit à la suppression des comptes — immuabilité RGPD."

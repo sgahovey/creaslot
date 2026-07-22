@@ -37,9 +37,8 @@ rectangle CreaSlot {
         usecase "Consulter ses notifications"               as UC_NOTIFICATIONS
         usecase "Consulter ses données\npersonnelles (RGPD)" as UC_DONNEES
         usecase "Exporter ses données\npersonnelles (RGPD)"  as UC_DONNEES_EXPORT
+        usecase "Supprimer son compte\n(anonymisation, RGPD art. 17)" as UC_SUPPRESSION
     }
-
-    usecase "Notifier les utilisateurs\nconcernés" as UC_NOTIFIER
 }
 
 ' Associations — Visiteur (routes PUBLIC_ACCESS)
@@ -57,10 +56,13 @@ UTILISATEUR -- UC_PROFIL_MDP
 UTILISATEUR -- UC_NOTIFICATIONS
 UTILISATEUR -- UC_DONNEES
 UTILISATEUR -- UC_DONNEES_EXPORT
+UTILISATEUR -- UC_SUPPRESSION
 
-' Include — ResetPasswordController envoie l'email de reinitialisation
-' via NotificationService::envoyer().
-UC_MDP_DEMANDE ..> UC_NOTIFIER : <<include>>
+' La réinitialisation du mot de passe envoie un E-MAIL
+' (ResetPasswordController -> NotificationService::envoyer via Mailer),
+' PAS une notification in-app : aucune relation <<include>> vers un cas
+' "notification". Les notifications in-app ne concernent que le cycle
+' réservation/créneau (cf. TypeNotification : 5 types seulement).
 
 note top of UTILISATEUR
   Acteur abstrait : représente tout compte
@@ -74,7 +76,6 @@ legend right
   | Cas d'utilisation | Fonctionnalité offerte par le système |
   | Association (--) | L'acteur déclenche le cas d'utilisation |
   | Héritage (--|>) | L'acteur fils hérite des cas du parent |
-  | <<include>> | Le cas source déclenche toujours le cas cible |
 endlegend
 
 @enduml

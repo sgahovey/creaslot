@@ -3,8 +3,8 @@
 -- 8 tables métier : service, type_rdv, utilisateur, creneau, reservation,
 --                   notification, journal_admin, reset_password_request
 --
--- État final du schéma, reconstitué à partir des 8 migrations Doctrine
--- du projet appliquées cumulativement, puis consolidées en une création
+-- État final du schéma, reconstitué à partir des migrations Doctrine
+-- successives du projet appliquées cumulativement, puis consolidées en une création
 -- unique et lisible.
 --
 -- Cible   : MySQL 8.0 / InnoDB / utf8mb4
@@ -81,6 +81,7 @@ CREATE TABLE utilisateur (
     date_creation                   DATETIME     NOT NULL,
     derniere_connexion              DATETIME     DEFAULT NULL,
     est_actif                       TINYINT(1)   NOT NULL,
+    email_verifie                   TINYINT(1)   NOT NULL DEFAULT 1,
     email_modification_commentaire  TINYINT(1)   NOT NULL DEFAULT 1,
     email_rappel_j1                 TINYINT(1)   NOT NULL DEFAULT 1,
     id_service                      INT          DEFAULT NULL,

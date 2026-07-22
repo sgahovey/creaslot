@@ -57,6 +57,7 @@ rectangle CreaSlot {
         usecase "Consulter ses notifications"      as UC_NOTIFICATIONS
         usecase "Consulter ses donnees\npersonnelles (RGPD)" as UC_DONNEES
         usecase "Exporter ses donnees\npersonnelles (RGPD)"  as UC_DONNEES_EXPORT
+        usecase "Supprimer son compte\n(anonymisation, RGPD art. 17)" as UC_SUPPRESSION
     }
 
     ' -----------------------------------------------------------------
@@ -119,6 +120,7 @@ UTILISATEUR -- UC_PROFIL_MDP
 UTILISATEUR -- UC_NOTIFICATIONS
 UTILISATEUR -- UC_DONNEES
 UTILISATEUR -- UC_DONNEES_EXPORT
+UTILISATEUR -- UC_SUPPRESSION
 
 ' Auditeur (ROLE_AUDITEUR)
 AUDITEUR -- UC_CRENEAUX_DISPO
@@ -149,7 +151,7 @@ SUPERADMIN -- UC_STATISTIQUES
 SUPERADMIN -- UC_OCCUPATION
 
 ' ---------------------------------------------------------------------
-' Relations <<include>> — toutes verifiees dans le code
+' Relations <<include>> et <<extend>> — toutes verifiees dans le code
 ' ---------------------------------------------------------------------
 
 ' ReservationService::reserver() appelle notifierAuditeurReservation()
@@ -160,15 +162,17 @@ UC_RESERVER          ..> UC_NOTIFIER : <<include>>
 ' et notifierPersonnelAnnulationReservation().
 UC_RESA_ANNULER      ..> UC_NOTIFIER : <<include>>
 
-' CreneauController : suppression d'un creneau reserve -> notifierAuditeurSuppressionCreneau().
-UC_CRENEAU_SUPPRIMER ..> UC_NOTIFIER : <<include>>
+' Extend — notification CONDITIONNELLE (le cas d'extension pointe vers le cas de base).
+' CreneauController : suppression -> notifierAuditeurSuppressionCreneau(),
+' declenchee UNIQUEMENT si le creneau etait reserve.
+UC_NOTIFIER ..> UC_CRENEAU_SUPPRIMER : <<extend>>
 
-' CreneauController : modification -> notifierAuditeurCommentaireCreneau()
-' (declenchee uniquement lorsque le commentaire visible par l'auditeur change).
-UC_CRENEAU_MODIFIER  ..> UC_NOTIFIER : <<include>>
+' CreneauController : modification -> notifierAuditeurCommentaireCreneau(),
+' declenchee UNIQUEMENT si le creneau est reserve ET que le commentaire visible change.
+UC_NOTIFIER ..> UC_CRENEAU_MODIFIER : <<extend>>
 
-' ResetPasswordController : envoi de l'email de reinitialisation.
-UC_MDP_DEMANDE       ..> UC_NOTIFIER : <<include>>
+' Reinitialisation du mot de passe = envoi d'un E-MAIL (NotificationService::envoyer
+' via Mailer), PAS une notification in-app : aucune relation <<include>> vers UC_NOTIFIER.
 
 ' CompteController : JournalAdminService::enregistrer() sur creation,
 ' modification et (des)activation d'un compte.
