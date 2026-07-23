@@ -1,0 +1,51 @@
+@startuml chaine-tracabilite
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam rectangle {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam note {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+
+left to right direction
+
+rectangle "Besoin\nexprimé au recueil" as BESOIN #F1F3F5
+rectangle "User story\nUS-X.Y sur Trello" as US
+rectangle "Branche\nfeature/US-X.Y" as BRANCHE
+rectangle "Commits\nconvention structurée" as COMMITS
+rectangle "Pull request\nobjectif, décisions,\ndifficultés" as PR
+rectangle "Quatre contrôles\nbloquants" as CI
+rectangle "Fusion en squash\nsur develop" as MERGE
+
+BESOIN --> US
+US --> BRANCHE
+BRANCHE --> COMMITS
+COMMITS --> PR
+PR --> CI
+CI --> MERGE
+
+note bottom of US
+  Les points de dette technique suivent la même
+  chaîne, sous le préfixe DT, ce qui relie un défaut
+  identifié au commit qui le corrige.
+end note
+
+note bottom of CI
+  Style, analyse statique, tests, audit de sécurité
+  des dépendances. Aucune fusion n'est possible
+  tant que l'un d'eux échoue.
+end note
+
+legend bottom
+|= Élément |= Signification |
+| Fond gris | Origine de la chaîne, hors outillage |
+| Trait plein | Étape suivante, sans saut possible |
+| <b>Point clé</b> | La chaîne se lit dans les deux sens : descendante, elle garantit qu'aucun\nbesoin ne reste sans réalisation ; ascendante, qu'aucun code livré\nne repose sur un besoin absent. |
+endlegend
+@enduml

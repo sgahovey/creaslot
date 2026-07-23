@@ -54,6 +54,7 @@ rectangle CreaSlot {
     package "Accès public" {
         usecase "Se connecter"                              as UC_CONNEXION
         usecase "S'inscrire"                                as UC_INSCRIPTION
+        usecase "Redemander un lien\nde confirmation"        as UC_CONFIRM_RENVOI
         usecase "Demander une réinitialisation\ndu mot de passe" as UC_MDP_DEMANDE
         usecase "Réinitialiser son mot de passe"            as UC_MDP_RESET
         usecase "Consulter les pages légales"               as UC_LEGAL
@@ -74,6 +75,7 @@ rectangle CreaSlot {
 ' Associations — Visiteur (routes PUBLIC_ACCESS)
 VISITEUR -- UC_CONNEXION
 VISITEUR -- UC_INSCRIPTION
+VISITEUR -- UC_CONFIRM_RENVOI
 VISITEUR -- UC_MDP_DEMANDE
 VISITEUR -- UC_MDP_RESET
 VISITEUR -- UC_LEGAL
