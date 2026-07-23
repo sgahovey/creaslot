@@ -1,0 +1,57 @@
+@startuml separation-mvc
+' Separation modele / vue / controleur
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam ArrowColor #4A4A45
+skinparam ArrowThickness 1.2
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #1F4E79
+  FontColor #1E1E1E
+  BorderThickness 1.4
+}
+skinparam database {
+  BackgroundColor #F1F3F5
+  BorderColor #8A8A82
+  FontColor #2B2B28
+}
+skinparam actor {
+  BorderColor #1F4E79
+  FontColor #1E1E1E
+}
+skinparam legend {
+  BackgroundColor #FFFFFF
+  BorderColor #BFBFBF
+  FontColor #40403C
+  FontSize 12
+}
+
+actor "Utilisateur" as U
+
+rectangle "Présentation" as PRES #FFFFFF {
+  rectangle "**Contrôleur**\nreçoit la requête, vérifie le droit d'agir,\nchoisit la réponse" as CTRL #F1F3F5
+  rectangle "**Vue**\nmet en forme la réponse,\néchappe toute donnée affichée" as VUE #F1F3F5
+}
+rectangle "**Traitement métier**\napplique les règles de gestion,\ngarantit les invariants" as SERV #DCE7F5
+rectangle "**Accès aux données**\ntraduit une intention métier\nen interrogation du stockage" as DEPOT #F1F3F5
+rectangle "**Modèle**\nporte les données et les\ncomportements intrinsèques" as MOD #F1F3F5
+database "Stockage" as STOCK
+
+U -down-> CTRL : requête
+CTRL -down-> SERV : délègue
+SERV -down-> DEPOT : sollicite
+DEPOT -down-> STOCK : interroge
+DEPOT -right-> MOD : produit
+SERV -up-> CTRL : transmet
+CTRL -right-> VUE : confie au rendu
+VUE ..> MOD : lit sans modifier
+VUE -up-> U : réponse
+
+legend bottom
+|= |= Lecture du schéma |
+| Trait plein | Appel ou transmission |
+| Trait pointillé | Lecture seule, sans modification |
+| <b>Point clé</b> | Le modèle n'émet aucune flèche montante : il ne connaît\nni la vue, ni le contrôleur, ni le traitement métier. |
+endlegend
+@enduml

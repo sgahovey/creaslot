@@ -1,0 +1,34 @@
+@startuml enchainement-personnel
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam rectangle {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+
+rectangle "Mon agenda" as AGENDA
+rectangle "Mes créneaux" as LISTE
+rectangle "Nouveau créneau" as NOUVEAU
+rectangle "Modifier le créneau" as MODIF
+rectangle "Mes collègues" as COLL
+
+AGENDA --> LISTE
+LISTE --> AGENDA
+AGENDA --> NOUVEAU : publier
+LISTE --> NOUVEAU : publier
+AGENDA --> MODIF : ouvrir un créneau
+LISTE --> MODIF : ouvrir un créneau
+
+NOUVEAU ..> LISTE : créer
+MODIF ..> LISTE : enregistrer
+LISTE ..> LISTE : supprimer
+
+legend bottom
+|= Trait |= Signification |
+| Trait plein | Navigation : conduit à un autre écran sans rien modifier |
+| Trait pointillé | Action : déclenche un traitement modifiant l'état du système |
+| <b>Point clé</b> | La suppression ramène à la liste plutôt que d'en sortir : le personnel\ntraite une file de créneaux, l'en extraire après chaque geste\nl'obligerait à y revenir. |
+endlegend
+@enduml

@@ -1,0 +1,33 @@
+@startuml
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam defaultFontName Sans
+left to right direction
+
+actor "Auditeur" as AUD
+actor "Personnel" as PER
+actor "Super-administrateur" as ADM
+
+package "Système de prise de rendez-vous" {
+  component "Portail web\nespaces cloisonnés par rôle" as PORTAIL
+  component "Traitement métier\nrègles de réservation\net d'habilitation" as METIER
+}
+
+database "Réservoir\nde données" as DONNEES
+component "Service d'envoi\nde messages" as MSG
+
+AUD --> PORTAIL : réserve
+PER --> PORTAIL : publie ses créneaux
+ADM --> PORTAIL : administre
+
+PORTAIL --> METIER
+METIER --> DONNEES
+METIER ..> MSG : notifie
+MSG ..> AUD : courriel
+MSG ..> PER : courriel
+
+legend bottom
+  Trait plein : échange synchrone, réalisé dans le fil de la demande qui le déclenche
+  Trait pointillé : échange différé, dont l'échec ne remet pas en cause l'opération d'origine
+endlegend
+@enduml
