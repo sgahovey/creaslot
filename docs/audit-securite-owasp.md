@@ -15,7 +15,7 @@ Ce document présente l'audit de sécurité applicatif de CreaSlot, conduit selo
    catégorie : mécanisme en place, état, trou éventuel (§3).
 
 **Périmètre** : le code applicatif (`src/`), la configuration de sécurité (`config/packages/security.yaml`),
-les en-têtes du reverse proxy (`docker/caddy/Caddyfile`) et les dépendances (`composer.lock`).
+les en-têtes du reverse proxy (`Caddyfile`, dépôt `infra-proxy`) et les dépendances (`composer.lock`).
 **Hors périmètre** (§5) : test d'intrusion externe et audit de configuration du serveur de production.
 
 **Rattachement CDA** : compétences **CP3 « Développer des composants métier »** (bloc 1) et **CP8
@@ -63,10 +63,10 @@ Les 33 avis restants (sévérités moyenne à basse : `cache`, `routing`, `http-
 | Catégorie | Mesure en place (fichier / mécanisme) | État | Trou éventuel / renvoi |
 |---|---|:--:|---|
 | **A01 — Broken Access Control** | 3 Voters (`CreneauVoter`, `ReservationVoter`, `UtilisateurVoter`) ; `#[IsGranted]` au niveau classe ; `access_control` avec catch-all `^/ → IS_AUTHENTICATED_FULLY` ; `role_hierarchy` ; anti-escalade `allow_extra_fields: false` (rejet 422) prouvé par test | ✅ Couvert | — |
-| **A02 — Cryptographic Failures** | Hachage des mots de passe en **argon2id** (`security.yaml`) ; secrets en `.env.local` **non versionné** (gitignoré) ; CSRF actif ; **HSTS + architecture TLS Caddy** (`docker/caddy/Caddyfile`), validée en local en `tls internal` — US-9.2 | ⚠️ Partiel | **Certificat ACME réel** (Let's Encrypt) → **US-9.3** |
+| **A02 — Cryptographic Failures** | Hachage des mots de passe en **argon2id** (`security.yaml`) ; secrets en `.env.local` **non versionné** (gitignoré) ; CSRF actif ; **HSTS + architecture TLS Caddy** (`Caddyfile`, dépôt `infra-proxy`), validée en local en `tls internal` — US-9.2 | ⚠️ Partiel | **Certificat ACME réel** (Let's Encrypt) → **US-9.3** |
 | **A03 — Injection** | Accès données via **Doctrine ORM paramétré** (aucun SQL natif concaténé) ; **auto-échappement Twig** (aucun `\|raw` sur donnée utilisateur) ; composant **Validator** sur les entrées | ✅ Couvert | — |
 | **A04 — Insecure Design** | Verrou **`PESSIMISTIC_WRITE`** + re-vérification après `refresh` ; invariant **« ≤ 1 réservation ACTIVE par créneau »** ; **suppression logique** (statut ANNULEE) ; jeton de réinitialisation à **usage unique** + `session->migrate(true)` | ✅ Couvert | Refactor `ReservationService` (qualité, non sécuritaire) → **DT-19** |
-| **A05 — Security Misconfiguration** | **CSP à nonce** posée par l'application (`CspResponseListener` + `csp_nonce()`) : `script-src 'self' 'nonce-…'` strict, sans `unsafe-inline`/`unsafe-eval` (US-9.2) ; en-têtes via Caddy : **HSTS**, **Permissions-Policy**, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, en-tête **`Server` masqué** (`docker/caddy/Caddyfile`) ; **`APP_ENV=prod` / `APP_DEBUG=0`** câblés (`.env.preprod`/`.env.prod`) ; web-profiler en `dev` uniquement ; bandeau d'environnement | ✅ Traité | Résiduel : **certificat TLS réel** → **US-9.3** |
+| **A05 — Security Misconfiguration** | **CSP à nonce** posée par l'application (`CspResponseListener` + `csp_nonce()`) : `script-src 'self' 'nonce-…'` strict, sans `unsafe-inline`/`unsafe-eval` (US-9.2) ; en-têtes via Caddy : **HSTS**, **Permissions-Policy**, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, en-tête **`Server` masqué** (`Caddyfile`, dépôt `infra-proxy`) ; **`APP_ENV=prod` / `APP_DEBUG=0`** câblés (`.env.preprod`/`.env.prod`) ; web-profiler en `dev` uniquement ; bandeau d'environnement | ✅ Traité | Résiduel : **certificat TLS réel** → **US-9.3** |
 | **A06 — Vulnerable & Outdated Components** | Versions **pinnées** (`8.0.*`, `^3.0`) ; `composer.lock` versionné ; `composer audit` exécuté ; **remédiation `composer update`** (§2) | ✅ Corrigé | **0 avis** (était 38) |
 | **A07 — Identification & Authentication Failures** | Politique de mot de passe centralisée `ContraintesMotDePasse` (≥ 12 + jeu de caractères) ; reset à usage unique ; **CSRF** sur les formulaires ; **messages d'authentification neutres** ; **`login_throttling: max_attempts: 5`** (anti-brute-force, ajouté en US-8.3) | ✅ Corrigé | Throttling **testé** (`LoginThrottlingTest`, suite à 247 tests). Journalisation des échecs de login **traitée en US-9.5** (channel Monolog `security`, cf. A09) |
 | **A08 — Software & Data Integrity Failures** | **CI** GitHub Actions (3 jobs) sur `push`/`pull_request` ; `composer.lock` (intégrité des dépendances) ; aucune désérialisation de données non fiables dans le code applicatif | ✅ Couvert | — |
@@ -105,7 +105,7 @@ audité.
 | Constat | Action | Vérification |
 |---|---|---|
 | **A05** — en-tête **CSP** absent | **CSP à nonce par requête** : `CspNonceProvider` + extension Twig `csp_nonce()` + `CspResponseListener` (HTML uniquement, hors `dev`, hors JSON). `script-src 'self' 'nonce-…'` strict (sans `unsafe-inline`/`unsafe-eval`) ; front adapté (nonce sur importmap/scripts inline, `onclick` → contrôleur Stimulus, polyfill es-module-shims désactivé, CSS d'entrypoint en `<link>`) | `tests/Controller/CspHeaderTest.php` : CSP présente, nonce en-tête = nonce des `<script>`, **JSON sans CSP** ; suite à **271 tests** verts |
-| **A05** — en-têtes durcis + masquage serveur | Via Caddy (`docker/caddy/Caddyfile`) : **HSTS**, **Permissions-Policy**, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, en-tête **`Server` masqué** | Vérifié en local (`curl -I`) sur les 2 sites |
+| **A05** — en-têtes durcis + masquage serveur | Via Caddy (`Caddyfile`, dépôt `infra-proxy`) : **HSTS**, **Permissions-Policy**, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, en-tête **`Server` masqué** | Vérifié en local (`curl -I`) sur les 2 sites |
 | **A05** — `APP_ENV=prod` / `APP_DEBUG=0` | Câblés par environnement (`.env.preprod`, `.env.prod`), injectés via `env_file` (cf. `docs/architecture-deploiement.md` §3.7) | Conteneurs prod : `APP_ENV=prod` confirmé |
 
 ### 4.4 Traité dans US-9.5

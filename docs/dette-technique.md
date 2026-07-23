@@ -579,7 +579,9 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 
 > **✅ RÉSOLUE le 19/06/2026** sur branche `feature/DT-20-retirer-x-xss-protection`.
 >
-> **Résumé fix** : la ligne `X-XSS-Protection "1; mode=block"` est retirée du snippet `securite` de `docker/caddy/Caddyfile` (commit `a0688f8`). Aucune compensation : la protection contre le XSS est assurée par la CSP à nonce stricte (DT-13 / US-9.2). Les autres en-têtes (HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy) sont préservés.
+> **Résumé fix** : la ligne `X-XSS-Protection "1; mode=block"` est retirée du snippet `securite` de `docker/caddy/Caddyfile` (commit `a0688f8`, 19/06/2026). Aucune compensation : la protection contre le XSS est assurée par la CSP à nonce stricte (DT-13 / US-9.2). Les autres en-têtes (HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy) sont préservés.
+>
+> **Note (postérieure)** : ce fichier a depuis été déplacé hors du dépôt CreaSlot lors du découplage du proxy (PR #117, 22/07/2026). Le snippet `securite` vit désormais dans `Caddyfile` (dépôt `infra-proxy`) ; le chemin `docker/caddy/Caddyfile` cité ci-dessus correspond à son emplacement au moment du correctif.
 >
 > **Validation** : en-tête absent du fichier (grep = 0, voisins intacts) ; confirmation `curl -I` au prochain déploiement préprod via le pipeline.
 
