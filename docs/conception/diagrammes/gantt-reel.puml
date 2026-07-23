@@ -1,0 +1,40 @@
+@startgantt
+Project starts 2026-05-06
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 12
+
+[It. 1 : socle technique, authentification, autorisations] as [I1] starts 2026-05-06 and ends 2026-05-07
+[It. 2 : gestion des créneaux par le personnel] as [I2] starts 2026-05-09 and ends 2026-05-10
+[It. 3 : parcours de réservation] as [I3] starts 2026-05-10 and ends 2026-05-11
+[It. 4 : notifications et rappels] as [I4] starts 2026-05-17 and ends 2026-05-19
+[It. 5 : administration, tableau de bord, journal] as [I5] starts 2026-06-01 and ends 2026-06-04
+[It. 6 : profil et récupération de mot de passe] as [I6] starts 2026-06-04 and ends 2026-06-07
+[It. 7 : outillage qualité et intégration continue] as [I7] starts 2026-06-07 and ends 2026-06-25
+[It. 8 : plan de tests et audit de sécurité] as [I8] starts 2026-06-07 and ends 2026-06-07
+[It. 9 : déploiement, supervision, sauvegarde] as [I9] starts 2026-06-15 and ends 2026-07-15
+[It. 10 : déploiement continu et pages légales] as [I10] starts 2026-06-17 and ends 2026-06-25
+[It. 11 : notifications internes] as [I11] starts 2026-06-26 and ends 2026-06-26
+[It. 12 : conformité RGPD et vérification d'adresse] as [I12] starts 2026-06-29 and ends 2026-07-15
+[It. 13 : veille de sécurité des dépendances] as [I13] starts 2026-07-22 and ends 2026-07-22
+
+[I1] is colored in #DCE7F5
+[I2] is colored in #DCE7F5
+[I3] is colored in #DCE7F5
+[I4] is colored in #DCE7F5
+[I5] is colored in #DCE7F5
+[I6] is colored in #DCE7F5
+[I7] is colored in #F1F3F5
+[I8] is colored in #F1F3F5
+[I9] is colored in #F1F3F5
+[I10] is colored in #F1F3F5
+[I11] is colored in #DCE7F5
+[I12] is colored in #F1F3F5
+[I13] is colored in #F1F3F5
+
+[Première mise en production, v1.0.0] happens 2026-06-25
+[Version 1.1.0] happens 2026-07-16
+[Version 1.1.1] happens 2026-07-22
+
+caption Déroulé réel, dates issues des cartes du tableau Kanban. Fond bleu : construction fonctionnelle. Fond gris : industrialisation, qualité, déploiement, conformité.
+@endgantt

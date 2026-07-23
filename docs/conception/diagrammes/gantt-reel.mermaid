@@ -1,0 +1,50 @@
+---
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#DCE7F5'
+    primaryBorderColor: '#1F4E79'
+    primaryTextColor: '#1E1E1E'
+    lineColor: '#1F4E79'
+    sectionBkgColor: '#F8F9FA'
+    altSectionBkgColor: '#FFFFFF'
+    gridColor: '#DEE2E6'
+    taskBkgColor: '#DCE7F5'
+    taskBorderColor: '#1F4E79'
+    taskTextColor: '#1E1E1E'
+    doneTaskBkgColor: '#F1F3F5'
+    doneTaskBorderColor: '#6C757D'
+    critBkgColor: '#1F4E79'
+    critBorderColor: '#0F3556'
+    todayLineColor: '#FFFFFF00'
+---
+gantt
+    title Déroulé réel du projet, relevé du 23 juillet 2026
+    dateFormat YYYY-MM-DD
+    axisFormat %d/%m
+    tickInterval 1week
+    weekday monday
+
+    section Construction fonctionnelle
+    Socle technique et authentification   :a1, 2026-05-06, 2d
+    Créneaux du personnel                 :a2, 2026-05-09, 2d
+    Parcours de réservation               :a3, 2026-05-10, 2d
+    Notifications et rappels              :a4, 2026-05-17, 3d
+    Administration et tableau de bord     :a5, 2026-06-01, 4d
+    Profil et mot de passe oublié         :a6, 2026-06-04, 4d
+
+    section Extension fonctionnelle tardive
+    Notifications internes                :a7, 2026-06-26, 1d
+
+    section Industrialisation
+    Outillage qualité et intégration      :done, b1, 2026-06-07, 19d
+    Plan de tests et audit de sécurité    :done, b2, 2026-06-07, 1d
+    Déploiement et supervision            :done, b3, 2026-06-15, 31d
+    Déploiement continu et pages légales  :done, b4, 2026-06-17, 9d
+    Conformité RGPD                       :done, b5, 2026-06-29, 17d
+    Veille de sécurité des dépendances    :done, b6, 2026-07-22, 1d
+
+    section Jalons
+    Première mise en production   :milestone, m1, 2026-06-25, 0d
+    Version 1.1.0                 :milestone, m2, 2026-07-16, 0d
+    Version 1.1.1                 :milestone, m3, 2026-07-22, 0d
