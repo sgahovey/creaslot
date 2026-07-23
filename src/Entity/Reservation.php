@@ -8,6 +8,10 @@ use App\Enum\StatutReservation;
 use App\Repository\ReservationRepository;
 use Doctrine\ORM\Mapping as ORM;
 
+/**
+ * Réservation d'un Creneau par un Auditeur ; son statut (ACTIVE / ANNULEE) porte le
+ * cycle de vie du rendez-vous.
+ */
 #[ORM\Entity(repositoryClass: ReservationRepository::class)]
 #[ORM\Table(name: 'reservation')]
 #[ORM\Index(columns: ['statut'], name: 'idx_reservation_statut')]

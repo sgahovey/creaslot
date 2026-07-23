@@ -26,6 +26,10 @@ class ReservationService
     ) {
     }
 
+    /**
+     * Motif pour lequel l'auteur ne peut pas réserver ce créneau, ou null si aucun
+     * obstacle n'existe : dans ce cas, la réservation est permise.
+     */
     public function motifRefusPrealable(Creneau $creneau, Utilisateur $auteur): ?MotifRefusReservation
     {
         if (!$creneau->isEstActif() || $creneau->isPasse()) {

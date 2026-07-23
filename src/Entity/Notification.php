@@ -8,6 +8,9 @@ use App\Enum\TypeNotification;
 use App\Repository\NotificationRepository;
 use Doctrine\ORM\Mapping as ORM;
 
+/**
+ * Notification in-app destinée à un Utilisateur, typée et marquée lue ou non lue.
+ */
 #[ORM\Entity(repositoryClass: NotificationRepository::class)]
 #[ORM\Table(name: 'notification')]
 #[ORM\Index(columns: ['id_destinataire', 'lu'], name: 'idx_notification_destinataire_lu')]
