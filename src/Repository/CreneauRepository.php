@@ -143,6 +143,10 @@ class CreneauRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
+    /**
+     * Retourne le prochain créneau réservé à venir du Personnel donné (le plus proche
+     * dans le futur portant une réservation ACTIVE), ou null s'il n'y en a aucun.
+     */
     public function findNextReservedCreneau(Utilisateur $personnel): ?Creneau
     {
         return $this->createQueryBuilder('c')

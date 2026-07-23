@@ -30,6 +30,11 @@ final readonly class DashboardService
     ) {
     }
 
+    /**
+     * Calcule les indicateurs du tableau de bord sur une fenêtre glissante des 30
+     * derniers jours (JOURS_FENETRE_OCCUPATION) : réservations actives à venir, taux
+     * d'occupation, créneaux réservés et créneaux offerts.
+     */
     public function calculerKpis(): TableauBordKpis
     {
         $maintenant = new \DateTimeImmutable();

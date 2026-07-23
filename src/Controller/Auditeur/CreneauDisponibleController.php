@@ -15,6 +15,11 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+/**
+ * Recherche des créneaux réservables par l'Auditeur (US-2.5).
+ *
+ * Accès réservé à ROLE_AUDITEUR (IsGranted de classe).
+ */
 #[IsGranted('ROLE_AUDITEUR')]
 class CreneauDisponibleController extends AbstractController
 {
@@ -26,6 +31,14 @@ class CreneauDisponibleController extends AbstractController
     ) {
     }
 
+    /**
+     * Liste paginée des créneaux réservables, filtrable par type de RDV, service et date.
+     *
+     * Seuls les créneaux effectivement offerts remontent : le repository exclut en
+     * amont l'indisponible (inactif, passé, déjà réservé), pour que l'Auditeur ne voie
+     * jamais un créneau qu'il ne pourrait pas réserver. La recherche est journalisée
+     * (filtres et auteur) au titre du suivi d'usage.
+     */
     #[Route('/creneaux-disponibles', name: 'app_creneaux_disponibles', methods: ['GET'])]
     public function liste(Request $request): Response
     {

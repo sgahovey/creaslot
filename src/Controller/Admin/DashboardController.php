@@ -24,6 +24,12 @@ final class DashboardController extends AbstractController
     ) {
     }
 
+    /**
+     * Écran d'accueil de l'administration : indicateurs clés et occupation par jour.
+     *
+     * Lecture seule ; accès super-admin porté par le `#[IsGranted]` de classe. Le
+     * calcul métier est entièrement délégué au DashboardService.
+     */
     #[Route('/admin', name: 'app_admin_dashboard', methods: ['GET'])]
     public function index(): Response
     {

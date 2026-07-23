@@ -16,6 +16,11 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+/**
+ * Annulation d'une réservation par l'Auditeur propriétaire (US-3.3).
+ *
+ * Accès réservé à ROLE_AUDITEUR (IsGranted de classe).
+ */
 #[IsGranted('ROLE_AUDITEUR')]
 final class ReservationAnnulationController extends AbstractController
 {
@@ -24,6 +29,15 @@ final class ReservationAnnulationController extends AbstractController
     ) {
     }
 
+    /**
+     * Annule une réservation à la demande de son Auditeur propriétaire.
+     *
+     * Le Voter CANCEL réserve l'action au propriétaire : le Personnel n'annule jamais
+     * la réservation d'un Auditeur (il désactive son créneau, action distincte). Une
+     * réservation déjà annulée, ou dont le créneau est passé, n'est plus annulable
+     * (ReservationNonAnnulableException) et le motif exact est restitué. Le succès
+     * déclenche un e-mail de confirmation.
+     */
     #[Route('/reservation/{id}/annuler', name: 'app_reservation_annulation', methods: ['POST'])]
     public function annuler(Reservation $reservation, Request $request): Response
     {

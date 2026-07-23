@@ -7,6 +7,11 @@ namespace App\Controller\Traits;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Fabrique de réponses JSON non mises en cache, partagée par les contrôleurs de
+ * calendrier (Personnel et Admin), dont les données doivent toujours refléter l'état
+ * courant.
+ */
 trait JsonSansCacheTrait
 {
     /**

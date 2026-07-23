@@ -15,6 +15,10 @@ use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
+/**
+ * Compte utilisateur de l'application, tous rôles confondus (Auditeur, Personnel,
+ * Super-admin) ; sert d'identité de sécurité Symfony (UserInterface).
+ */
 #[ORM\Entity(repositoryClass: UtilisateurRepository::class)]
 #[ORM\Table(name: 'utilisateur')]
 #[ORM\UniqueConstraint(name: 'UNIQ_utilisateur_email', columns: ['email'])]
