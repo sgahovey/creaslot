@@ -61,13 +61,24 @@ classDiagram
         cibleLibelle : texte
     }
 
-    Service "0..1" -- "*" Utilisateur : rattache
-    Utilisateur "1" -- "*" Creneau : publie
-    TypeRdv "1" -- "*" Creneau : caractérise
-    Creneau "1" -- "*" Reservation : porte
-    Utilisateur "1" -- "*" Reservation : réserve
-    Utilisateur "1" -- "*" Notification : destinataire
-    Reservation "0..1" -- "*" Notification : concerne
-    Utilisateur "1" -- "*" ResetPasswordRequest : demande
+    class HistoriqueUtilisateur {
+        id : entier
+        utilisateurId : entier
+        champModifie : texte
+        ancienneValeur : texte
+        nouvelleValeur : texte
+        dateModification : date
+    }
+
+    Service "0..1" -- "*" Utilisateur : rattacher
+    Utilisateur "1" -- "*" Creneau : publier
+    TypeRdv "1" -- "*" Creneau : catégoriser
+    Creneau "1" -- "*" Reservation : concerner
+    Utilisateur "1" -- "*" Reservation : effectuer
+    Utilisateur "1" -- "*" Notification : recevoir
+    Reservation "0..1" -- "*" Notification : référencer
+    Utilisateur "1" -- "*" ResetPasswordRequest : demander
 
     note for JournalAdmin "Classe isolée, sans association (choix délibéré). Acteur et cible figés en libellés (append-only) : la trace survit à la suppression des comptes — immuabilité RGPD."
+
+    note for HistoriqueUtilisateur "Classe isolée, sans association (choix délibéré). Trace alimentée par un déclencheur au niveau de la base ; utilisateurId est un identifiant scalaire sans clé étrangère. Table purgée lors de l'anonymisation d'un compte, au titre du droit à l'effacement (RGPD art. 17)."

@@ -1,7 +1,8 @@
 -- =====================================================================
 -- CreaSlot — Script de création de la base de données
--- 8 tables métier : service, type_rdv, utilisateur, creneau, reservation,
---                   notification, journal_admin, reset_password_request
+-- 9 tables métier : service, type_rdv, utilisateur, creneau, reservation,
+--                   notification, journal_admin, reset_password_request,
+--                   historique_utilisateur
 --
 -- État final du schéma, reconstitué à partir des migrations Doctrine
 -- successives du projet appliquées cumulativement, puis consolidées en une création
@@ -11,6 +12,10 @@
 -- Ordre   : tables référencées d'abord (dépendances de clés étrangères),
 --           afin que le script s'exécute d'un seul bloc sans avoir à
 --           désactiver les contraintes d'intégrité.
+-- Avancé  : un déclencheur (trg_historique_utilisateur) et une procédure
+--           stockée (consulter_historique_utilisateur), placés après les tables
+--           (US-12.1). Leurs corps contenant des « ; » internes, ils sont encadrés
+--           par un changement de séparateur d'instruction (DELIMITER).
 -- Exclu   : messenger_messages (table technique de file d'attente des
 --           messages différés, générée par Symfony Messenger : elle ne
 --           relève pas de la modélisation métier).
@@ -265,8 +270,123 @@ CREATE TABLE journal_admin (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 
+-- ---------------------------------------------------------------------
+-- 9. historique_utilisateur — trace des modifications des données d'un compte
+--    AUCUNE clé étrangère : utilisateur_id est un entier scalaire, comme
+--    acteur_id / cible_id de journal_admin. Le parti pris est identique dans
+--    la forme mais répond à une FINALITÉ opposée, et c'est elle qui justifie
+--    l'absence de contrainte :
+--
+--    journal_admin trace un ACTE d'administration. Il relève de la
+--    redevabilité : la trace doit SURVIVRE à la disparition du compte
+--    concerné, d'où des libellés figés et aucune clé étrangère qui la ferait
+--    tomber avec lui.
+--
+--    historique_utilisateur trace les DONNÉES d'un compte. Ce sont des
+--    données personnelles : le droit à l'effacement (RGPD art. 17) impose au
+--    contraire qu'elles DISPARAISSENT avec la personne. L'absence de clé
+--    étrangère laisse l'anonymisation opérer une suppression ciblée de ces
+--    lignes (par utilisateur_id), sans être bloquée par une contrainte
+--    référentielle ni entraîner de cascade non maîtrisée.
+--
+--    Table alimentée par le déclencheur trg_historique_utilisateur (ci-dessous),
+--    jamais par l'ORM : aucune entité Doctrine ne lui correspond. Le dossier
+--    compte donc neuf tables mais huit entités.
+--
+--    Index métier idx_historique_utilisateur (utilisateur_id, date_modification) :
+--    consultation chronologique de l'historique d'un compte donné (procédure
+--    consulter_historique_utilisateur).
+-- ---------------------------------------------------------------------
+CREATE TABLE historique_utilisateur (
+    id                 INT          NOT NULL AUTO_INCREMENT,
+    utilisateur_id     INT          NOT NULL,
+    champ_modifie      VARCHAR(50)  NOT NULL,
+    ancienne_valeur    VARCHAR(255) DEFAULT NULL,
+    nouvelle_valeur    VARCHAR(255) DEFAULT NULL,
+    date_modification  DATETIME     NOT NULL,
+    PRIMARY KEY (id),
+    KEY idx_historique_utilisateur (utilisateur_id, date_modification)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+-- =====================================================================
+-- Objets SQL avancés (US-12.1) — placés après toutes les tables
+--
+-- Le corps du déclencheur et de la procédure contient des « ; » internes
+-- (blocs IF … END IF ;, INSERT …;, SELECT …;). On bascule le séparateur
+-- d'instruction sur $$ le temps de les créer, puis on rétablit le « ; » par
+-- défaut : le script reste ainsi exécutable d'un seul bloc.
+-- =====================================================================
+
+DELIMITER $$
+
+-- ---------------------------------------------------------------------
+-- Déclencheur trg_historique_utilisateur — traçabilité au niveau SGBD
+--    AFTER UPDATE sur utilisateur : insère une ligne d'historique par champ
+--    modifié. Complète le journal applicatif (journal_admin) : la trace est
+--    produite même pour une modification faite directement en SQL, hors
+--    application.
+--    Les six colonnes surveillées (email, nom, prenom, role, est_actif,
+--    mot_de_passe_hash) sont TOUTES NOT NULL : l'opérateur de comparaison
+--    <> suffit, aucune valeur NULL ne peut fausser le test (OLD <> NEW étant
+--    évalué à « inconnu » dès qu'un opérande est NULL, ce qui n'insérerait
+--    rien).
+--    Le hash du mot de passe n'est JAMAIS recopié : la modification est
+--    enregistrée sous le champ 'mot_de_passe' avec les deux valeurs figées à
+--    'modifie' (RGPD, minimisation des données).
+-- ---------------------------------------------------------------------
+CREATE TRIGGER trg_historique_utilisateur
+AFTER UPDATE ON utilisateur
+FOR EACH ROW
+BEGIN
+    IF OLD.email <> NEW.email THEN
+        INSERT INTO historique_utilisateur (utilisateur_id, champ_modifie, ancienne_valeur, nouvelle_valeur, date_modification)
+        VALUES (NEW.id, 'email', OLD.email, NEW.email, NOW());
+    END IF;
+    IF OLD.nom <> NEW.nom THEN
+        INSERT INTO historique_utilisateur (utilisateur_id, champ_modifie, ancienne_valeur, nouvelle_valeur, date_modification)
+        VALUES (NEW.id, 'nom', OLD.nom, NEW.nom, NOW());
+    END IF;
+    IF OLD.prenom <> NEW.prenom THEN
+        INSERT INTO historique_utilisateur (utilisateur_id, champ_modifie, ancienne_valeur, nouvelle_valeur, date_modification)
+        VALUES (NEW.id, 'prenom', OLD.prenom, NEW.prenom, NOW());
+    END IF;
+    IF OLD.role <> NEW.role THEN
+        INSERT INTO historique_utilisateur (utilisateur_id, champ_modifie, ancienne_valeur, nouvelle_valeur, date_modification)
+        VALUES (NEW.id, 'role', OLD.role, NEW.role, NOW());
+    END IF;
+    IF OLD.est_actif <> NEW.est_actif THEN
+        INSERT INTO historique_utilisateur (utilisateur_id, champ_modifie, ancienne_valeur, nouvelle_valeur, date_modification)
+        VALUES (NEW.id, 'est_actif', OLD.est_actif, NEW.est_actif, NOW());
+    END IF;
+    IF OLD.mot_de_passe_hash <> NEW.mot_de_passe_hash THEN
+        INSERT INTO historique_utilisateur (utilisateur_id, champ_modifie, ancienne_valeur, nouvelle_valeur, date_modification)
+        VALUES (NEW.id, 'mot_de_passe', 'modifie', 'modifie', NOW());
+    END IF;
+END$$
+
+-- ---------------------------------------------------------------------
+-- Procédure consulter_historique_utilisateur — lecture de l'historique
+--    Renvoie, pour un compte donné (p_utilisateur_id), ses modifications les
+--    plus récentes d'abord. Point d'accès unique de consultation, en SQL, de
+--    la trace au niveau SGBD.
+-- ---------------------------------------------------------------------
+CREATE PROCEDURE consulter_historique_utilisateur(IN p_utilisateur_id INT)
+BEGIN
+    SELECT id, champ_modifie, ancienne_valeur, nouvelle_valeur, date_modification
+    FROM historique_utilisateur
+    WHERE utilisateur_id = p_utilisateur_id
+    ORDER BY date_modification DESC;
+END$$
+
+DELIMITER ;
+
+
 -- =====================================================================
 -- Récapitulatif des contraintes d'intégrité
+--
+-- 9 tables, 8 clés étrangères, 5 index métier, 2 contraintes d'unicité,
+-- 1 déclencheur, 1 procédure stockée.
 --
 -- 8 clés étrangères :
 --   utilisateur.id_service              -> service(id)
@@ -283,12 +403,23 @@ CREATE TABLE journal_admin (
 --   utilisateur.email   (identifiant de connexion)
 --   type_rdv.code       (identifiant stable du type)
 --
--- 4 index métier :
+-- 5 index métier :
 --   idx_creneau_utilisateur_debut     (id_utilisateur, date_debut)
 --   idx_reservation_statut            (statut)
 --   idx_notification_destinataire_lu  (id_destinataire, lu)
 --   idx_journal_admin_date            (date_action)
+--   idx_historique_utilisateur        (utilisateur_id, date_modification)
 --
--- Conventions de nommage : tables en snake_case singulier, clés étrangères
--- toujours nommées id_<entité>, clés primaires en INT AUTO_INCREMENT.
+-- Conventions de nommage : tables en snake_case singulier, clés primaires en
+-- INT AUTO_INCREMENT, clés étrangères préfixées id_<entité>. Trois exceptions
+-- assumées à ce dernier point :
+--   - notification.id_destinataire : clé étrangère vers utilisateur nommée par
+--     le RÔLE tenu (le destinataire de la notification), et non id_utilisateur,
+--     car la colonne exprime une fonction précise et pas un simple lien de table.
+--   - journal_admin.acteur_id / cible_id : entiers SCALAIRES sans clé étrangère
+--     (suffixe _id, pas préfixe id_). Aucune contrainte, pour que la trace
+--     d'administration survive à la suppression des comptes (redevabilité).
+--   - historique_utilisateur.utilisateur_id : entier scalaire sans clé
+--     étrangère, pour que l'anonymisation efface ces données personnelles avec
+--     le compte (droit à l'effacement).
 -- =====================================================================
