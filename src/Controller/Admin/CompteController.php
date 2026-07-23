@@ -42,6 +42,11 @@ final class CompteController extends AbstractController
     ) {
     }
 
+    /**
+     * Liste paginée des comptes, filtrable par une recherche nom ou e-mail.
+     *
+     * Lecture seule ; l'accès super-admin est porté par le `#[IsGranted]` de classe.
+     */
     #[Route('/admin/comptes', name: 'app_admin_comptes', methods: ['GET'])]
     public function liste(Request $request): Response
     {
@@ -63,6 +68,13 @@ final class CompteController extends AbstractController
         ]);
     }
 
+    /**
+     * Crée un compte : le mot de passe saisi est haché (argon2id) avant persistance,
+     * et l'opération est tracée dans le journal d'accountability (COMPTE_CREATION).
+     *
+     * Accès super-admin (IsGranted de classe). L'ouverture d'un compte est une action
+     * d'administration sensible : d'où la trace immuable, en plus du log applicatif.
+     */
     #[Route('/admin/comptes/nouveau', name: 'app_admin_compte_nouveau', methods: ['GET', 'POST'])]
     public function nouveau(Request $request): Response
     {
@@ -107,6 +119,14 @@ final class CompteController extends AbstractController
         ]);
     }
 
+    /**
+     * Modifie un compte, avec un traitement particulier du changement de rôle.
+     *
+     * Trois barrières se cumulent : le Voter EDIT (droit de modifier la cible), la
+     * garde système « jamais 0 super-admin » (invariant global, hors périmètre du
+     * Voter), puis le Voter CHANGE_ROLE si le rôle change réellement. La modification
+     * est tracée (COMPTE_MODIFICATION, ou COMPTE_CHANGEMENT_ROLE selon le cas).
+     */
     #[Route('/admin/comptes/{id}/modifier', name: 'app_admin_compte_modifier', methods: ['GET', 'POST'])]
     public function modifier(Utilisateur $compte, Request $request): Response
     {
@@ -165,6 +185,14 @@ final class CompteController extends AbstractController
         ]);
     }
 
+    /**
+     * Active ou désactive un compte selon son état courant (bascule).
+     *
+     * Protégée par un jeton CSRF (action de mutation en POST), puis par la garde
+     * système « jamais 0 super-admin actif » et le Voter DEACTIVATE ou ACTIVATE
+     * selon le sens. La bascule est tracée (COMPTE_DESACTIVATION / COMPTE_ACTIVATION) :
+     * couper l'accès d'un compte engage la responsabilité de l'administrateur.
+     */
     #[Route('/admin/comptes/{id}/activation', name: 'app_admin_compte_activation', methods: ['POST'])]
     public function basculerActivation(Utilisateur $compte, Request $request): Response
     {

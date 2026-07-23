@@ -26,6 +26,13 @@ final class StatistiquesController extends AbstractController
     ) {
     }
 
+    /**
+     * Statistiques d'occupation agrégées par service et par type de RDV.
+     *
+     * Lecture seule ; accès super-admin porté par le `#[IsGranted]` de classe. Le
+     * calcul est délégué au StatistiquesService ; la vue reçoit des séries prêtes à
+     * tracer, sans appel JSON séparé.
+     */
     #[Route('/admin/statistiques', name: 'app_admin_statistiques', methods: ['GET'])]
     public function index(): Response
     {

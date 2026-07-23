@@ -16,6 +16,11 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+/**
+ * Réservation d'un créneau par l'Auditeur (US-3.1).
+ *
+ * Accès réservé à ROLE_AUDITEUR (IsGranted de classe).
+ */
 #[IsGranted('ROLE_AUDITEUR')]
 class ReservationController extends AbstractController
 {
@@ -24,6 +29,22 @@ class ReservationController extends AbstractController
     ) {
     }
 
+    /**
+     * Affiche le formulaire de réservation puis enregistre la réservation.
+     *
+     * Trois filtres métier se succèdent, du moins au plus coûteux :
+     *  1. un refus préalable court-circuite l'affichage si le créneau est inactif,
+     *     passé, déjà réservé, tenu par un propriétaire inactif, ou appartient à
+     *     l'Auditeur lui-même (on ne réserve pas son propre créneau) ;
+     *  2. à la soumission, un chevauchement avec une autre réservation active de
+     *     l'Auditeur au même horaire est bloqué (on ne peut pas être à deux RDV en
+     *     même temps) ;
+     *  3. la réservation peut encore échouer si le créneau a été pris entre l'affichage
+     *     et la validation : CreneauIndisponibleException, levée derrière le verrou
+     *     pessimiste du service, traduit cette concurrence.
+     *
+     * Le succès déclenche l'envoi d'un e-mail de confirmation (via ReservationService).
+     */
     #[Route('/creneau/{id}/reserver', name: 'app_reservation_nouvelle', methods: ['GET', 'POST'])]
     public function nouveau(Creneau $creneau, Request $request): Response
     {
