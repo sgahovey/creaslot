@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquette hi-fi — Réinitialisation du mot de passe</title>
+<style>
+  :root {
+    --cs-blue-primary:#1F4E79; --cs-blue-secondary:#2E75B6; --cs-blue-light:#A5C8FF; --cs-blue-admin:#0F3556;
+    --cs-green-presentiel:#28A745; --cs-orange-visio:#FD7E14; --cs-blue-telephone:#007BFF;
+    --cs-success:#28A745; --cs-danger:#DC3545; --cs-warning:#FD7E14; --cs-info:#17A2B8;
+    --cs-bg-page:#F8F9FA; --cs-bg-card:#FFFFFF; --cs-bg-subtle:#F1F3F5; --cs-bg-admin:#0F3556;
+    --cs-text-primary:#1E1E1E; --cs-text-secondary:#6C757D; --cs-text-light:#FFFFFF; --cs-text-disabled:#ADB5BD;
+    --cs-border:#DEE2E6; --cs-border-input:#CED4DA; --cs-border-focus:#1F4E79;
+    --cs-font-family:'Inter', system-ui, -apple-system, sans-serif;
+    --cs-fs-tiny:0.75rem; --cs-fs-small:0.875rem; --cs-fs-base:1rem; --cs-fs-h4:1.125rem; --cs-fs-h3:1.25rem; --cs-fs-h2:1.5rem; --cs-fs-h1:1.875rem;
+    --cs-fw-normal:400; --cs-fw-medium:500; --cs-fw-semibold:600; --cs-fw-bold:700;
+    --cs-space-xs:4px; --cs-space-sm:8px; --cs-space-md:16px; --cs-space-lg:24px; --cs-space-xl:32px; --cs-space-xxl:48px;
+    --cs-radius-sm:4px; --cs-radius-md:6px; --cs-radius-lg:8px; --cs-radius-xl:12px;
+    --cs-shadow-sm:0 2px 4px rgba(0,0,0,0.05); --cs-shadow-md:0 4px 8px rgba(0,0,0,0.08); --cs-shadow-lg:0 8px 16px rgba(0,0,0,0.12);
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:var(--cs-font-family); background:var(--cs-bg-page); color:var(--cs-text-primary); line-height:1.5; }
+  .cs-auth-wrapper { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:var(--cs-space-lg); }
+  .cs-auth-card { width:100%; max-width:520px; background:var(--cs-bg-card); border:1px solid var(--cs-border); border-radius:var(--cs-radius-lg); padding:var(--cs-space-xl); box-shadow:var(--cs-shadow-md); }
+  .cs-auth-logo { font-size:1.5rem; font-weight:var(--cs-fw-bold); color:var(--cs-blue-primary); text-decoration:none; letter-spacing:-0.5px; display:inline-flex; align-items:center; gap:var(--cs-space-sm); margin-bottom:var(--cs-space-lg); }
+  .cs-auth-title { font-size:var(--cs-fs-h2); font-weight:var(--cs-fw-bold); margin-bottom:var(--cs-space-xs); }
+  .cs-auth-subtitle { font-size:var(--cs-fs-small); color:var(--cs-text-secondary); margin-bottom:var(--cs-space-lg); }
+  .cs-label { display:block; font-size:var(--cs-fs-small); font-weight:var(--cs-fw-semibold); margin-bottom:var(--cs-space-xs); }
+  .cs-input { width:100%; border:1px solid var(--cs-border-input); border-radius:var(--cs-radius-md); font-family:inherit; font-size:var(--cs-fs-base); padding:9px 12px; background:var(--cs-bg-card); color:var(--cs-text-primary); }
+  .cs-field { margin-bottom:var(--cs-space-md); }
+  .cs-form-text { font-size:var(--cs-fs-tiny); color:var(--cs-text-secondary); margin-top:var(--cs-space-xs); }
+  .cs-btn { display:inline-flex; align-items:center; justify-content:center; gap:var(--cs-space-sm); font-weight:var(--cs-fw-semibold); border-radius:var(--cs-radius-md); padding:10px var(--cs-space-lg); font-size:var(--cs-fs-small); cursor:pointer; text-decoration:none; border:1px solid transparent; font-family:inherit; }
+  .cs-btn-primary { background:var(--cs-blue-primary); border-color:var(--cs-blue-primary); color:var(--cs-text-light); }
+  .cs-btn-block { width:100%; }
+  .cs-auth-footer { text-align:center; margin-top:var(--cs-space-lg); font-size:var(--cs-fs-small); color:var(--cs-text-secondary); }
+  .cs-auth-footer a { color:var(--cs-blue-primary); font-weight:var(--cs-fw-semibold); text-decoration:none; }
+  .cs-page-caption { text-align:center; color:var(--cs-text-secondary); font-size:var(--cs-fs-tiny); font-style:italic; margin-top:var(--cs-space-lg); }
+</style>
+</head>
+<body>
+<div class="cs-auth-wrapper">
+  <div class="cs-auth-card">
+    <a class="cs-auth-logo" href="#"><span aria-hidden="true">📅</span> CreaSlot</a>
+    <h1 class="cs-auth-title">Nouveau mot de passe</h1>
+    <p class="cs-auth-subtitle">Choisissez un nouveau mot de passe pour le compte lea.moreau@exemple.fr.</p>
+
+    <form>
+      <div class="cs-field">
+        <label class="cs-label" for="mdp">Nouveau mot de passe</label>
+        <input class="cs-input" id="mdp" type="password" value="••••••••••">
+        <p class="cs-form-text">Au moins 10 caractères, dont une majuscule et un chiffre.</p>
+      </div>
+      <div class="cs-field">
+        <label class="cs-label" for="mdp2">Confirmer le mot de passe</label>
+        <input class="cs-input" id="mdp2" type="password" value="••••••••••">
+      </div>
+      <button type="button" class="cs-btn cs-btn-primary cs-btn-block">Réinitialiser mon mot de passe</button>
+    </form>
+
+    <p class="cs-auth-footer">Ce lien est valable une seule fois et expire après usage. <a href="#">Retour à la connexion</a></p>
+  </div>
+  <p class="cs-page-caption">Maquette hi-fi — Réinitialisation du mot de passe (après lien)</p>
+</div>
+</body>
+</html>

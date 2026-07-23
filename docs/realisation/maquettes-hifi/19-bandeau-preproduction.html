@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maquette hi-fi — Bandeau de pré-production</title>
+<style>
+  :root {
+    --cs-blue-primary:#1F4E79; --cs-blue-secondary:#2E75B6; --cs-blue-light:#A5C8FF; --cs-blue-admin:#0F3556;
+    --cs-green-presentiel:#28A745; --cs-orange-visio:#FD7E14; --cs-blue-telephone:#007BFF;
+    --cs-success:#28A745; --cs-danger:#DC3545; --cs-warning:#FD7E14; --cs-info:#17A2B8;
+    --cs-bg-page:#F8F9FA; --cs-bg-card:#FFFFFF; --cs-bg-subtle:#F1F3F5; --cs-bg-admin:#0F3556;
+    --cs-text-primary:#1E1E1E; --cs-text-secondary:#6C757D; --cs-text-light:#FFFFFF; --cs-text-disabled:#ADB5BD;
+    --cs-border:#DEE2E6; --cs-border-input:#CED4DA; --cs-border-focus:#1F4E79;
+    --cs-font-family:'Inter', system-ui, -apple-system, sans-serif;
+    --cs-fs-tiny:0.75rem; --cs-fs-small:0.875rem; --cs-fs-base:1rem; --cs-fs-h4:1.125rem; --cs-fs-h3:1.25rem; --cs-fs-h2:1.5rem; --cs-fs-h1:1.875rem;
+    --cs-fw-normal:400; --cs-fw-medium:500; --cs-fw-semibold:600; --cs-fw-bold:700;
+    --cs-space-xs:4px; --cs-space-sm:8px; --cs-space-md:16px; --cs-space-lg:24px; --cs-space-xl:32px; --cs-space-xxl:48px;
+    --cs-radius-sm:4px; --cs-radius-md:6px; --cs-radius-lg:8px; --cs-radius-xl:12px;
+    --cs-shadow-sm:0 2px 4px rgba(0,0,0,0.05); --cs-shadow-md:0 4px 8px rgba(0,0,0,0.08); --cs-shadow-lg:0 8px 16px rgba(0,0,0,0.12);
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:var(--cs-font-family); background:var(--cs-bg-page); color:var(--cs-text-primary); line-height:1.5; min-height:100vh; display:flex; flex-direction:column; }
+  a { color:inherit; }
+  .cs-container { max-width:1200px; margin:0 auto; padding:0 var(--cs-space-lg); width:100%; }
+  /* Marqueur 1 : bandeau d'environnement */
+  .cs-env-banner { padding:6px var(--cs-space-md); font-weight:var(--cs-fw-bold); font-size:var(--cs-fs-tiny); text-transform:uppercase; letter-spacing:1px; text-align:center; }
+  .cs-env-banner--preprod { background:var(--cs-warning); color:var(--cs-text-light); }
+  .cs-header { position:sticky; top:0; z-index:1030; box-shadow:var(--cs-shadow-sm); }
+  /* Marqueur 2 : liseré persistant de 3 px sur le header (contre 1 px ordinaire) */
+  .cs-env-preprod .cs-header { border-top:3px solid var(--cs-warning); }
+  .cs-nav { background:var(--cs-blue-primary); }
+  .cs-nav-inner { display:flex; align-items:center; gap:var(--cs-space-lg); min-height:60px; }
+  .cs-brand { color:var(--cs-text-light); font-weight:var(--cs-fw-bold); font-size:var(--cs-fs-h4); text-decoration:none; letter-spacing:-0.3px; display:flex; align-items:center; gap:var(--cs-space-sm); }
+  .cs-nav-menu { display:flex; align-items:center; gap:var(--cs-space-xs); list-style:none; }
+  .cs-nav-menu.center { margin:0 auto; }
+  .cs-nav-link { color:rgba(255,255,255,0.8); font-size:var(--cs-fs-small); font-weight:var(--cs-fw-medium); padding:var(--cs-space-sm) var(--cs-space-md); border-radius:var(--cs-radius-md); text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+  .cs-nav-link:hover, .cs-nav-link.active { color:var(--cs-text-light); background:rgba(255,255,255,0.12); }
+  .cs-nav-right { margin-left:auto; display:flex; align-items:center; gap:var(--cs-space-sm); }
+  .cs-avatar { width:34px; height:34px; border-radius:50%; background:var(--cs-blue-secondary); color:var(--cs-text-light); font-size:var(--cs-fs-tiny); font-weight:var(--cs-fw-bold); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .cs-hello { color:var(--cs-text-light); font-size:var(--cs-fs-small); }
+  .cs-main { flex:1; padding:var(--cs-space-xl) 0; }
+  .cs-h1 { font-size:var(--cs-fs-h1); font-weight:var(--cs-fw-bold); margin-bottom:var(--cs-space-xs); }
+  .cs-subtitle { color:var(--cs-text-secondary); font-size:var(--cs-fs-small); margin-bottom:var(--cs-space-lg); }
+  .cs-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:var(--cs-space-lg); }
+  .cs-slot-card { border:1px solid var(--cs-border); border-left:4px solid var(--cs-green-presentiel); padding:var(--cs-space-lg); border-radius:var(--cs-radius-md); background:var(--cs-bg-card); box-shadow:var(--cs-shadow-sm); display:flex; flex-direction:column; gap:var(--cs-space-sm); }
+  .cs-badge { display:inline-flex; align-items:center; gap:var(--cs-space-xs); padding:3px 10px; border-radius:100px; font-size:var(--cs-fs-tiny); font-weight:var(--cs-fw-semibold); align-self:flex-start; background:rgba(40,167,69,0.12); color:#1A6E2E; }
+  .cs-dot { width:8px; height:8px; border-radius:50%; display:inline-block; background:var(--cs-green-presentiel); }
+  .cs-slot-date { font-weight:var(--cs-fw-semibold); }
+  .cs-slot-time { color:var(--cs-text-secondary); font-size:var(--cs-fs-small); }
+  .cs-note { background:var(--cs-bg-subtle); border:1px solid var(--cs-border); border-radius:var(--cs-radius-md); padding:var(--cs-space-md) var(--cs-space-lg); margin-top:var(--cs-space-xl); font-size:var(--cs-fs-small); color:var(--cs-text-secondary); }
+  .cs-footer { background:var(--cs-blue-primary); color:rgba(255,255,255,0.75); padding:var(--cs-space-xxl) 0 var(--cs-space-lg); margin-top:auto; }
+  .cs-footer-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:var(--cs-space-xl); }
+  .cs-footer-title { color:var(--cs-text-light); font-weight:var(--cs-fw-bold); font-size:var(--cs-fs-small); margin-bottom:var(--cs-space-sm); }
+  .cs-footer-text { font-size:var(--cs-fs-small); color:rgba(255,255,255,0.6); max-width:260px; }
+  .cs-footer-link { color:rgba(255,255,255,0.65); text-decoration:none; font-size:var(--cs-fs-small); display:block; margin-bottom:var(--cs-space-xs); }
+  .cs-footer-divider { border:none; border-top:1px solid rgba(255,255,255,0.15); margin:var(--cs-space-lg) 0 var(--cs-space-md); }
+  .cs-footer-copyright { color:rgba(255,255,255,0.45); font-size:var(--cs-fs-tiny); text-align:center; }
+  .cs-page-caption { text-align:center; color:var(--cs-text-secondary); font-size:var(--cs-fs-tiny); font-style:italic; padding:var(--cs-space-md) 0; }
+</style>
+</head>
+<body class="cs-env-preprod">
+
+<!-- Marqueur 1 : bandeau orange en tête -->
+<div class="cs-env-banner cs-env-banner--preprod" role="status" aria-label="Environnement de pré-production">
+  <span aria-hidden="true">⚠</span> PRÉ-PRODUCTION — Les données de cet environnement ne sont pas réelles
+</div>
+
+<header class="cs-header">
+  <nav class="cs-nav">
+    <div class="cs-container cs-nav-inner">
+      <!-- Marqueur 3 : mention du titre de fenêtre figurée par le préfixe [PRÉPROD] -->
+      <a class="cs-brand" href="#"><span aria-hidden="true">📅</span> [PRÉPROD] CreaSlot</a>
+      <ul class="cs-nav-menu center">
+        <li><a class="cs-nav-link active" href="#"><span aria-hidden="true">🔍</span> Trouver un RDV</a></li>
+        <li><a class="cs-nav-link" href="#"><span aria-hidden="true">🗓</span> Mes réservations</a></li>
+        <li><a class="cs-nav-link" href="#"><span aria-hidden="true">⚙</span> Mes préférences</a></li>
+      </ul>
+      <div class="cs-nav-right">
+        <span class="cs-avatar" aria-hidden="true">LM</span>
+        <span class="cs-hello">Bonjour, <strong>Léa</strong> ▾</span>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<main class="cs-main">
+  <div class="cs-container">
+    <h1 class="cs-h1">Créneaux disponibles</h1>
+    <p class="cs-subtitle">Environnement de vérification — trois marqueurs signalent qu'il ne s'agit pas du service réel.</p>
+
+    <div class="cs-grid">
+      <article class="cs-slot-card">
+        <span class="cs-badge"><span class="cs-dot"></span> Présentiel</span>
+        <div class="cs-slot-date">Lundi 8 septembre 2026</div>
+        <div class="cs-slot-time">09:00 – 10:00 · Camille BERNARD</div>
+      </article>
+      <article class="cs-slot-card" style="border-left-color:var(--cs-orange-visio)">
+        <span class="cs-badge" style="background:rgba(253,126,20,0.12); color:#A85200"><span class="cs-dot" style="background:var(--cs-orange-visio)"></span> Visioconférence</span>
+        <div class="cs-slot-date">Mardi 9 septembre 2026</div>
+        <div class="cs-slot-time">14:30 – 15:30 · Camille BERNARD</div>
+      </article>
+      <article class="cs-slot-card" style="border-left-color:var(--cs-blue-telephone)">
+        <span class="cs-badge" style="background:rgba(0,123,255,0.12); color:#004A99"><span class="cs-dot" style="background:var(--cs-blue-telephone)"></span> Téléphone</span>
+        <div class="cs-slot-date">Jeudi 11 septembre 2026</div>
+        <div class="cs-slot-time">10:00 – 11:00 · Camille BERNARD</div>
+      </article>
+    </div>
+
+    <div class="cs-note">
+      <strong>Trois marqueurs de pré-production :</strong> le bandeau orange en tête, le liseré orange persistant sous celui-ci sur l'en-tête, et le préfixe <code>[PRÉPROD]</code> dans le titre. L'environnement de service, lui, ne porte aucun marqueur — l'absence de signal est elle-même le signal. La couleur relève de la charte graphique, non de la maquette lo-fi.
+    </div>
+  </div>
+</main>
+
+<footer class="cs-footer">
+  <div class="cs-container">
+    <div class="cs-footer-grid">
+      <div>
+        <div class="cs-footer-title">📅 CreaSlot</div>
+        <p class="cs-footer-text">Plateforme de gestion de rendez-vous du Cnam Réunion — réservez vos créneaux en quelques clics.</p>
+      </div>
+      <div>
+        <div class="cs-footer-title">Informations légales</div>
+        <a class="cs-footer-link" href="#">Mentions légales</a>
+        <a class="cs-footer-link" href="#">Conditions générales d'utilisation</a>
+        <a class="cs-footer-link" href="#">Politique de confidentialité</a>
+        <a class="cs-footer-link" href="#">Accessibilité (RGAA)</a>
+      </div>
+      <div>
+        <div class="cs-footer-title">Contact</div>
+        <p class="cs-footer-text">Cnam Réunion<br>18 rue Claude Chappe ZAC 2000<br>97420 Le Port</p>
+        <a class="cs-footer-link" href="#">contact@cnam-reunion.fr</a>
+      </div>
+    </div>
+    <hr class="cs-footer-divider">
+    <p class="cs-footer-copyright">© 2026 CreaSlot — Cnam Réunion. Tous droits réservés.</p>
+  </div>
+</footer>
+<p class="cs-page-caption">Maquette hi-fi — Bandeau de pré-production (trois marqueurs)</p>
+</body>
+</html>
