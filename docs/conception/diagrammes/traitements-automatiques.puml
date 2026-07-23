@@ -1,0 +1,61 @@
+@startuml traitements-automatiques
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam rectangle {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam database {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+skinparam note {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+
+rectangle "Ordonnanceur de tâches\nhors du système,\nsur la machine d'exécution" as ORDO #F1F3F5
+
+rectangle "Rappel d'échéance\nprévenir la veille\nd'un rendez-vous" as RAPPEL
+rectangle "Purge des traces\nsupprimer au-delà de la durée\nde conservation retenue" as PURGE
+rectangle "Sauvegarde\nproduire une copie\nexploitable des données" as SAUVE
+
+database "Réservoir de données" as DONNEES
+database "Copie de sauvegarde" as ARCHIVE
+rectangle "Dispositif de surveillance" as SURV #F1F3F5
+
+ORDO --> RAPPEL : chaque jour
+ORDO --> PURGE : chaque mois
+ORDO --> SAUVE : chaque jour
+
+RAPPEL --> DONNEES
+PURGE --> DONNEES
+SAUVE --> DONNEES
+SAUVE --> ARCHIVE : produit
+
+RAPPEL ..> SURV
+PURGE ..> SURV
+SAUVE ..> SURV
+
+note right of SAUVE
+  Une copie dont la restauration n'a jamais été
+  tentée est une hypothèse, pas une garantie.
+  La restauration doit être exercée.
+end note
+
+note bottom of SURV
+  Chaque traitement signale son exécution réussie.
+  C'est l'absence de ce signal qui alerte.
+end note
+
+legend bottom
+|= Élément |= Signification |
+| Trait plein | Déclenchement ou action sur les données |
+| Trait pointillé | Signal d'exécution réussie |
+| <b>Point clé</b> | Le traitement dont l'échec ne produit aucun symptôme est celui dont\nla détection doit être la plus rapide : une sauvegarde qui ne s'exécute\nplus ne se signale jamais d'elle-même. |
+endlegend
+@enduml

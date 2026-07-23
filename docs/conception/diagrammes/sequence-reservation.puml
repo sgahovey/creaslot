@@ -54,30 +54,29 @@ skinparam note {
 title Séquence, réservation d'un créneau avec verrou pessimiste
 
 actor "Auditeur" as AUDITEUR
-participant "ReservationController" as CONTROLEUR
-participant "ReservationService" as SERVICE
-database "Base de données" as BDD
-participant "NotificationService" as NOTIF
+participant "Contrôleur" as CONTROLEUR
+participant "Service de réservation" as SERVICE
+database "Réservoir de données" as BDD
+participant "Service de notification" as NOTIF
 
 AUDITEUR -> CONTROLEUR : POST /creneau/{id}/reserver\n(commentaire optionnel)
 activate CONTROLEUR
 
 note right of CONTROLEUR
-  Autorisation vérifiée en amont,
-  IsGranted ROLE_AUDITEUR.
+  Autorisation vérifiée en amont : l'utilisateur doit disposer du rôle d'auditeur.
 end note
 
 ' ---------------------------------------------------------------------
 ' Phase A, contrôles préalables hors transaction
 ' ---------------------------------------------------------------------
-CONTROLEUR -> SERVICE : motifRefusPrealable(créneau, auditeur)
+CONTROLEUR -> SERVICE : vérifier les motifs de refus préalables
 activate SERVICE
 SERVICE --> CONTROLEUR : null (aucun motif de refus)
 deactivate SERVICE
 
-CONTROLEUR -> SERVICE : aReservationChevauchante(auditeur, créneau)
+CONTROLEUR -> SERVICE : vérifier l'absence de chevauchement
 activate SERVICE
-SERVICE -> BDD : existeReservationActiveEnChevauchement()
+SERVICE -> BDD : chercher une réservation active chevauchante
 activate BDD
 BDD --> SERVICE : false
 deactivate BDD
@@ -93,27 +92,26 @@ end note
 ' ---------------------------------------------------------------------
 ' Phase B, la transaction verrouillée
 ' ---------------------------------------------------------------------
-CONTROLEUR -> SERVICE : reserver(créneau, commentaire, auditeur)
+CONTROLEUR -> SERVICE : réserver le créneau
 activate SERVICE
 
 group Transaction (verrou pessimiste)
 
-    SERVICE -> BDD : beginTransaction()
+    SERVICE -> BDD : ouvrir une transaction
     activate BDD
 
-    SERVICE -> BDD : lock(créneau, PESSIMISTIC_WRITE)
+    SERVICE -> BDD : poser un verrou exclusif sur le créneau
     note right of BDD
-      SELECT ... FOR UPDATE
-      Verrou de ligne InnoDB. Toute requête
-      concurrente sur ce même créneau est
-      bloquée ici, ce qui empêche deux
-      auditeurs de réserver simultanément.
+      Verrou exclusif sur la ligne du créneau.
+      Toute autre demande portant sur ce même créneau
+      attend ici, ce qui empêche deux auditeurs
+      de réserver simultanément.
     end note
 
-    SERVICE -> BDD : refresh(créneau)
+    SERVICE -> BDD : relire l'état du créneau
     BDD --> SERVICE : état du créneau, rechargé sous verrou
 
-    SERVICE -> SERVICE : creneauEstEncoreDisponible(créneau)
+    SERVICE -> SERVICE : revérifier la disponibilité
     note right of SERVICE
       Double contrôle, cette fois sous verrou.
       Un autre auditeur a pu réserver le créneau
@@ -122,13 +120,13 @@ group Transaction (verrou pessimiste)
 
     alt Créneau libre (succès)
 
-        SERVICE -> SERVICE : creerReservation()\nstatut ACTIVE
-        SERVICE -> BDD : persist(réservation) puis flush()
-        BDD --> SERVICE : INSERT effectué
-        SERVICE -> SERVICE : logger.info("Réservation créée")
-        SERVICE -> BDD : commit()
+        SERVICE -> SERVICE : créer la réservation à l'état actif
+        SERVICE -> BDD : enregistrer la réservation
+        BDD --> SERVICE : écriture effectuée
+        SERVICE -> SERVICE : consigner la création
+        SERVICE -> BDD : valider la transaction
         note right of BDD
-          Le commit libère le verrou.
+          La validation de la transaction libère le verrou.
           Les notifications sont envoyées après,
           hors transaction.
         end note
@@ -136,10 +134,10 @@ group Transaction (verrou pessimiste)
 
     else Créneau déjà réservé (concurrence)
 
-        SERVICE -> BDD : rollback()
+        SERVICE -> BDD : annuler la transaction
         BDD --> SERVICE : transaction annulée, verrou libéré
         deactivate BDD
-        SERVICE --> CONTROLEUR : throw CreneauIndisponibleException
+        SERVICE --> CONTROLEUR : signaler l'indisponibilité
         CONTROLEUR -> AUDITEUR : message d'erreur,\n"Ce créneau vient d'être réservé\npar quelqu'un d'autre",\nredirection vers Créneaux disponibles
         note right of CONTROLEUR
           Aucune notification n'est envoyée
@@ -153,32 +151,32 @@ end
 ' ---------------------------------------------------------------------
 ' Phase C, notifications après le commit (cas de succès)
 ' ---------------------------------------------------------------------
-SERVICE -> NOTIF : notifierAuditeurReservation(réservation)
+SERVICE -> NOTIF : notifier l'auditeur
 activate NOTIF
-NOTIF -> BDD : persist(notification in-app) puis flush()
+NOTIF -> BDD : enregistrer la notification
 activate BDD
 BDD --> NOTIF : notification enregistrée
 deactivate BDD
-NOTIF -> NOTIF : envoi de l'email à l'auditeur
+NOTIF -> NOTIF : envoi du message à l'auditeur
 NOTIF --> SERVICE : notification traitée
 deactivate NOTIF
 
-SERVICE -> NOTIF : notifierPersonnelReservation(réservation)
+SERVICE -> NOTIF : notifier le personnel
 activate NOTIF
-NOTIF -> BDD : persist(notification in-app) puis flush()
+NOTIF -> BDD : enregistrer la notification
 activate BDD
 BDD --> NOTIF : notification enregistrée
 deactivate BDD
-NOTIF -> NOTIF : envoi de l'email au personnel
+NOTIF -> NOTIF : envoi du message au personnel
 NOTIF --> SERVICE : notification traitée
 deactivate NOTIF
 
 note over SERVICE, NOTIF
   Notifications hors transaction (choix assumé),
-  un échec d'envoi d'email n'annule pas
+  un échec d'envoi n'annule pas
   une réservation déjà validée. La notification
-  in-app est persistée avant l'email, elle sert
-  de filet de traçabilité.
+  interne est enregistrée avant l'envoi du message,
+  elle sert de filet de traçabilité.
 end note
 
 SERVICE --> CONTROLEUR : réservation créée
