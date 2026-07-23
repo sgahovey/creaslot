@@ -21,7 +21,7 @@ isolées, les workers consomment la file.
 **Complété par US-10.1** : le **pipeline CI/CD (CP11)** de déploiement continu (build d'une image versionnée sur GHCR, promotion par environnement, déploiement par SSH avec approbation manuelle avant la production), décrit en §5.
 
 **Renvoyé** (non dupliqué ici) :
-- **US-9.3 — déploiement réel sur le VPS** : DNS `*.sslip.io`, certificats **ACME Let's
+- **US-9.3 — déploiement réel sur le VPS** : DNS `creaslot.re` / `preprod.creaslot.re` (après une phase initiale en `*.sslip.io`), certificats **ACME Let's
   Encrypt**, secrets de production, `trusted_proxies`, ouverture des ports 80/443, crons
   (`app:envoyer-rappels-j1`, `app:purger-journal`).
 - **US-9.4 — exploitation** : runbook opérationnel, sauvegardes/restauration, supervision
@@ -334,7 +334,7 @@ Preuve pérenne automatisée : `tests/Controller/CspHeaderTest.php` (intégrée 
 
 | Sujet | Renvoi |
 |---|---|
-| DNS `*.sslip.io`, **certificats ACME** Let's Encrypt, ports 80/443 | **US-9.3** |
+| DNS `creaslot.re` / `preprod.creaslot.re` (initialement `*.sslip.io`), **certificats ACME** Let's Encrypt, ports 80/443 | **US-9.3** |
 | Secrets de production (`.env.*.local` réels), `trusted_proxies` | **US-9.3** |
 | Crons `app:envoyer-rappels-j1` / `app:purger-journal` | **US-9.3** |
 | **CI/CD (CP11)** — pipeline de build et de promotion | **§5 (ce document, US-10.1)** |
