@@ -37,7 +37,7 @@ et le pipeline GitHub Actions déploie (détail : `docs/architecture-deploiement
 
 **Pourquoi une PR et pas un push direct** : les branches `preprod` et `main` sont protégées par un
 ruleset qui **refuse le push direct** et impose une **Pull Request mergée en squash**
-(`allowed_merge_methods: ["squash"]`, 3 contrôles requis au vert). La promotion se fait donc par PR.
+(`allowed_merge_methods: ["squash"]`, 4 contrôles requis au vert). La promotion se fait donc par PR.
 L'ancienne méthode `git merge --ff-only` + `git push origin <branche>` est désormais **bloquée** par le ruleset.
 
 > **Le squash ne casse PAS la cohérence du SHA** : chaque workflow de déploiement **reconstruit
@@ -52,7 +52,7 @@ L'ancienne méthode `git merge --ff-only` + `git push origin <branche>` est dés
    ```bash
    gh pr create --base preprod --head develop --title "deploy: promotion develop vers preprod"
    ```
-2. Attendre les **3 contrôles verts** (PHP-CS-Fixer, PHPStan, PHPUnit) **et SonarCloud**.
+2. Attendre les **4 contrôles verts** (PHP-CS-Fixer, PHPStan, PHPUnit, `composer audit`) **et SonarCloud**.
 3. Merger en squash :
    ```bash
    gh pr merge <NUM> --squash
@@ -68,7 +68,7 @@ qui répond 401 avant l'application). Aucune action manuelle sur le VPS.
    ```bash
    gh pr create --base main --head preprod --title "deploy: mise en production"
    ```
-2. Attendre les **3 contrôles verts**.
+2. Attendre les **4 contrôles verts**.
 3. Merger en squash :
    ```bash
    gh pr merge <NUM> --squash
