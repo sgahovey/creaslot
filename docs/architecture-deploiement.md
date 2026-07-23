@@ -59,9 +59,13 @@ isolées, les workers consomment la file.
                                 └─────────────────────────┘
 ```
 
-Orchestration : `compose.prod.yml` (projet `creaslot_prod`). Six services — `caddy`, `db`,
-`app-preprod`, `app-prod`, `worker-preprod`, `worker-prod` — sur le réseau
-`creaslot-prod-net`.
+Orchestration : `compose.prod.yml` (projet `creaslot_prod`). Cinq services — `db`,
+`app-preprod`, `app-prod`, `worker-preprod`, `worker-prod` — sur le réseau interne
+`creaslot-prod-net`. Le reverse-proxy Caddy **ne fait plus partie de cette stack** :
+depuis le découplage (PR #117), il vit dans un dépôt dédié `infra-proxy` et rejoint les
+applications via le réseau Docker externe `web` (cf. §3.1). Les conteneurs `app-preprod`
+et `app-prod` sont donc raccordés à **deux réseaux** : `creaslot-prod-net` (interne, accès
+à `db`) et `web` (externe, joignable par le proxy sous leur nom de service).
 
 ---
 
@@ -70,13 +74,18 @@ Orchestration : `compose.prod.yml` (projet `creaslot_prod`). Six services — `c
 Chaque choix est donné avec sa **raison** et l'**alternative écartée** — c'est le
 *pourquoi* qui se défend.
 
-### 3.1 Caddy en façade unique
+### 3.1 Caddy en façade mutualisée (dépôt dédié)
 
-**Décision** : un seul conteneur `caddy:2-alpine` assure la terminaison TLS, le service des
+**Décision** : un conteneur `caddy:2-alpine` assure la terminaison TLS, le service des
 assets statiques (`file_server`), la délégation PHP (`php_fastcgi`), les en-têtes de
-sécurité et le `basic_auth` de la pré-prod (`docker/caddy/Caddyfile`).
-**Pourquoi** : un seul point pour TLS + en-têtes + routage des deux sites ; ACME intégré
-sans configuration externe ; HTTP/2 natif.
+sécurité et le `basic_auth` de la pré-prod. Depuis le découplage (PR #117), il **ne fait
+plus partie de la stack CreaSlot** : il vit dans un dépôt d'infrastructure dédié
+(`infra-proxy`), possède son propre cycle de vie, et sert **sept sites** répartis sur
+plusieurs applications indépendantes (dont les deux de CreaSlot).
+**Pourquoi** : un seul point pour TLS + en-têtes + routage ; ACME intégré sans
+configuration externe ; HTTP/2 natif. Le sortir de la stack applicative permet de
+redéployer CreaSlot (`docker compose down/up`) sans interrompre le proxy ni les autres
+applications servies.
 **Alternative écartée** : *Caddy + nginx conservé* — doublonnait la configuration
 (en-têtes posés à deux endroits, deux couches à maintenir) sans bénéfice. nginx reste pour
 le **développement** (`docker-compose.yml`), non concerné par cette cible.
@@ -338,8 +347,8 @@ Preuve pérenne automatisée : `tests/Controller/CspHeaderTest.php` (intégrée 
 
 | Fichier | Rôle |
 |---|---|
-| `compose.prod.yml` | Orchestration des 6 services (projet `creaslot_prod`) |
-| `docker/caddy/Caddyfile` | Reverse-proxy : 2 sites dual-root, en-têtes, basic_auth, TLS |
+| `compose.prod.yml` | Orchestration des 5 services (projet `creaslot_prod`) ; réseaux `creaslot-prod-net` (interne) et `web` (externe, proxy) |
+| `Caddyfile` (dépôt `infra-proxy`) | Reverse-proxy mutualisé : dual-root, en-têtes, basic_auth, TLS ; sert les deux sites CreaSlot parmi sept |
 | `docker/mysql/init-prod.sh` | Création des 2 bases + 2 users au premier démarrage |
 | `docker/app/entrypoint.sh` | Synchronisation `public/` → volume d'assets au boot |
 | `Dockerfile` | Image multi-stage `creaslot:prod` (US-9.1) |

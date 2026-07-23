@@ -5,22 +5,24 @@ flowchart TB
     NAV -->|"HTTPS 443"| CADDY
     NAV -.->|"HTTP 80 : redirige vers HTTPS"| CADDY
 
-    subgraph RESEAU["Reseau Docker interne unique : creaslot-prod-net"]
-
+    subgraph PROXY["Reverse proxy : depot infra-proxy (cycle de vie separe de CreaSlot)"]
         CADDY["caddy - caddy:2-alpine<br/>SEUL conteneur expose au monde<br/>ports 80 et 443<br/>Terminaison TLS automatique via ACME Lets Encrypt<br/>En-tetes de securite : HSTS, X-Frame-Options<br/>AUCUNE CSP : posee par l application, nonce par requete<br/>Sert les fichiers statiques directement : file_server"]
+    end
+
+    subgraph RESEAU["Reseau interne creaslot-prod-net (stack CreaSlot, projet creaslot_prod)"]
 
         subgraph PROD["Environnement PRODUCTION"]
-            APPPROD["app-prod<br/>PHP-FPM, port 9000<br/>utilisateur non-root, uid 1000<br/>non expose"]
-            WPROD["worker-prod<br/>messenger consume async<br/>traitement asynchrone des mails<br/>non expose"]
+            APPPROD["app-prod<br/>PHP-FPM, port 9000<br/>utilisateur non-root, uid 1000<br/>sur creaslot-prod-net + reseau web (joint par le proxy)"]
+            WPROD["worker-prod<br/>messenger consume async<br/>traitement asynchrone des mails<br/>reseau interne uniquement"]
         end
 
         subgraph PREPROD["Environnement PREPRODUCTION"]
-            APPPRE["app-preprod<br/>PHP-FPM, port 9000<br/>utilisateur non-root, uid 1000<br/>non expose"]
-            WPRE["worker-preprod<br/>messenger consume async<br/>traitement asynchrone des mails<br/>non expose"]
+            APPPRE["app-preprod<br/>PHP-FPM, port 9000<br/>utilisateur non-root, uid 1000<br/>sur creaslot-prod-net + reseau web (joint par le proxy)"]
+            WPRE["worker-preprod<br/>messenger consume async<br/>traitement asynchrone des mails<br/>reseau interne uniquement"]
         end
 
         subgraph SUP["Supervision"]
-            KUMA["uptime-kuma<br/>port 3001 interne<br/>non expose"]
+            KUMA["uptime-kuma<br/>port 3001<br/>joint par le proxy via le reseau web"]
         end
 
         subgraph BDD["Base de donnees : instance UNIQUE, NON exposee"]
@@ -29,9 +31,9 @@ flowchart TB
 
     end
 
-    CADDY -->|"creaslot.re - public<br/>php_fastcgi vers 9000"| APPPROD
-    CADDY -->|"preprod.creaslot.re - basic_auth<br/>php_fastcgi vers 9000"| APPPRE
-    CADDY -->|"domaine de supervision - basic_auth<br/>reverse_proxy vers 3001"| KUMA
+    CADDY -->|"creaslot.re - public<br/>reseau web, php_fastcgi vers 9000"| APPPROD
+    CADDY -->|"preprod.creaslot.re - basic_auth<br/>reseau web, php_fastcgi vers 9000"| APPPRE
+    CADDY -->|"domaine de supervision - basic_auth<br/>reseau web, reverse_proxy vers 3001"| KUMA
 
     APPPROD -->|"PDO 3306"| DB
     WPROD -->|"PDO 3306"| DB
