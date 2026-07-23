@@ -21,6 +21,36 @@
 left to right direction
 skinparam shadowing false
 skinparam actorStyle awesome
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam usecase {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam actor {
+  BorderColor #1F4E79
+  FontColor #1E1E1E
+}
+skinparam participant {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam sequence {
+  ArrowColor #1F4E79
+  LifeLineBorderColor #1F4E79
+  GroupBorderColor #1F4E79
+}
+skinparam package {
+  BorderColor #1F4E79
+  FontColor #1E1E1E
+}
+skinparam note {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
 
 title Cas d'utilisation — Espace Personnel
 
@@ -90,7 +120,7 @@ legend right
   | Acteur | Rôle qui interagit avec le système |
   | Cas d'utilisation | Fonctionnalité offerte par le système |
   | Association (--) | L'acteur déclenche le cas d'utilisation |
-  | Héritage (--|>) | L'acteur fils hérite des cas du parent |
+  | Héritage (flèche creuse) | L'acteur fils hérite des cas du parent |
   | <<extend>> | Le cas d'extension s'exécute sous condition |
 endlegend
 
