@@ -92,7 +92,7 @@ UC_NOTIFIER ..> UC_CRENEAU_SUPPRIMER : <<extend>>
 UC_NOTIFIER ..> UC_CRENEAU_MODIFIER : <<extend>>
 
 note right of UC_CRENEAU_MODIFIER
-  CreneauVoter::EDIT
+  Règle d'autorisation, modification
   Seul le créateur du créneau (ou le
   Super-administrateur) peut le modifier.
   Si le créneau est réservé, seul le
@@ -102,7 +102,7 @@ note right of UC_CRENEAU_MODIFIER
 end note
 
 note right of UC_CRENEAU_SUPPRIMER
-  CreneauVoter::DELETE
+  Règle d'autorisation, suppression
   La notification n'est émise que si le
   créneau était réservé (l'auditeur concerné
   est alors prévenu).
@@ -110,8 +110,7 @@ end note
 
 note bottom of AUDITEUR
   Le Personnel hérite de l'Auditeur
-  (role_hierarchy : ROLE_PERSONNEL inclut
-  ROLE_AUDITEUR) : il accède donc aussi
+  (la hiérarchie des rôles est cumulative) : il accède donc aussi
   à tout le parcours Auditeur.
 end note
 

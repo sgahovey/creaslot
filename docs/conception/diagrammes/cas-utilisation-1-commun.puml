@@ -66,9 +66,9 @@ rectangle CreaSlot {
         usecase "Modifier ses informations"                 as UC_PROFIL_INFOS
         usecase "Changer son mot de passe"                  as UC_PROFIL_MDP
         usecase "Consulter ses notifications"               as UC_NOTIFICATIONS
-        usecase "Consulter ses données\npersonnelles (RGPD)" as UC_DONNEES
-        usecase "Exporter ses données\npersonnelles (RGPD)"  as UC_DONNEES_EXPORT
-        usecase "Supprimer son compte\n(anonymisation, RGPD art. 17)" as UC_SUPPRESSION
+        usecase "Consulter ses données\npersonnelles" as UC_DONNEES
+        usecase "Exporter ses données\npersonnelles"  as UC_DONNEES_EXPORT
+        usecase "Supprimer son compte\n(par anonymisation)" as UC_SUPPRESSION
     }
 }
 
@@ -98,8 +98,7 @@ UTILISATEUR -- UC_SUPPRESSION
 
 note top of UTILISATEUR
   Acteur abstrait : représente tout compte
-  authentifié, quel que soit son rôle
-  (IS_AUTHENTICATED_FULLY).
+  authentifié, quel que soit son rôle.
 end note
 
 legend right

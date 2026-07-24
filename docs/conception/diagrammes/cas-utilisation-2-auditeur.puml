@@ -87,21 +87,20 @@ UC_RESERVER ..> UC_NOTIFIER : <<include>>
 UC_RESA_ANNULER ..> UC_NOTIFIER : <<include>>
 
 note right of UC_RESA_DETAIL
-  ReservationVoter::VIEW
+  Règle d'autorisation, consultation
   Seul le propriétaire de la réservation
   (ou le Super-administrateur) peut la consulter.
 end note
 
 note right of UC_RESA_ANNULER
-  ReservationVoter::CANCEL
+  Règle d'autorisation, annulation
   Annulation possible uniquement si la réservation
   est encore active et le créneau à venir.
 end note
 
 note top of UTILISATEUR
   Acteur abstrait : représente tout compte
-  authentifié, quel que soit son rôle
-  (IS_AUTHENTICATED_FULLY).
+  authentifié, quel que soit son rôle.
 end note
 
 legend right

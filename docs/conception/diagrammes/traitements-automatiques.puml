@@ -18,7 +18,7 @@ skinparam note {
   FontColor #1E1E1E
 }
 
-rectangle "Ordonnanceur de tâches\nhors du système,\nsur la machine d'exécution" as ORDO #F1F3F5
+rectangle "Planificateur\nhors du système,\nsur la machine d'exécution" as ORDO #F1F3F5
 
 rectangle "Rappel d'échéance\nprévenir la veille\nd'un rendez-vous" as RAPPEL
 rectangle "Purge des traces\nsupprimer au-delà de la durée\nde conservation retenue" as PURGE

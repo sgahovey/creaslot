@@ -59,7 +59,7 @@ participant "Service de réservation" as SERVICE
 database "Réservoir de données" as BDD
 participant "Service de notification" as NOTIF
 
-AUDITEUR -> CONTROLEUR : POST /creneau/{id}/reserver\n(commentaire optionnel)
+AUDITEUR -> CONTROLEUR : demander la réservation d'un créneau\n(commentaire optionnel)
 activate CONTROLEUR
 
 note right of CONTROLEUR
@@ -71,16 +71,16 @@ end note
 ' ---------------------------------------------------------------------
 CONTROLEUR -> SERVICE : vérifier les motifs de refus préalables
 activate SERVICE
-SERVICE --> CONTROLEUR : null (aucun motif de refus)
+SERVICE --> CONTROLEUR : aucun motif de refus
 deactivate SERVICE
 
 CONTROLEUR -> SERVICE : vérifier l'absence de chevauchement
 activate SERVICE
 SERVICE -> BDD : chercher une réservation active chevauchante
 activate BDD
-BDD --> SERVICE : false
+BDD --> SERVICE : aucune réservation chevauchante
 deactivate BDD
-SERVICE --> CONTROLEUR : false (aucun chevauchement)
+SERVICE --> CONTROLEUR : aucun chevauchement
 deactivate SERVICE
 
 note over CONTROLEUR, SERVICE

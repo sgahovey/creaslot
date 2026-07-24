@@ -101,29 +101,28 @@ UC_COMPTE_ACTIVATION ..> UC_JOURNALISER : <<include>>
 UC_COMPTE_EXPORT     ..> UC_JOURNALISER : <<include>>
 
 note right of UC_COMPTE_MODIFIER
-  UtilisateurVoter::EDIT
-  et UtilisateurVoter::CHANGE_ROLE
+  Règles d'autorisation, modification
+  et changement de rôle
   si le rôle du compte est modifié.
 end note
 
 note right of UC_COMPTE_ACTIVATION
-  UtilisateurVoter::ACTIVATE
-  et UtilisateurVoter::DEACTIVATE
+  Règles d'autorisation, activation
+  et désactivation
   Un administrateur ne peut pas
   se désactiver lui-même.
 end note
 
 note bottom of UC_JOURNALISER
-  Trace immuable (append-only).
+  Trace immuable (écriture seule).
   Acteur et cible figés en scalaires :
   la trace survit à la suppression
-  des comptes concernés (RGPD).
+  des comptes concernés (données personnelles).
 end note
 
 note bottom of PERSONNEL
   Le Super-administrateur hérite du Personnel
-  (role_hierarchy : ROLE_SUPER_ADMIN inclut
-  ROLE_PERSONNEL et ROLE_AUDITEUR) : il accède
+  (la hiérarchie des rôles est cumulative) : il accède
   donc aussi à l'ensemble des parcours
   Personnel et Auditeur.
 end note
