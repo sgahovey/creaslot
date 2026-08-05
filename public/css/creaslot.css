@@ -572,16 +572,20 @@
 }
 
 /* Pastille — base commune : contraste RGAA (texte quasi noir sur pastille
-   colorée) et atténuation des créneaux passés. */
-.cs-fc-calendar .fc-v-event.cs-fc-creneau,
-.cs-fc-calendar .fc-v-event.cs-fc-creneau .fc-event-main,
-.cs-fc-calendar .fc-v-event.cs-fc-creneau .fc-event-main-frame,
-.cs-fc-calendar .fc-v-event.cs-fc-creneau .fc-event-title,
-.cs-fc-calendar .fc-v-event.cs-fc-creneau .fc-event-time {
+   colorée) et atténuation des créneaux passés. Scopé sur `.fc-event` (base
+   commune à tous les événements) et non sur `.fc-v-event` seul, afin de couvrir
+   aussi la vue Mois (événements `.fc-daygrid-event`), où le texte tombait sinon
+   sur le bleu par défaut de FullCalendar et où les créneaux passés n'étaient
+   pas atténués. */
+.cs-fc-calendar .fc-event.cs-fc-creneau,
+.cs-fc-calendar .fc-event.cs-fc-creneau .fc-event-main,
+.cs-fc-calendar .fc-event.cs-fc-creneau .fc-event-main-frame,
+.cs-fc-calendar .fc-event.cs-fc-creneau .fc-event-title,
+.cs-fc-calendar .fc-event.cs-fc-creneau .fc-event-time {
     color: #1a1a1a !important;
 }
-.cs-fc-calendar .fc-v-event.cs-fc-creneau.fc-event-passe,
-.cs-fc-calendar .fc-v-event.cs-fc-creneau.fc-event-past {
+.cs-fc-calendar .fc-event.cs-fc-creneau.fc-event-passe,
+.cs-fc-calendar .fc-event.cs-fc-creneau.fc-event-past {
     opacity: 0.62 !important;
     filter: grayscale(0.08);
 }
