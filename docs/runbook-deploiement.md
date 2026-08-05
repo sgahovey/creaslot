@@ -5,9 +5,11 @@ Pour les **choix de conception** (pourquoi Caddy en façade, image *build-once*,
 CSP à nonce, `trusted_proxies`…), voir `docs/architecture-deploiement.md` — ce runbook
 ne contient que des procédures et des commandes copiables.
 
-**Périmètre** : déploiement, mise à jour, certificats, e-mail, crons, rollback simple.
-Hors périmètre (→ **US-9.4**) : sauvegardes BDD, supervision/monitoring, journalisation
-des échecs de connexion (OWASP A09).
+**Périmètre** : déploiement, mise à jour, certificats, e-mail, crons, sauvegarde et
+restauration de la base (§8), rollback simple.
+Hors périmètre : supervision/monitoring applicatif, encore une piste d'évolution (cf. §10).
+La journalisation des échecs de connexion (OWASP A09), initialement renvoyée à une US
+ultérieure, a depuis été livrée (US-9.5, cf. §10).
 
 ## 1. Accès et environnement
 - VPS OVH Ubuntu, IP **51.178.25.175**, fuseau **`Etc/UTC`**.
@@ -225,7 +227,7 @@ git checkout <commit-stable>
 docker compose -f compose.prod.yml --env-file .env.deploy.local build app-prod
 docker compose -f compose.prod.yml --env-file .env.deploy.local up -d
 ```
-Le pipeline CI/CD *build-once / promote-on-green* fera l'objet d'une US dédiée ; ici le build se fait **sur le VPS**.
+Le pipeline CI/CD *build-once / promote-on-green* est en place (US-10.1, cf. §3.1) ; ce rollback manuel reste une procédure de secours où le build se fait **sur le VPS**.
 
 ## 10. Pistes d'évolution
 
