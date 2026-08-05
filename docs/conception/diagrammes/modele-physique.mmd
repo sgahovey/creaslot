@@ -1,0 +1,106 @@
+---
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#DCE7F5'
+    primaryBorderColor: '#1F4E79'
+    primaryTextColor: '#1E1E1E'
+    lineColor: '#1F4E79'
+---
+erDiagram
+    service {
+        INT id PK
+        VARCHAR(100) nom
+        LONGTEXT description
+        TINYINT(1) est_actif
+    }
+    type_rdv {
+        INT id PK
+        VARCHAR(20) code UK
+        VARCHAR(50) libelle
+        VARCHAR(7) couleur_hex
+        VARCHAR(50) icone
+        LONGTEXT description
+        TINYINT(1) est_actif
+    }
+    utilisateur {
+        INT id PK
+        VARCHAR(180) email UK
+        VARCHAR(255) mot_de_passe_hash
+        VARCHAR(100) nom
+        VARCHAR(100) prenom
+        VARCHAR(30) role
+        DATETIME date_creation
+        DATETIME derniere_connexion
+        TINYINT(1) est_actif
+        TINYINT(1) email_verifie
+        TINYINT(1) email_modification_commentaire
+        TINYINT(1) email_rappel_j1
+        INT id_service FK "nullable"
+    }
+    creneau {
+        INT id PK
+        DATETIME date_debut
+        DATETIME date_fin
+        LONGTEXT commentaire_auditeur
+        DATETIME date_creation
+        TINYINT(1) est_actif
+        INT id_utilisateur FK
+        INT id_type_rdv FK
+    }
+    reservation {
+        INT id PK
+        DATETIME date_reservation
+        LONGTEXT commentaire_auditeur
+        VARCHAR(20) statut
+        DATETIME date_annulation
+        LONGTEXT motif_annulation
+        DATETIME rappel_envoye_at
+        INT id_creneau FK
+        INT id_utilisateur FK
+    }
+    notification {
+        INT id PK
+        VARCHAR(30) type
+        VARCHAR(255) titre
+        LONGTEXT message
+        TINYINT(1) lu
+        DATETIME date_creation
+        INT id_destinataire FK
+        INT id_reservation FK "nullable, ON DELETE SET NULL"
+    }
+    reset_password_request {
+        INT id PK
+        VARCHAR(20) selector
+        VARCHAR(100) hashed_token
+        DATETIME requested_at
+        DATETIME expires_at
+        INT id_utilisateur FK
+    }
+    journal_admin {
+        INT id PK
+        DATETIME date_action
+        VARCHAR(40) type_action
+        INT acteur_id
+        VARCHAR(201) acteur_libelle
+        INT cible_id
+        VARCHAR(201) cible_libelle
+        LONGTEXT details
+    }
+    historique_utilisateur {
+        INT id PK
+        INT utilisateur_id
+        VARCHAR(50) champ_modifie
+        VARCHAR(255) ancienne_valeur
+        VARCHAR(255) nouvelle_valeur
+        DATETIME date_modification
+    }
+
+    service |o--o{ utilisateur : "id_service"
+    utilisateur ||--o{ creneau : "id_utilisateur"
+    type_rdv ||--o{ creneau : "id_type_rdv"
+    creneau ||--o{ reservation : "id_creneau"
+    utilisateur ||--o{ reservation : "id_utilisateur"
+    utilisateur ||--o{ notification : "id_destinataire"
+    reservation |o--o{ notification : "id_reservation"
+    utilisateur ||--o{ reset_password_request : "id_utilisateur"
