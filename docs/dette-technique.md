@@ -1047,3 +1047,31 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 **Hors périmètre** : la commande `app:envoyer-rappels-j1` elle-même, correcte et couverte par trois tests unitaires ; le worker Messenger et la file d'envoi, vérifiés sains (aucun message bloqué ni en échec) ; la supervision des crons CreaPret, déjà en place.
 
 **Priorité** : 🟡 moyenne (fonctionnalité de production inopérante pendant cinq jours ; impact réel nul faute de données en base, mais le défaut de supervision qui l'a masquée couvrait aussi la sauvegarde quotidienne).
+
+## DT-41 — Configuration CSRF dupliquée dans les douze form types (🟢 BAS) — ✅ RÉSOLUE (05/08/2026)
+
+> **✅ RÉSOLUE le 05/08/2026** — découverte le 04/08/2026 via la porte de qualité SonarCloud de la demande d'intégration #132, puis factorisée dans la foulée.
+>
+> **Origine** : la protection CSRF est une politique de sécurité transverse strictement identique partout (toujours active, jamais désactivée). Elle était pourtant exprimée par copier-coller : chaque `configureOptions()` de formulaire redéfinissait le même couple `csrf_protection => true` / `csrf_token_id => '<jeton>'`, seule la valeur de l'identifiant de jeton variant légitimement d'un formulaire à l'autre. Duplication **structurelle** (même règle recopiée), et non accidentelle.
+>
+> **Ampleur réelle** : la porte SonarCloud « Duplication on New Code » avait d'abord signalé le bloc sur **deux** formulaires (`ReservationType` et `AnnulationReservationType`, à l'origine du blocage de la demande #132). L'inspection du reste de `src/Form/` a révélé que **douze** formulaires portaient le même bloc, pas deux ; la factorisation a donc été menée sur l'ensemble.
+>
+> **Résumé fix** : nouveau trait `App\Form\ProtectionCsrfTrait` (`src/Form/ProtectionCsrfTrait.php`) exposant `configurerProtectionCsrf(OptionsResolver $resolver, string $csrfTokenId)`. Il mutualise l'unique constante (`csrf_protection => true`) et **exige** le `csrf_token_id` en paramètre : l'identifiant de jeton reste propre à chaque formulaire (isolation des jetons — un jeton émis sur un formulaire ne doit pas en valider un autre). Les douze form types délèguent désormais au trait tout en conservant leurs options spécifiques (`data_class`, `creneau_reserve`, `avec_mot_de_passe` et leurs `setAllowedTypes`). Aucune logique de champ ni de validation modifiée.
+>
+> **Alternatives écartées** : (1) **classe de base abstraite** (`AbstractCsrfType extends AbstractType` avec un `getCsrfTokenId()` abstrait) — écartée car elle imposait de changer la hiérarchie des douze classes (leur `extends`, leur annotation générique `@extends AbstractType<X>`), compliquait le `data_class` via `parent::configureOptions()` et gênait les classes déclarées `final` ; le trait est chirurgical, les classes restent `extends AbstractType`. (2) **jeton CSRF mutualisé** (un `csrf_token_id` unique partagé) — écartée car elle aurait **affaibli la protection** : un jeton unique validerait plusieurs formulaires. L'identifiant demeure donc distinct par formulaire.
+
+**Détecté** : 04/08/2026, via la porte de qualité SonarCloud (« Duplication on New Code ») sur la demande d'intégration #132.
+
+**Constat** : le couple `csrf_protection => true` / `csrf_token_id => '<jeton>'` était recopié à l'identique dans les douze `configureOptions()` des form types ; seule la valeur du jeton différait. SonarCloud a d'abord flaggé deux formulaires, l'analyse en a révélé douze.
+
+**Fichiers concernés** : `src/Form/ProtectionCsrfTrait.php` (nouveau) ; les douze form types adaptés (`AnnulationReservationType`, `ChangePasswordFormType`, `ChangementMotDePasseType`, `CreneauType`, `InscriptionType`, `MonProfilType`, `PreferencesNotificationType`, `RenvoiConfirmationType`, `ReservationType`, `ResetPasswordRequestFormType`, `SuppressionCompteType`, `UtilisateurAdminType`). Le même lot a embarqué la documentation de `ReservationType` (PHPDoc de classe + commentaire auditeur), retenue lors de #132 à cause de cette duplication.
+
+**Action réalisée** : extraction du bloc CSRF dans le trait `ProtectionCsrfTrait`, délégation depuis les douze formulaires avec conservation de leur jeton propre et de leurs options spécifiques. Publié dans la demande #133, fusionnée en regroupement dans `develop`.
+
+**Vérification** : PHP-CS-Fixer 0 écart, PHPStan niveau 8 sans erreur, PHPUnit 336 tests / 1184 assertions. `csrf_protection` n'apparaît plus qu'en un seul point (le trait) ; les douze `csrf_token_id` restent distincts (vérifié par extraction).
+
+**Constat associé** : en touchant `ReservationType` et `AnnulationReservationType`, la refactorisation a transformé leurs lignes en « code neuf » et fait remonter une **seconde** duplication, préexistante et distincte du CSRF : les deux formulaires construisent un même champ `TextareaType` optionnel (mêmes `attr`, `help` RGPD identique au mot près, contrainte `Length(max: 500)`), seuls le nom du champ, le libellé et le message différant. Elle n'a **pas** été factorisée : un helper couvrant ces deux usages exigerait cinq à six paramètres (nom, libellé, placeholder, message, nombre de lignes…), soit de la sur-ingénierie contraire à la sobriété visée par le projet. SonarCloud est donc resté rouge sur #133 (duplication à 9,2 % sur code neuf), mais les quatre portes requises (cs-fixer, phpstan, phpunit, audit) étaient vertes et la porte SonarCloud n'est pas bloquante ; la demande a été fusionnée en connaissance de cause.
+
+**Hors périmètre** : la logique de construction des champs et les contraintes de validation (inchangées) ; la duplication résiduelle du champ textarea RGPD ci-dessus (assumée) ; les autres mesures de qualité de #133, au vert (couverture 94,1 %, notes de fiabilité, sécurité et maintenabilité au niveau maximal).
+
+**Priorité** : 🟢 basse (duplication de configuration, sans impact fonctionnel ni sécurité ; la protection CSRF elle-même n'a jamais été affaiblie, chaque formulaire conservant son jeton propre).
