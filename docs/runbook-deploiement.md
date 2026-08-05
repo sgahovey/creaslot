@@ -16,7 +16,7 @@ des échecs de connexion (OWASP A09).
 - Pare-feu `ufw` : ports **22, 80, 443** ouverts.
 
 ## 2. Fichiers de configuration
-- `compose.prod.yml` — services : `caddy`, `db`, `app-preprod`, `app-prod`, `worker-preprod`, `worker-prod`.
+- `compose.prod.yml` — services : `db`, `app-preprod`, `app-prod`, `worker-preprod`, `worker-prod`. Le reverse-proxy Caddy **ne fait plus partie de cette stack** : depuis le découplage (PR #117), il vit dans un dépôt d'infrastructure dédié `infra-proxy` (cf. §4 et `docs/architecture-deploiement.md`).
 - `.env.deploy.local` (**secret**, infra ; passé via `--env-file`) : hosts, `CADDY_TLS` (e-mail ACME), `CADDY_ACME_CA` (vide = prod), ports, `MYSQL_*`, `PREPROD_BASICAUTH_*` (hash bcrypt **échappé `$$`**).
 - `.env.prod.local` / `.env.preprod.local` (**secrets**, app) : `APP_SECRET`, `DATABASE_URL`, `MAILER_DSN`.
 - Gabarits `*.example` versionnés ; les `*.local` sont **gitignorés** (jamais commités).
@@ -129,18 +129,16 @@ curl -s -o /dev/null -w "%{http_code}\n" https://preprod.creaslot.re/connexion  
 > d'un trigger sans privilège `SUPER` alors que le binary logging est actif). Cela vaut
 > pour le déploiement nominal (§3.1, migration jouée par le pipeline) comme manuel (§3.2).
 
-## 4. HTTPS / certificats (Caddy + Let's Encrypt)
+## 4. HTTPS / certificats (Caddy dans le dépôt `infra-proxy`)
+- Le reverse-proxy Caddy vit dans le dépôt d'infrastructure dédié **`infra-proxy`** (découplé de la stack CreaSlot en PR #117 ; cf. `docs/architecture-deploiement.md`). **Toutes les opérations sur le proxy — certificats, hosts, CA ACME, `basic_auth` — s'effectuent dans ce dépôt**, pas via `compose.prod.yml`.
 - Caddy **obtient et renouvelle** les certificats automatiquement (ACME). Domaines : `creaslot.re` (prod, apex) et `preprod.creaslot.re` ; enregistrements DNS **A** pointant vers `51.178.25.175`.
 - `CADDY_ACME_CA` **vide = CA PRODUCTION**. Pour tester sans griller le rate-limit Let's Encrypt :
   ```
   CADDY_ACME_CA=https://acme-staging-v02.api.letsencrypt.org/directory
   ```
   (certificats **non reconnus** par les navigateurs, c'est normal en staging).
-- Après modification d'un host ou de la CA : recréer Caddy :
-  ```bash
-  docker compose -f compose.prod.yml --env-file .env.deploy.local up -d caddy
-  ```
-- La **préprod** est protégée par `basic_auth` (`PREPROD_BASICAUTH_USER` / `PREPROD_BASICAUTH_HASH`).
+- Après modification d'un host ou de la CA : recréer le proxy **depuis le dépôt `infra-proxy`** (selon sa procédure propre), et non via `compose.prod.yml`.
+- La **préprod** est protégée par `basic_auth` (`PREPROD_BASICAUTH_USER` / `PREPROD_BASICAUTH_HASH`), configuré dans `infra-proxy`.
 
 ## 5. E-mail transactionnel (Brevo)
 - Domaine `creaslot.re` **authentifié chez Brevo** via 4 entrées DNS dans la zone OVH : code Brevo (`TXT @`), DKIM `brevo1._domainkey` + `brevo2._domainkey` (`CNAME`), DMARC (`_dmarc`, `TXT`).
@@ -152,11 +150,12 @@ curl -s -o /dev/null -w "%{http_code}\n" https://preprod.creaslot.re/connexion  
   ```
 
 ## 6. Tâches planifiées (crons)
-- Crontab de l'utilisateur `ubuntu`, **2 entrées** (VPS en UTC) :
+- Crontab de l'utilisateur `ubuntu`, **3 entrées** (VPS en UTC) :
+  - Sauvegarde de la base : `30 2 * * *` (quotidienne, 02h30 UTC).
   - Rappels J-1 : `0 14 * * *` (= 18h00 heure Réunion).
   - Purge du journal RGPD : `0 3 1 * *` (1er du mois, 03h00 UTC).
-- Logs : `~/cron-logs/rappels-j1.log` et `~/cron-logs/purger-journal.log`.
-- Lignes exactes et procédures détaillées : `docs/cron-rappels-j1.md` et `docs/cron-purger-journal.md`.
+- Logs : `~/cron-logs/backup-db.log`, `~/cron-logs/rappels-j1.log` et `~/cron-logs/purger-journal.log`.
+- Lignes exactes et procédures détaillées : `docs/cron-backup.md`, `docs/cron-rappels-j1.md` et `docs/cron-purger-journal.md`.
 
 ## 7. Administration courante
 ```bash
@@ -166,7 +165,7 @@ docker compose -f compose.prod.yml --env-file .env.deploy.local exec app-prod ph
 # État des services
 docker compose -f compose.prod.yml --env-file .env.deploy.local ps
 
-# Logs d'un service (caddy, app-prod, worker-prod, db…)
+# Logs d'un service (app-prod, worker-prod, db…) — le proxy Caddy se journalise dans le dépôt infra-proxy
 docker compose -f compose.prod.yml --env-file .env.deploy.local logs <service> --tail 50
 ```
 
