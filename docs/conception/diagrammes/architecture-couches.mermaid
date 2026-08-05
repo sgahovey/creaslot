@@ -1,0 +1,36 @@
+---
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#DCE7F5'
+    primaryBorderColor: '#1F4E79'
+    primaryTextColor: '#1E1E1E'
+    lineColor: '#1F4E79'
+    clusterBkg: '#FFFFFF'
+    clusterBorder: '#1F4E79'
+---
+flowchart TB
+    UTIL(["Utilisateur"])
+
+    subgraph app["Application"]
+        direction TB
+        PRES["<b>Présentation</b><br/>produire les écrans"]
+        CTRL["<b>Contrôle</b><br/>recevoir et router la requête"]
+        METIER["<b>Traitement métier</b><br/>appliquer les règles"]
+        PERS["<b>Persistance</b><br/>interroger le réservoir"]
+    end
+
+    SEC["<b>Sécurité</b><br/><i>préoccupation transverse</i><br/>valider, autoriser, tracer"]
+
+    DONNEES[("Réservoir de données")]
+
+    UTIL --> PRES
+    PRES --> CTRL
+    CTRL --> METIER
+    METIER --> PERS
+    PERS --> DONNEES
+
+    SEC -.- PRES
+    SEC -.- CTRL
+    SEC -.- METIER
+    SEC -.- PERS

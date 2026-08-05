@@ -1,0 +1,44 @@
+@startuml versionnement
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam rectangle {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam note {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+
+rectangle "Ligne de travail\nporte un lot isolé\njusqu'à sa complétude" as FEAT #F1F3F5
+rectangle "Ligne d'intégration\nrassemble les lots achevés\net vérifie leur coexistence" as INTEG
+rectangle "Ligne de validation\nporte la version soumise\nà vérification" as VALID
+rectangle "Ligne de service\nreflète exactement\nce qui est en ligne" as SERV
+
+FEAT --> INTEG : intégrer le lot terminé
+INTEG --> VALID : soumettre à vérification
+VALID --> SERV : mettre en service
+
+note right of FEAT
+  Éphémère par conception : une fois le lot
+  intégré, elle a rempli son office. Une ligne
+  qui survit devient un doublon dormant dont
+  on ne sait plus s'il contient du travail non repris.
+end note
+
+note right of SERV
+  Un exploitant doit pouvoir affirmer, sans
+  vérification, que ce qui figure sur cette ligne
+  est ce que rencontrent les utilisateurs.
+end note
+
+legend bottom
+|= Élément |= Signification |
+| Fond gris | Ligne éphémère, supprimée après intégration |
+| Fond bleu | Ligne permanente |
+| <b>Point clé</b> | Une modification ne saute jamais d'étape : elle traverse les trois\nlignes permanentes dans cet ordre, et chaque passage est\nconditionné au succès des contrôles automatiques. |
+endlegend
+@enduml

@@ -1,0 +1,76 @@
+@startuml dispositif-veille
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam rectangle {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam database {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+skinparam note {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+
+package "Veille par agrégation de flux" {
+  rectangle "5 flux sécurité\nCERT-FR, NVD, OWASP,\nSnyk, The Hacker News" as SEC
+  rectangle "3 flux backend\nSymfony, PHP.net, PHP Watch" as BACK
+  rectangle "2 flux frontend\nCSS-Tricks, Smashing Magazine" as FRONT
+  rectangle "5 flux généraux\nDev.to, Hacker News, GreenIT,\nJournal du Hacker, Stack Overflow" as GEN
+
+  rectangle "Agrégateur\nfiltre, déduplique, synthétise" as BOT
+  database "Base des articles déjà vus" as SEEN
+}
+
+rectangle "Canal Discord\nconsulté quotidiennement" as DISCORD
+database "Récapitulatifs hebdomadaires\narchivés dans le dépôt" as ARCHIVE
+
+package "Veille automatisée sur le dépôt" {
+  rectangle "Alertes de dépendances" as DEPALERT
+  rectangle "Correctifs de sécurité\nautomatiques" as DEPFIX
+  rectangle "Analyse de secrets\net blocage à la poussée" as SECRET
+  rectangle "Porte d'audit\nen intégration continue" as AUDIT
+}
+
+SEC --> BOT
+BACK --> BOT
+FRONT --> BOT
+GEN --> BOT
+
+BOT --> SEEN : marque les articles traités
+BOT --> DISCORD : synthèse quotidienne, 7 h
+BOT --> DISCORD : récapitulatif du dimanche, 19 h
+BOT --> ARCHIVE : un fichier par semaine
+
+DEPALERT --> DISCORD
+DEPFIX --> DISCORD
+SECRET --> DISCORD
+AUDIT --> DISCORD : bloque l'intégration
+
+note right of BOT
+  Un article n'est marqué comme traité que si
+  la publication a réussi. Une panne du canal
+  fait reparaître les articles à l'exécution
+  suivante, plutôt que de perdre une journée
+  de veille sans que personne s'en aperçoive.
+end note
+
+note bottom of AUDIT
+  Seule porte bloquante du dispositif : une
+  vulnérabilité connue dans une dépendance
+  de production interdit l'intégration.
+end note
+
+legend bottom
+|= Élément |= Signification |
+| Volet supérieur | Veille humaine, alimentée par agrégation de sources publiques |
+| Volet inférieur | Veille automatisée, appliquée au dépôt du projet |
+| <b>Point clé</b> | Un tiers des sources est consacré à la sécurité, dont deux sources\nprimaires qui publient les alertes plutôt que de les commenter. |
+endlegend
+@enduml

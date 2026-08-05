@@ -1,0 +1,199 @@
+@startuml sequence-reservation
+' =====================================================================
+' CreaSlot — Diagramme de sequence : reservation d'un creneau
+' Section 5.7 du dossier CDA.
+'
+' Fidele au code : chaque message correspond a un appel reellement
+' present dans le code.
+'
+' Sources :
+'   src/Controller/Auditeur/ReservationController.php (methode nouveau)
+'   src/Service/ReservationService.php (methode reserver, lignes 62 a 101)
+'   src/Service/NotificationService.php (notifierAuditeurReservation,
+'                                        notifierPersonnelReservation)
+'   src/Exception/CreneauIndisponibleException.php
+'
+' Le participant "Base de donnees" fusionne l'EntityManager Doctrine,
+' le ReservationRepository et MySQL : le detail de l'ORM n'apporte rien
+' a la comprehension du verrouillage, qui est le sujet du diagramme.
+' =====================================================================
+
+skinparam shadowing false
+skinparam sequenceMessageAlign left
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam usecase {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam actor {
+  BorderColor #1F4E79
+  FontColor #1E1E1E
+}
+skinparam participant {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam sequence {
+  ArrowColor #1F4E79
+  LifeLineBorderColor #1F4E79
+  GroupBorderColor #1F4E79
+}
+skinparam package {
+  BorderColor #1F4E79
+  FontColor #1E1E1E
+}
+skinparam note {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+
+title Séquence, réservation d'un créneau avec verrou pessimiste
+
+actor "Auditeur" as AUDITEUR
+participant "Contrôleur" as CONTROLEUR
+participant "Service de réservation" as SERVICE
+database "Réservoir de données" as BDD
+participant "Service de notification" as NOTIF
+
+AUDITEUR -> CONTROLEUR : demander la réservation d'un créneau\n(commentaire optionnel)
+activate CONTROLEUR
+
+note right of CONTROLEUR
+  Autorisation vérifiée en amont : l'utilisateur doit disposer du rôle d'auditeur.
+end note
+
+' ---------------------------------------------------------------------
+' Phase A, contrôles préalables hors transaction
+' ---------------------------------------------------------------------
+CONTROLEUR -> SERVICE : vérifier les motifs de refus préalables
+activate SERVICE
+SERVICE --> CONTROLEUR : aucun motif de refus
+deactivate SERVICE
+
+CONTROLEUR -> SERVICE : vérifier l'absence de chevauchement
+activate SERVICE
+SERVICE -> BDD : chercher une réservation active chevauchante
+activate BDD
+BDD --> SERVICE : aucune réservation chevauchante
+deactivate BDD
+SERVICE --> CONTROLEUR : aucun chevauchement
+deactivate SERVICE
+
+note over CONTROLEUR, SERVICE
+  Deux contrôles préalables, en mémoire puis en base.
+  Ils évitent d'ouvrir une transaction inutilement,
+  mais ne protègent pas de la concurrence.
+end note
+
+' ---------------------------------------------------------------------
+' Phase B, la transaction verrouillée
+' ---------------------------------------------------------------------
+CONTROLEUR -> SERVICE : réserver le créneau
+activate SERVICE
+
+group Transaction (verrou pessimiste)
+
+    SERVICE -> BDD : ouvrir une transaction
+    activate BDD
+
+    SERVICE -> BDD : poser un verrou exclusif sur le créneau
+    note right of BDD
+      Verrou exclusif sur la ligne du créneau.
+      Toute autre demande portant sur ce même créneau
+      attend ici, ce qui empêche deux auditeurs
+      de réserver simultanément.
+    end note
+
+    SERVICE -> BDD : relire l'état du créneau
+    BDD --> SERVICE : état du créneau, rechargé sous verrou
+
+    SERVICE -> SERVICE : revérifier la disponibilité
+    note right of SERVICE
+      Double contrôle, cette fois sous verrou.
+      Un autre auditeur a pu réserver le créneau
+      pendant l'attente du verrou.
+    end note
+
+    alt Créneau libre (succès)
+
+        SERVICE -> SERVICE : créer la réservation à l'état actif
+        SERVICE -> BDD : enregistrer la réservation
+        BDD --> SERVICE : écriture effectuée
+        SERVICE -> SERVICE : consigner la création
+        SERVICE -> BDD : valider la transaction
+        note right of BDD
+          La validation de la transaction libère le verrou.
+          Les notifications sont envoyées après,
+          hors transaction.
+        end note
+        deactivate BDD
+
+    else Créneau déjà réservé (concurrence)
+
+        SERVICE -> BDD : annuler la transaction
+        BDD --> SERVICE : transaction annulée, verrou libéré
+        deactivate BDD
+        SERVICE --> CONTROLEUR : signaler l'indisponibilité
+        CONTROLEUR -> AUDITEUR : message d'erreur,\n"Ce créneau vient d'être réservé\npar quelqu'un d'autre",\nredirection vers Créneaux disponibles
+        note right of CONTROLEUR
+          Aucune notification n'est envoyée
+          dans ce cas.
+        end note
+
+    end
+
+end
+
+' ---------------------------------------------------------------------
+' Phase C, notifications après le commit (cas de succès)
+' ---------------------------------------------------------------------
+SERVICE -> NOTIF : notifier l'auditeur
+activate NOTIF
+NOTIF -> BDD : enregistrer la notification
+activate BDD
+BDD --> NOTIF : notification enregistrée
+deactivate BDD
+NOTIF -> NOTIF : envoi du message à l'auditeur
+NOTIF --> SERVICE : notification traitée
+deactivate NOTIF
+
+SERVICE -> NOTIF : notifier le personnel
+activate NOTIF
+NOTIF -> BDD : enregistrer la notification
+activate BDD
+BDD --> NOTIF : notification enregistrée
+deactivate BDD
+NOTIF -> NOTIF : envoi du message au personnel
+NOTIF --> SERVICE : notification traitée
+deactivate NOTIF
+
+note over SERVICE, NOTIF
+  Notifications hors transaction (choix assumé),
+  un échec d'envoi n'annule pas
+  une réservation déjà validée. La notification
+  interne est enregistrée avant l'envoi du message,
+  elle sert de filet de traçabilité.
+end note
+
+SERVICE --> CONTROLEUR : réservation créée
+deactivate SERVICE
+
+CONTROLEUR -> AUDITEUR : message de succès,\n"Votre réservation a été confirmée",\nredirection vers Mes réservations
+deactivate CONTROLEUR
+
+' ---------------------------------------------------------------------
+legend right
+  | **Symbole** | **Signification** |
+  | Barre d'activation | Période pendant laquelle le participant exécute du code |
+  | group Transaction | Bloc exécuté dans une transaction avec verrou pessimiste |
+  | alt / else | Deux issues mutuellement exclusives (succès ou conflit) |
+  | note | Précision sur un choix de conception ou une contrainte technique |
+  | Flèche pleine | Appel de méthode |
+  | Flèche pointillée | Retour ou exception |
+endlegend
+
+@enduml
