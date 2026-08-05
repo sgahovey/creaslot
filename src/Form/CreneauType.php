@@ -27,6 +27,8 @@ use Symfony\Component\Validator\Constraints\NotBlank;
  */
 class CreneauType extends AbstractType
 {
+    use ProtectionCsrfTrait;
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $estReserve = $options['creneau_reserve'];
@@ -177,11 +179,10 @@ class CreneauType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class'      => Creneau::class,
-            'csrf_protection' => true,
-            'csrf_token_id'   => 'creneau_form',
             'creneau_reserve' => false,
         ]);
-
         $resolver->setAllowedTypes('creneau_reserve', 'bool');
+
+        $this->configurerProtectionCsrf($resolver, 'creneau_form');
     }
 }

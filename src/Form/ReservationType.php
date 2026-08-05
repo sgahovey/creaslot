@@ -11,10 +11,15 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\Length;
 
 /**
+ * Formulaire de confirmation d'une réservation : il ne porte que l'unique champ de
+ * commentaire facultatif de l'auditeur. Utilisé par ReservationController::nouveau().
+ *
  * @extends AbstractType<mixed>
  */
 class ReservationType extends AbstractType
 {
+    use ProtectionCsrfTrait;
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder->add('commentaireAuditeur', TextareaType::class, [
@@ -26,6 +31,8 @@ class ReservationType extends AbstractType
                 'maxlength'   => 500,
                 'placeholder' => 'Optionnel — précisez brièvement la raison de votre demande (sans information personnelle sensible)…',
             ],
+            // Invite l'auditeur à ne pas consigner d'information sensible : le périmètre
+            // du projet exclut par construction les données sensibles au sens du RGPD.
             'help'        => 'Optionnel — précisez brièvement (sans donnée médicale, santé ou autre information sensible).',
             'constraints' => [
                 new Length(max: 500, maxMessage: 'Le commentaire ne peut pas dépasser {{ limit }} caractères.'),
@@ -35,9 +42,6 @@ class ReservationType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults([
-            'csrf_protection' => true,
-            'csrf_token_id'   => 'reservation_form',
-        ]);
+        $this->configurerProtectionCsrf($resolver, 'reservation_form');
     }
 }
