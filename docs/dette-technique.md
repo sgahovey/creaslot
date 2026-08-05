@@ -474,9 +474,9 @@ Chaque `notifier*()` passe son **message et ses identifiants métier propres** (
 
 ---
 
-## DT-16 — Mutualisation des helpers FullCalendar et du JSON no-store (🟡 MOYEN) — 🟡 PARTIELLEMENT RÉSOLUE (volets JS + PHP) (22/06/2026)
+## DT-16 — Mutualisation des helpers FullCalendar et du JSON no-store (🟡 MOYEN) — ✅ RÉSOLUE (05/08/2026)
 
-> **🟡 PARTIELLEMENT RÉSOLUE (volets JS + PHP) le 22/06/2026** sur branche `feature/DT-16-helpers-fullcalendar-no-store`.
+> **✅ RÉSOLUE le 05/08/2026.** Volets JS et PHP traités le 22/06/2026 (branche `feature/DT-16-helpers-fullcalendar-no-store`, commit `be20af4`) ; volet CSS restant traité le 05/08/2026 (cf. « Volet CSS » ci-dessous).
 >
 > **Volet JS (fait)** : les 4 helpers dupliqués (`escapeHtml`, `heureSlot`, `hexVersRgb`, `melangerBlanc`) sont extraits dans `assets/fullcalendar_helpers.js`, importé par `agenda_controller` et `occupation_controller` (`hexVersRgb` reste interne au module).
 >
@@ -484,7 +484,7 @@ Chaque `notifier*()` passe son **message et ses identifiants métier propres** (
 >
 > **Volet écarté** : la mutualisation du rendu `eventContent` est abandonnée (contenus réellement différents, 3 vs 4 lignes, et piège de double-échappement sur la ligne « état » de l'agenda).
 >
-> **Volet CSS (restant)** : la mutualisation de l'habillage toolbar/pastille (style inline d'`agenda.html.twig` dupliqué dans le bloc `.cs-occupation-page` de `creaslot.css`, ~150 lignes) est reportée en tâche dédiée — seul volet à risque de régression visuelle (2 calendriers) pour un gain de maintenabilité pure ; à traiter via une classe partagée `.cs-fc-calendar` avec vérification visuelle stricte.
+> **Volet CSS (fait le 05/08/2026)** : l'habillage de toolbar (prev | titre | next sur une ligne, boutons charte) et la base de pastille (contraste RGAA `#1a1a1a`, atténuation des créneaux passés) sont mutualisés dans une classe partagée **`.cs-fc-calendar`** (bloc unique de `public/css/creaslot.css`), ajoutée aux conteneurs racines des deux vues. Elle remplace le `<style>` inline d'`agenda.html.twig` et le bloc `.cs-occupation-page` dupliqué. Les réglages propres à chaque vue restent scopés sous `.cs-agenda-page` / `.cs-occupation-page` : tailles de lignes (pastille 3 lignes côté agenda, 4 lignes côté occupation avec ligne « personnel » et `overflow` de sécurité), états `fc-event-reservee` (agenda) / `fc-event-occupe` (occupation). Refacto sans changement de rendu : **vérification visuelle stricte** des deux calendriers — styles calculés (`getComputedStyle`) strictement identiques avant/après sur toolbar, boutons, titre et pastilles, et captures d'écran avant/après superposables. DoD verte (PHP-CS-Fixer 0, PHPStan niveau 8 = 0, 344 tests / 1223 assertions).
 >
 > **Validation** : PHP-CS-Fixer 0, PHPStan niveau 8 = 0, suite complète verte (274 tests, 1009 assertions) ; vérification navigateur (occupation Admin + agenda Personnel : calendriers et pastilles rendus, console propre).
 >
