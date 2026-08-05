@@ -1,15 +1,15 @@
 # Dette technique CreaSlot — Suivi
 
-Date dernière mise à jour : 22 juillet 2026.
+Date dernière mise à jour : 22/07/2026.
 Convention : DT-N = Dette Technique numéro N.
 
 ---
 
-## DT-1 — Architecture OneToOne Creneau↔Reservation (🔴 CRITIQUE) — ✅ RESOLVED 27/05/2026
+## DT-1 — Architecture OneToOne Creneau↔Reservation (🔴 CRITIQUE) — ✅ RÉSOLUE 27/05/2026
 
-> **✅ RESOLVED le 27/05/2026** sur branche `bugfix/reservation-onetomany-creneau`.
+> **✅ RÉSOLUE le 27/05/2026** sur branche `bugfix/reservation-onetomany-creneau`.
 >
-> **Résumé fix** : Refacto vers OneToMany (Stratégie S4 retenue). Migration Doctrine `Version20260527155759` drop l'index UNIQUE sur `reservation.id_creneau` et le remplace par un index non-unique. L'invariant "1 Reservation ACTIVE max par Creneau" est désormais garanti applicatif via le `PESSIMISTIC_WRITE` dans `ReservationController::enregistrerReservation`.
+> **Résumé fix** : Refacto vers OneToMany (Stratégie S4 retenue). Migration Doctrine `Version20260527155759` drop l'index UNIQUE sur `reservation.id_creneau` et le remplace par un index non-unique. L'invariant "1 Reservation ACTIVE max par Creneau" est désormais garanti applicatif via le `PESSIMISTIC_WRITE` dans `ReservationService::reserver`.
 >
 > **Validations** :
 > - ✅ 66/66 tests verts (65 existants + 1 nouveau test d'intégration `tests/Integration/ReservationRereservationApresAnnulationTest.php` qui fige la non-régression)
@@ -53,9 +53,9 @@ Convention : DT-N = Dette Technique numéro N.
 
 ---
 
-## DT-2 — Validation horaire créneau manquante (🔴 ÉLEVÉ) — ✅ RESOLVED 28/05/2026
+## DT-2 — Validation horaire créneau manquante (🔴 ÉLEVÉ) — ✅ RÉSOLUE 28/05/2026
 
-> **✅ RESOLVED le 28/05/2026** sur branche `bugfix/validation-horaire-creneau`.
+> **✅ RÉSOLUE le 28/05/2026** sur branche `bugfix/validation-horaire-creneau`.
 >
 > **Résumé fix** : Defense in depth 3 niveaux pour garantir `dateFin > dateDebut` :
 > - **Niveau 2 (fix principal, serveur)** : extension `CreneauType::validerCoherenceHoraires` (hook POST_SUBMIT) — check `heureFin > heureDebut` strict (A1) en mode "Personnalisée".
@@ -109,9 +109,9 @@ Recommandation : appliquer les 3 niveaux (defense in depth, best practice Symfon
 
 ---
 
-## DT-3 — PHPUnit Notices willReturnCallback (🟢 BAS) — ✅ RESOLVED 29/05/2026
+## DT-3 — PHPUnit Notices willReturnCallback (🟢 BAS) — ✅ RÉSOLUE 29/05/2026
 
-> **✅ RESOLVED le 29/05/2026 (US-4.8)** : 30 notices → 0. La suite tourne désormais
+> **✅ RÉSOLUE le 29/05/2026 (US-4.8)** : 30 notices → 0. La suite tourne désormais
 > sans aucune notice (`phpunit.dist.xml` a `failOnNotice="true"`, donc la suite reste
 > verte en intégrant ces tests).
 >
@@ -236,9 +236,9 @@ Sans ce setup, tout test d'intégration extending `KernelTestCase` échoue avec 
 
 ---
 
-## DT-8 — Migration FullCalendar CDN vers self-hosted (AssetMapper) (🟡 MOYEN) — ✅ RESOLVED 01/06/2026
+## DT-8 — Migration FullCalendar CDN vers self-hosted (AssetMapper) (🟡 MOYEN) — ✅ RÉSOLUE 01/06/2026
 
-> **✅ RESOLVED le 01/06/2026** (dette technique autonome) sur branche `feat/us-5.1-agenda-fullcalendar`.
+> **✅ RÉSOLUE le 01/06/2026** (dette technique autonome) sur branche `feat/us-5.1-agenda-fullcalendar`.
 >
 > **Résumé fix** : L'agenda Personnel ne dépend plus d'un CDN tiers. FullCalendar
 > est self-hosté via AssetMapper (bundle global officiel **6.1.20**) et le JS inline
@@ -843,72 +843,72 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 
 **Priorité** : 🟢 basse (cohérence du marquage preprod web↔email ; aucun impact fonctionnel ni sécurité).
 
-## DT-31 — Fixtures Doctrine monolithiques : impossible de peupler prod et preprod differemment (🟢 BAS) — ✅ RÉSOLUE (30/06/2026)
+## DT-31 — Fixtures Doctrine monolithiques : impossible de peupler prod et preprod différemment (🟢 BAS) — ✅ RÉSOLUE (30/06/2026)
 > **✅ RÉSOLUE le 30/06/2026** sur branche `feature/DT-31-fixtures-groupes-reference-demo`.
 >
-> **Origine** : `AppFixtures` etait une classe monolithique chargeant toutes les donnees d'un bloc (services, types de RDV, comptes fictifs, creneaux, reservations, notifications). Impossible de charger uniquement les donnees de reference metier (services + types de RDV) sans charger aussi les faux comptes de demonstration. Or la production ne doit recevoir que les donnees de reference, jamais les donnees de demo.
+> **Origine** : `AppFixtures` était une classe monolithique chargeant toutes les données d'un bloc (services, types de RDV, comptes fictifs, créneaux, réservations, notifications). Impossible de charger uniquement les données de référence métier (services + types de RDV) sans charger aussi les faux comptes de démonstration. Or la production ne doit recevoir que les données de référence, jamais les données de démo.
 >
-> **Résumé fix** : scission de `AppFixtures` en deux classes a groupes. `ReferenceFixtures` (groupe `reference`) : services + types de RDV, exposes via le systeme de references Doctrine (`addReference`, prefixes stables `PREFIXE_SERVICE` / `PREFIXE_TYPE`). `DemoFixtures` (groupe `demo`) : personnel, auditeurs, super-admin de demo, creneaux, reservations, notifications ; implemente `DependentFixtureInterface` (depend de `ReferenceFixtures`) et recupere les donnees de reference via `getReference`. Refacto pur : donnees produites inchangees.
+> **Résumé fix** : scission de `AppFixtures` en deux classes à groupes. `ReferenceFixtures` (groupe `reference`) : services + types de RDV, exposés via le système de références Doctrine (`addReference`, préfixes stables `PREFIXE_SERVICE` / `PREFIXE_TYPE`). `DemoFixtures` (groupe `demo`) : personnel, auditeurs, super-admin de démo, créneaux, réservations, notifications ; implémente `DependentFixtureInterface` (dépend de `ReferenceFixtures`) et récupère les données de référence via `getReference`. Refacto pur : données produites inchangées.
 >
-> **Chargement par environnement** : dev/preprod = `doctrine:fixtures:load` (complet) ; prod = `doctrine:fixtures:load --group=reference --append` (services + types uniquement, sans purge). Le super-admin de prod reste cree par la commande `app:creer-admin` (pas de doublon dans le groupe `reference`).
+> **Chargement par environnement** : dev/preprod = `doctrine:fixtures:load` (complet) ; prod = `doctrine:fixtures:load --group=reference --append` (services + types uniquement, sans purge). Le super-admin de prod reste créé par la commande `app:creer-admin` (pas de doublon dans le groupe `reference`).
 >
-> **Validation** : chargement complet identique a l'avant-refacto (3 services, 3 types, 9 comptes, 10 creneaux) ; `--group=reference` seul verifie a 3 services + 3 types + 0 compte + 0 creneau ; `--append` confirme ne pas purger la base. `lint:container` OK, 306 tests verts. Couverture Sonar : `src/DataFixtures/**` exclu du calcul de couverture (donnees de demo non testables unitairement), Quality Gate au vert.
-**Détecté** : 30/06/2026, en preparant le peuplement differencie preprod/prod.
-**Constat** : une seule classe `AppFixtures` melait donnees de reference et donnees de demo, rendant impossible un chargement selectif par environnement.
-**Fichiers concernés** : `src/DataFixtures/ReferenceFixtures.php` (nouveau), `src/DataFixtures/DemoFixtures.php` (nouveau, ex-`AppFixtures`), `src/DataFixtures/AppFixtures.php` (supprime), `sonar-project.properties` (exclusion de couverture).
-**Action réalisée** : separation en deux groupes de fixtures relies par `DependentFixtureInterface` + systeme de references Doctrine ; documentation des commandes de chargement par environnement.
-**Hors périmètre** : la logique des fixtures elle-meme (donnees inchangees) ; le peuplement reel de preprod/prod (realise separement apres promotion, jamais en touchant les serveurs directement).
-**Priorité** : 🟢 basse (amelioration de deployabilite ; aucun impact fonctionnel ni securite).
+> **Validation** : chargement complet identique à l'avant-refacto (3 services, 3 types, 9 comptes, 10 créneaux) ; `--group=reference` seul vérifié à 3 services + 3 types + 0 compte + 0 créneau ; `--append` confirmé ne pas purger la base. `lint:container` OK, 306 tests verts. Couverture Sonar : `src/DataFixtures/**` exclu du calcul de couverture (données de démo non testables unitairement), Quality Gate au vert.
+**Détecté** : 30/06/2026, en préparant le peuplement différencié preprod/prod.
+**Constat** : une seule classe `AppFixtures` mêlait données de référence et données de démo, rendant impossible un chargement sélectif par environnement.
+**Fichiers concernés** : `src/DataFixtures/ReferenceFixtures.php` (nouveau), `src/DataFixtures/DemoFixtures.php` (nouveau, ex-`AppFixtures`), `src/DataFixtures/AppFixtures.php` (supprimé), `sonar-project.properties` (exclusion de couverture).
+**Action réalisée** : séparation en deux groupes de fixtures reliés par `DependentFixtureInterface` + système de références Doctrine ; documentation des commandes de chargement par environnement.
+**Hors périmètre** : la logique des fixtures elle-même (données inchangées) ; le peuplement réel de preprod/prod (réalisé séparément après promotion, jamais en touchant les serveurs directement).
+**Priorité** : 🟢 basse (amélioration de déployabilité ; aucun impact fonctionnel ni sécurité).
 
 ## DT-32 — Flag log-bin-trust-function-creators absent de compose.prod.yml (bloque la migration du trigger US-12.1) (🟡 MOYEN) — ✅ RÉSOLUE (01/07/2026)
-> **✅ RÉSOLUE le 01/07/2026** (PR #96 mergee, commit `78774a8`).
+> **✅ RÉSOLUE le 01/07/2026** (PR #96 mergée, commit `78774a8`).
 >
-> **Origine** : la migration `Version20260629120000` (US-12.1) cree un trigger SQL. MySQL refuse la creation d'un trigger par un utilisateur non-SUPER quand le binary logging est actif (erreur **1419**). Le flag `--log-bin-trust-function-creators=1` etait present dans `docker-compose.yml` (dev) mais absent de `compose.prod.yml` (preprod/prod).
+> **Origine** : la migration `Version20260629120000` (US-12.1) créé un trigger SQL. MySQL refuse la création d'un trigger par un utilisateur non-SUPER quand le binary logging est actif (erreur **1419**). Le flag `--log-bin-trust-function-creators=1` était présent dans `docker-compose.yml` (dev) mais absent de `compose.prod.yml` (preprod/prod).
 >
 > **Résumé fix** : ajout de `command: --log-bin-trust-function-creators=1` au service `db` de `compose.prod.yml`.
 >
-> **Intervention manuelle preprod (assumée, documentee honnetement)** : au premier deploiement preprod, la migration a echoue (1419) car le conteneur `db` tournait depuis 13 jours sans le flag et le pipeline ne l'avait pas recree. Correction manuelle sur le VPS : mise a jour du repo (`git reset --hard origin/preprod`), recreation du conteneur `db` (`docker compose up -d --force-recreate db`, volume `mysql_data_prod` preserve, variable MySQL passee de OFF a ON), puis nettoyage d'un etat de migration partiel (le 1er essai avait cree la table `historique_utilisateur` en auto-commit DDL avant de planter au trigger : table presente, trigger et procedure absents, migration non enregistree cote Doctrine) via `DROP TABLE` de la table orpheline, avant relance reussie de la migration (table + trigger + procedure crees, verifies 1/1/1).
+> **Intervention manuelle preprod (assumée, documentée honnêtement)** : au premier déploiement preprod, la migration a échoué (1419) car le conteneur `db` tournait depuis 13 jours sans le flag et le pipeline ne l'avait pas recrée. Correction manuelle sur le VPS : mise à jour du repo (`git reset --hard origin/preprod`), recréation du conteneur `db` (`docker compose up -d --force-recreate db`, volume `mysql_data_prod` préservé, variable MySQL passée de OFF à ON), puis nettoyage d'un état de migration partiel (le 1er essai avait créé la table `historique_utilisateur` en auto-commit DDL avant de planter au trigger : table présente, trigger et procédure absents, migration non enregistrée côté Doctrine) via `DROP TABLE` de la table orpheline, avant relance réussie de la migration (table + trigger + procédure créés, vérifiés 1/1/1).
 
-**Détecté** : 01/07/2026, lors du premier deploiement preprod de la migration US-12.1 (trigger).
-**Constat** : le flag `--log-bin-trust-function-creators=1`, present sur la db de dev (`docker-compose.yml`), etait absent du service `db` de `compose.prod.yml` — d'ou l'erreur MySQL 1419 au moment de creer le trigger via un utilisateur non-SUPER avec binary logging actif.
+**Détecté** : 01/07/2026, lors du premier déploiement preprod de la migration US-12.1 (trigger).
+**Constat** : le flag `--log-bin-trust-function-creators=1`, présent sur la db de dev (`docker-compose.yml`), était absent du service `db` de `compose.prod.yml` — d'ou l'erreur MySQL 1419 au moment de créer le trigger via un utilisateur non-SUPER avec binary logging actif.
 **Fichiers concernés** : `compose.prod.yml` (service `db`).
-**Action réalisée** : ajout du flag `--log-bin-trust-function-creators=1` au service `db` ; en complement, intervention manuelle ponctuelle sur le VPS preprod (recreation de `db` + nettoyage de l'etat de migration partiel) pour debloquer le deploiement en cours.
-**Hors périmètre** : la correction du pipeline lui-meme (il ne synchronise pas `compose.prod.yml` sur le VPS et ne recree pas `db`) — tracee en [[DT-34]].
-**Priorité** : 🟡 moyenne (bloquant le deploiement du trigger ; contourne manuellement).
+**Action réalisée** : ajout du flag `--log-bin-trust-function-creators=1` au service `db` ; en complément, intervention manuelle ponctuelle sur le VPS preprod (recréation de `db` + nettoyage de l'état de migration partiel) pour débloquer le déploiement en cours.
+**Hors périmètre** : la correction du pipeline lui-même (il ne synchronise pas `compose.prod.yml` sur le VPS et ne recrée pas `db`) — tracée en [[DT-34]].
+**Priorité** : 🟡 moyenne (bloquant le déploiement du trigger ; contourné manuellement).
 
 ## DT-33 — Peuplement preprod impossible via doctrine:fixtures:load (image runtime sans Composer ni fixtures-bundle) (🟡 MOYEN) — ✅ RÉSOLUE (01/07/2026)
-> **✅ RÉSOLUE le 01/07/2026** (PR #97 mergee).
+> **✅ RÉSOLUE le 01/07/2026** (PR #97 mergée).
 >
-> **Origine** : l'image de prod/preprod est construite en `composer --no-dev` (stage `build` du Dockerfile). Elle n'embarque ni Composer, ni doctrine-fixtures-bundle. La commande `doctrine:fixtures:load` est donc indisponible en preprod (erreur « no commands defined in `doctrine:fixtures` namespace », puis « composer: not found »). Il fallait neanmoins peupler `creaslot_preprod` avec les memes donnees de demo que les fixtures.
+> **Origine** : l'image de prod/preprod est construite en `composer --no-dev` (stage `build` du Dockerfile). Elle n'embarque ni Composer, ni doctrine-fixtures-bundle. La commande `doctrine:fixtures:load` est donc indisponible en preprod (erreur « no commands defined in `doctrine:fixtures` namespace », puis « composer: not found »). Il fallait néanmoins peupler `creaslot_preprod` avec les mêmes données de démo que les fixtures.
 >
-> **Résumé fix** : creation de `scripts/seed-preprod.sql`, equivalent SQL de `ReferenceFixtures` + `DemoFixtures` : 3 services, 3 types de RDV, 9 comptes (3 personnels, 5 auditeurs, 1 super-admin), 10 creneaux, 3 reservations, 5 notifications. Idempotent (purge inverse-FK dans une transaction, `reset_password_request` incluse car FK NON NULL, rejouable), dates de creneaux relatives via `DATE_ADD`/`CURDATE()` (restent futures), mots de passe en argon2id (mot de passe demo : `password`) generes via `security:hash-password` en `APP_ENV=prod` (iso-config, pas la config dev qui est en bcrypt cost-4), preference RGPD de Julie preservee (`email_rappel_j1 = 0`). Colonnes verifiees via la `naming_strategy` underscore + les migrations.
+> **Résumé fix** : création de `scripts/seed-preprod.sql`, équivalent SQL de `ReferenceFixtures` + `DemoFixtures` : 3 services, 3 types de RDV, 9 comptes (3 personnels, 5 auditeurs, 1 super-admin), 10 créneaux, 3 réservations, 5 notifications. Idempotent (purge inverse-FK dans une transaction, `reset_password_request` incluse car FK NON NULL, rejouable), dates de créneaux relatives via `DATE_ADD`/`CURDATE()` (restent futures), mots de passe en argon2id (mot de passe démo : `password`) générés via `security:hash-password` en `APP_ENV=prod` (iso-config, pas la config dev qui est en bcrypt cost-4), préférence RGPD de Julie préservée (`email_rappel_j1 = 0`). Colonnes vérifiées via la `naming_strategy` underscore + les migrations.
 >
-> **Validation** : teste en local (chargement code retour 0, comptages 3/3/9/10/3/5 conformes, Julie a 0, hash argon2id confirme en base). Execution reelle sur le VPS preprod : a realiser (promotion `develop`→`preprod` puis execution manuelle du seed sur `creaslot_preprod`).
+> **Validation** : testé en local (chargement code retour 0, comptages 3/3/9/10/3/5 conformes, Julie a 0, hash argon2id confirmé en base). Exécution réelle sur le VPS preprod : à réaliser (promotion `develop`→`preprod` puis exécution manuelle du seed sur `creaslot_preprod`).
 
-**Détecté** : 01/07/2026, en preparant le peuplement de la preprod (fixtures indisponibles sur l'image runtime).
-**Constat** : l'image runtime `composer --no-dev` n'embarque ni Composer ni doctrine-fixtures-bundle, rendant `doctrine:fixtures:load` inutilisable en preprod ; il fallait un equivalent SQL des fixtures, executable directement sur MySQL.
+**Détecté** : 01/07/2026, en préparant le peuplement de la preprod (fixtures indisponibles sur l'image runtime).
+**Constat** : l'image runtime `composer --no-dev` n'embarque ni Composer ni doctrine-fixtures-bundle, rendant `doctrine:fixtures:load` inutilisable en preprod ; il fallait un équivalent SQL des fixtures, exécutable directement sur MySQL.
 **Fichiers concernés** : `scripts/seed-preprod.sql` (nouveau).
-**Action réalisée** : ecriture d'un seed SQL idempotent reproduisant a l'identique `ReferenceFixtures` + `DemoFixtures` (colonnes issues de la `naming_strategy` underscore + migrations, dates relatives `DATE_ADD`/`CURDATE()`, hash argon2id iso-config prod, preference RGPD de Julie preservee).
-**Hors périmètre** : l'automatisation du chargement du seed dans le pipeline (execution manuelle voulue) ; le peuplement de la prod (qui ne recoit jamais les donnees de demo, seulement le groupe `reference` via `--group=reference --append`, cf. [[DT-31]]).
-**Priorité** : 🟡 moyenne (necessaire a la demo preprod ; contourne).
+**Action réalisée** : écriture d'un seed SQL idempotent reproduisant à l'identique `ReferenceFixtures` + `DemoFixtures` (colonnes issues de la `naming_strategy` underscore + migrations, dates relatives `DATE_ADD`/`CURDATE()`, hash argon2id iso-config prod, préférence RGPD de Julie préservée).
+**Hors périmètre** : l'automatisation du chargement du seed dans le pipeline (exécution manuelle voulue) ; le peuplement de la prod (qui ne reçoit jamais les données de démo, seulement le groupe `reference` via `--group=reference --append`, cf. [[DT-31]]).
+**Priorité** : 🟡 moyenne (nécessaire à la démo preprod ; contourné).
 
 ## DT-34 — Le pipeline de déploiement ne synchronise pas compose.prod.yml sur le VPS et ne recrée pas le conteneur db (🟡 MOYEN) — ✅ RÉSOLUE (01/07/2026)
-> **✅ RÉSOLUE le 01/07/2026** (PR #99 mergee, commit `cc521c9`).
+> **✅ RÉSOLUE le 01/07/2026** (PR #99 mergée, commit `cc521c9`).
 >
-> **Résumé fix** : ajout d'une etape de synchronisation git dans `scripts/deploy-ci.sh`, apres le `cd` dans le repo et avant le pull de l'image : `git fetch --quiet origin` puis `git reset --hard --quiet "$TAG"` (le SHA deja valide par la regex hexadecimale). Le working tree du VPS est desormais amene exactement sur le commit deploye avant tout `docker compose up`, donc les fichiers d'orchestration versionnes (compose.prod.yml, init-prod.sh) sont toujours a jour. `set -euo pipefail` garantit l'arret avant deploiement si la synchro echoue. Le `Caddyfile`, alors present dans le depot a la date de ce correctif, en a depuis ete retire lors du decouplage du proxy (PR #117) et vit desormais dans le depot `infra-proxy`.
+> **Résumé fix** : ajout d'une étape de synchronisation git dans `scripts/deploy-ci.sh`, après le `cd` dans le repo et avant le pull de l'image : `git fetch --quiet origin` puis `git reset --hard --quiet "$TAG"` (le SHA déjà valide par la regex hexadécimale). Le working tree du VPS est désormais amené exactement sur le commit déployé avant tout `docker compose up`, donc les fichiers d'orchestration versionnés (compose.prod.yml, init-prod.sh) sont toujours à jour. `set -euo pipefail` garantit l'arrêt avant déploiement si la synchro échoue. Le `Caddyfile`, alors présent dans le dépôt à la date de ce correctif, en a depuis été retiré lors du découplage du proxy (PR #117) et vit désormais dans le dépôt `infra-proxy`.
 >
-> **Portee volontairement limitee** : seule la synchro du depot est automatisee. La recreation du conteneur `db` reste MANUELLE et documentee (geste rare, risque de micro-coupure de la prod partagee) — la meilleure pratique theorique (push de config immuable via scp/rsync) a ete ecartee car elle imposerait de revoir la forced command SSH, disproportionne au volume du projet.
+> **Portée volontairement limitée** : seule la synchro du dépôt est automatisée. La recréation du conteneur `db` reste MANUELLE et documentée (geste rare, risque de micro-coupure de la prod partagée) — la meilleure pratique théorique (push de config immuable via scp/rsync) a été écartée car elle imposerait de revoir la forced command SSH, disproportionné au volume du projet.
 >
-> **Paradoxe de bootstrap (documente honnetement)** : le deploiement qui a livre ce correctif a lui-meme tourne avec l'ANCIEN script (sans synchro), car le VPS n'avait pas encore le nouveau `deploy-ci.sh` au moment de son execution. Une derniere synchro manuelle du VPS a donc ete necessaire pour installer le nouveau script. A partir du deploiement suivant, la synchro est automatique.
+> **Paradoxe de bootstrap (documenté honnêtement)** : le déploiement qui a livré ce correctif a lui-même tourne avec l'ANCIEN script (sans synchro), car le VPS n'avait pas encore le nouveau `deploy-ci.sh` au moment de son exécution. Une dernière synchro manuelle du VPS a donc été nécessaire pour installer le nouveau script. A partir du déploiement suivant, la synchro est automatique.
 >
-> **Validation** : `bash -n scripts/deploy-ci.sh` OK, CI verte (PR #99). Preuve en conditions reelles : la prochaine promotion vers preprod affichera les lignes « >>> Synchronisation du depot sur <sha> » dans les logs du pipeline.
+> **Validation** : `bash -n scripts/deploy-ci.sh` OK, CI verte (PR #99). Preuve en conditions réelles : la prochaine promotion vers preprod affichera les lignes « >>> Synchronisation du dépôt sur <sha> » dans les logs du pipeline.
 
-**Détecté** : 01/07/2026, lors du deploiement preprod de [[DT-32]].
-**Constat** : le pipeline `deploy-preprod.yml` (et par extension `deploy-prod.yml`) tire l'image applicative depuis GHCR et recree uniquement les services `app`/`worker`. Il ne met PAS a jour le fichier `compose.prod.yml` present sur le VPS (le repo du VPS restait sur un ancien commit) et ne recree PAS le conteneur `db`. Consequence : toute modification de la configuration du service `db` dans `compose.prod.yml` (comme le flag [[DT-32]]) n'est jamais appliquee automatiquement au deploiement ; il faut intervenir manuellement sur le serveur (`git reset` + `--force-recreate db`). Le probleme se reproduira a chaque changement de config `db`.
-**Impact** : les changements de configuration d'infrastructure `db` (flags MySQL, variables, volumes) necessitent une intervention manuelle sur le VPS ; risque d'echec de deploiement silencieux (le pipeline reussit mais la config attendue n'est pas active).
-**Action proposée** : faire en sorte que le pipeline (a) synchronise `compose.prod.yml` sur le VPS (via `git pull`/`reset` du repo de deploiement, ou copie du fichier), et (b) recree le conteneur `db` quand sa configuration change (`docker compose up -d --force-recreate db`, volume preserve). A cadrer : detecter le changement de config `db` pour eviter une micro-coupure `db` a chaque deploiement.
-**Hors périmètre** : la refonte complete de la strategie de deploiement.
-**Priorité** : 🟡 moyenne (fiabilite du deploiement ; contourne manuellement a ce jour).
+**Détecté** : 01/07/2026, lors du déploiement preprod de [[DT-32]].
+**Constat** : le pipeline `deploy-preprod.yml` (et par extension `deploy-prod.yml`) tire l'image applicative depuis GHCR et recrée uniquement les services `app`/`worker`. Il ne met PAS à jour le fichier `compose.prod.yml` présent sur le VPS (le repo du VPS restait sur un ancien commit) et ne recrée PAS le conteneur `db`. Conséquence : toute modification de la configuration du service `db` dans `compose.prod.yml` (comme le flag [[DT-32]]) n'est jamais appliquée automatiquement au déploiement ; il faut intervenir manuellement sur le serveur (`git reset` + `--force-recreate db`). Le problème se reproduira à chaque changement de config `db`.
+**Impact** : les changements de configuration d'infrastructure `db` (flags MySQL, variables, volumes) nécessitent une intervention manuelle sur le VPS ; risque d'échec de déploiement silencieux (le pipeline réussit mais la config attendue n'est pas active).
+**Action proposée** : faire en sorte que le pipeline (a) synchronise `compose.prod.yml` sur le VPS (via `git pull`/`reset` du repo de déploiement, ou copie du fichier), et (b) recrée le conteneur `db` quand sa configuration change (`docker compose up -d --force-recreate db`, volume préservé). A cadrer : détecter le changement de config `db` pour éviter une micro-coupure `db` à chaque déploiement.
+**Hors périmètre** : la refonte complète de la stratégie de déploiement.
+**Priorité** : 🟡 moyenne (fiabilité du déploiement ; contourné manuellement à ce jour).
 
 ## DT-35 — Constante morte `UtilisateurVoter::DELETE` jamais branchée (🟢 BAS) — ✅ RÉSOLUE (15/07/2026)
 
