@@ -15,7 +15,7 @@ skinparam enum {
 
 class Utilisateur {
   email : texte
-  motDePasse : texte
+  motDePasseHash : texte
   nom : texte
   prenom : texte
   role : énuméré
