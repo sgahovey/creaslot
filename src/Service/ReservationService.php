@@ -27,8 +27,15 @@ class ReservationService
     }
 
     /**
-     * Motif pour lequel l'auteur ne peut pas réserver ce créneau, ou null si aucun
-     * obstacle n'existe : dans ce cas, la réservation est permise.
+     * Détermine le motif métier qui empêche l'auteur de réserver ce créneau.
+     *
+     * Garde préalable hors transaction : créneau inactif ou passé, déjà réservé,
+     * propriétaire inactif, ou tentative de réserver son propre créneau.
+     *
+     * @param Creneau     $creneau Le créneau visé par la demande de réservation
+     * @param Utilisateur $auteur  L'auditeur qui souhaite réserver
+     *
+     * @return MotifRefusReservation|null Le motif de refus, ou null si la réservation est permise
      */
     public function motifRefusPrealable(Creneau $creneau, Utilisateur $auteur): ?MotifRefusReservation
     {
@@ -51,6 +58,15 @@ class ReservationService
         return null;
     }
 
+    /**
+     * Indique si l'auteur détient déjà une réservation active dont le créneau
+     * chevauche la plage horaire du créneau visé (RG-2, intersection stricte).
+     *
+     * @param Utilisateur $auteur  L'auditeur dont on inspecte les réservations actives
+     * @param Creneau     $creneau Le créneau visé, dont la plage horaire sert de référence
+     *
+     * @return bool Vrai si une réservation active chevauchante existe déjà
+     */
     public function aReservationChevauchante(Utilisateur $auteur, Creneau $creneau): bool
     {
         return $this->reservationRepository->existeReservationActiveEnChevauchement(
@@ -61,6 +77,18 @@ class ReservationService
     }
 
     /**
+     * Crée une réservation active sur le créneau, sous verrou pessimiste.
+     *
+     * Le créneau est verrouillé en écriture puis sa disponibilité revérifiée avant
+     * l'enregistrement ; les deux courriels partent une fois la transaction validée,
+     * afin qu'un échec d'envoi ne remette pas en cause une réservation déjà écrite.
+     *
+     * @param Creneau     $creneau     Le créneau à réserver
+     * @param string|null $commentaire Le commentaire libre de l'auditeur, ou null
+     * @param Utilisateur $auteur      L'auditeur qui effectue la réservation
+     *
+     * @return Reservation La réservation créée, à l'état actif
+     *
      * @throws CreneauIndisponibleException si le creneau vient d'etre reserve (concurrence)
      */
     public function reserver(Creneau $creneau, ?string $commentaire, Utilisateur $auteur): Reservation
@@ -97,7 +125,7 @@ class ReservationService
             throw $e;
         }
 
-        // Notifications HORS transaction (Option B : un echec SMTP ne rollback pas la reservation).
+        // Notifications HORS transaction : un echec SMTP ne doit pas annuler une reservation valide
         $this->notificationService->notifierAuditeurReservation($reservation);
         $this->notificationService->notifierPersonnelReservation($reservation);
 
@@ -105,6 +133,15 @@ class ReservationService
     }
 
     /**
+     * Passe une réservation à l'état annulé, à la demande de son propriétaire ou d'un administrateur.
+     *
+     * Le statut bascule à ANNULEE en conservant la ligne (soft-delete), après contrôle
+     * de l'annulabilité ; le journal ne retient que la longueur du motif, jamais son
+     * contenu, par minimisation RGPD.
+     *
+     * @param Reservation $reservation La réservation active à annuler
+     * @param string|null $motif       Le motif d'annulation saisi, ou null
+     *
      * @throws ReservationNonAnnulableException si la reservation n'est plus annulable
      */
     public function annuler(Reservation $reservation, ?string $motif): void

@@ -1,3 +1,13 @@
+{#
+ # Liste des créneaux réservables par l'auditeur (catalogue filtré et paginé).
+ # Rendu par la route app_creneaux_disponibles (GET /creneaux-disponibles).
+ # Variables attendues :
+ #   creneaux — page courante de Creneau disponibles (paginateur)
+ #   total    — nombre de résultats correspondant aux filtres
+ #   page / nbPages — pagination
+ #   typesRdv / services — options actives des filtres
+ #   filtres  — valeurs actives { type, service, date }
+ #}
 {% extends 'base.html.twig' %}
 
 {% block title %}Créneaux disponibles{% endblock %}
@@ -10,6 +20,8 @@
         <h1 class="h4 fw-bold mb-1" style="color: var(--cs-text-primary);">
             <i class="bi bi-search me-2" aria-hidden="true"></i>Créneaux disponibles
         </h1>
+        {# aria-live : le filtrage recharge la liste en GET ; la région vive fait annoncer le nouveau total au lecteur d'écran, 
+        sinon le changement de résultats passerait inaperçu. #}
         <p class="text-muted mb-0" style="font-size: .875rem;" aria-live="polite" aria-atomic="true">
             {% if total == 0 %}
                 Aucun créneau ne correspond à votre recherche.
@@ -109,10 +121,12 @@
 
     {% else %}
 
+        {# Grille fluide : 1 colonne sur mobile, 2 au palier md, 3 au palier xl — adaptation au support par points de rupture. #}
         <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3"
              aria-label="Liste des créneaux disponibles">
             {% for creneau in creneaux %}
                 <div class="col">
+                    {# Composant réutilisable : la carte porte le bord gauche et la pastille à la couleur du type de rendez-vous (TypeRdv.couleurHex). #}
                     {{ include('components/carte_creneau_disponible.html.twig', { creneau: creneau }) }}
                 </div>
             {% endfor %}
