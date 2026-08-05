@@ -21,7 +21,7 @@ dans le projet.
 **Public visé** : le jury MSP3 (preuve d'une démarche de test outillée et traçable) et l'équipe projet
 (référence opérationnelle pour maintenir la non-régression).
 
-**Périmètre** : la **suite de tests automatisée** de CreaSlot — **336 cas de test**, **1184 assertions**,
+**Périmètre** : la **suite de tests automatisée** de CreaSlot — **344 cas de test**, **1223 assertions**,
 exécutés par PHPUnit 13.1.8, complétés par l'analyse statique (PHPStan 2.2.2) et le contrôle de style
 (PHP-CS-Fixer), le tout vérifié en intégration continue (GitHub Actions, 4 jobs).
 
@@ -39,7 +39,7 @@ reproductible.
 | Les tests sont exécutés conformément au plan ; résultats attendus comparés aux obtenus | Jeu d'essai / cahier de recette (§5) + compte rendu (§8) |
 | Les niveaux de test (unitaire, intégration, système) et de sécurité sont couverts | Pyramide chiffrée et cartographie (§2, §3) + dossier sécurité (§6) |
 | Un dossier de compte rendu de tests est produit | Résultats datés et chiffrés (§8) |
-| Les anomalies sont tracées et suivies | Registre de dette technique `docs/dette-technique.md` (DT-1 … DT-40) |
+| Les anomalies sont tracées et suivies | Registre de dette technique `docs/dette-technique.md` (DT-1 … DT-41) |
 
 ---
 
@@ -52,13 +52,13 @@ La suite est structurée selon les **niveaux de test ISTQB** et respecte la form
 
 | Niveau ISTQB | Réalisation technique | Cas | Part |
 |---|---|---:|---:|
-| **Test unitaire** (composant isolé, sans I/O) | `PHPUnit\Framework\TestCase`, doublures de test | **121** | 36 % |
+| **Test unitaire** (composant isolé, sans I/O) | `PHPUnit\Framework\TestCase`, doublures de test | **121** | 35 % |
 | **Test d'intégration** (composant + BDD/ORM réels) | `KernelTestCase` + transaction/rollback | **82** | 24 % |
-| **Test système / fonctionnel** (parcours HTTP de bout en bout) | `WebTestCase` (noyau HTTP simulé) | **133** | 40 % |
-| **Total** | | **336** | 100 % |
+| **Test système / fonctionnel** (parcours HTTP de bout en bout) | `WebTestCase` (noyau HTTP simulé) | **141** | 41 % |
+| **Total** | | **344** | 100 % |
 
-**Justification de la forme** : la base unitaire (36 %) sécurise la logique métier et d'autorisation à
-coût d'exécution quasi nul ; la couche fonctionnelle (40 %) reste volontairement nourrie car CreaSlot est
+**Justification de la forme** : la base unitaire (35 %) sécurise la logique métier et d'autorisation à
+coût d'exécution quasi nul ; la couche fonctionnelle (41 %) reste volontairement nourrie car CreaSlot est
 une application **à fort enjeu d'autorisation** (trois rôles, voters), où le contrôle d'accès n'est prouvé
 qu'au niveau HTTP. La couche d'intégration (24 %) cible spécifiquement le **risque ORM/DQL** (cf. anomalies
 DT-1/DT-2, régressions de requêtes non détectées par les tests à doublure).
@@ -124,8 +124,8 @@ L'isolation diffère selon le niveau, et chaque choix est argumenté :
 |---|---|---:|---:|
 | Unitaire | `TestCase` | 16 | 121 |
 | Intégration | `KernelTestCase` (+ transaction/rollback) | 18 | 82 |
-| Fonctionnel | `WebTestCase` | 22 | 133 |
-| **Total** | | **56** | **336** |
+| Fonctionnel | `WebTestCase` | 24 | 141 |
+| **Total** | | **58** | **344** |
 
 ### 3.2 Par domaine fonctionnel
 
@@ -137,13 +137,13 @@ L'isolation diffère selon le niveau, et chaque choix est argumenté :
 | Intégration repositories / DQL | OccupationGlobale (10), CreneauRepositoryQueries (8), StatistiquesQueries (7), UtilisateurRepositoryAdmin (6), ReservationRepositoryQueries (6), DashboardKpi (4), JournalAdminRepo (3), NotificationRepo (3), OccupationParJour (3), HistoriqueUtilisateurTrigger (3), JournalAdminPurge (1) | 54 |
 | Intégration service + BDD réelle | AnonymisationCompteService (5), CollegueService (9), NotificationServicePersist (3), ReservationRereservation (1) | 18 |
 | Fonctionnel — Administration | Compte (26), Occupation (10), Export (8), Journal (6), Statistiques (5), Dashboard (4) | 59 |
-| Fonctionnel — Authentification / self-service | MonProfil (9), ResetPassword (9), InscriptionConfirmation (7), SuppressionCompte (6), ExportSelfService (4), LoginThrottling (2), DesactivationSession (2) | 39 |
-| Fonctionnel — Auditeur / réservation | ReservationParcours (9), ReservationAnnulationRedirection (3) | 12 |
+| Fonctionnel — Authentification / self-service | MonProfil (9), ResetPassword (9), InscriptionConfirmation (7), Inscription (4), SuppressionCompte (6), ExportSelfService (4), LoginThrottling (2), DesactivationSession (2) | 43 |
+| Fonctionnel — Auditeur / réservation & préférences | ReservationParcours (9), ReservationAnnulationRedirection (3), Preferences (4) | 16 |
 | Fonctionnel — Personnel | Agenda (4), CollegueServiceQueryCount (1) | 5 |
 | Fonctionnel — Transverse / pages publiques | Legal (5), HomeRedirection (4), NotificationListe (4), CspHeader (3), Health (2) | 18 |
 | **Total** | | **336** |
 
-> Réconciliation : 34 + 72 + 25 + 54 + 18 + 59 + 39 + 12 + 5 + 18 = **336**, identique au total par niveau.
+> Réconciliation : 34 + 72 + 25 + 54 + 18 + 59 + 43 + 16 + 5 + 18 = **344**, identique au total par niveau.
 
 ---
 
@@ -153,11 +153,11 @@ Niveau(x) : **U** = unitaire, **I** = intégration, **F** = fonctionnel.
 
 | User Story / exigence | Fichiers de tests | Niveau(x) | Statut |
 |---|---|:--:|:--:|
-| Authentification / inscription publique | *(aucun test dédié inscription)* | — | ⚠️ Trou (§7) |
+| Authentification / inscription publique | InscriptionControllerTest, InscriptionConfirmationTest | F | ✅ |
 | Création/édition de créneaux (Personnel) | CreneauValidationTest, CreneauTypeTest, SlotServiceTest, CreneauRepositoryQueriesTest, AgendaControllerTest | U, I, F | ✅ |
 | Notifications & rappels (US-4.2→4.6) | NotificationServiceTest, NotificationServicePersistTest, NotificationRepositoryTest, NotificationExtensionTest, EnvoyerRappelsJ1CommandTest, DateFormatterServiceTest | U, I | ✅ |
 | Notifications in-app (US-4.7) | NotificationServiceTest, NotificationRepositoryTest | U, I | ✅ |
-| Préférences notifications (US-4.8) | *(couvert via NotificationService ; pas de WebTest PreferencesController)* | U | ⚠️ Partiel (§7) |
+| Préférences notifications (US-4.8) | NotificationServiceTest, PreferencesControllerTest | U, F | ✅ |
 | Tableau de bord / KPIs (US-5.1/5.2) | DashboardServiceTest, DashboardControllerTest, DashboardKpiQueriesTest | U, I, F | ✅ |
 | Gestion des comptes (US-5.3/5.4) | CompteControllerTest, UtilisateurVoterTest, UtilisateurRepositoryAdminTest | U, I, F | ✅ |
 | Journal RGPD (US-5.5) | JournalControllerTest, JournalAdminServiceTest, JournalAdminRepositoryTest | U, I, F | ✅ |
@@ -240,12 +240,17 @@ Déclarés explicitement (démarche d'honnêteté attendue d'un dossier de tests
    conception** (transaction + `PESSIMISTIC_WRITE` + `refresh` + re-check) et vérification manuelle ; le
    refactoring correspondant a été réalisé (**DT-19**, résolue le 18/06/2026) : l'extraction d'un
    `ReservationService` rend désormais l'invariant testable hors HTTP.
-2. **`PreferencesController`** (préférences de notifications) : pas de test fonctionnel dédié ; la logique
-   sous-jacente est couverte unitairement par `NotificationServiceTest`. Trou assumé, faible risque.
-3. **Inscription publique** (`SecurityController::inscription`) : pas de WebTest dédié ; la validation du
-   formulaire d'inscription est couverte indirectement (contraintes partagées `ContraintesMotDePasse`).
-4. **Cas limites de réservation** : propriétaire devenant inactif entre l'affichage et la réservation ;
+2. **Cas limites de réservation** : propriétaire devenant inactif entre l'affichage et la réservation ;
    chevauchement horaire pour un même auditeur — testés au niveau repository/service mais pas en parcours HTTP.
+
+**Trous comblés** (mise à jour) : les deux lacunes fonctionnelles précédemment listées ici ont été fermées.
+L'**inscription publique** dispose désormais d'un test fonctionnel dédié à la validation du formulaire
+(`InscriptionControllerTest` — création d'un compte Auditeur non vérifié + e-mail de confirmation, connexion
+refusée avant confirmation, adresse déjà utilisée rejetée de façon neutre, contraintes de mot de passe
+appliquées), en complément de `InscriptionConfirmationTest` qui couvre le parcours de vérification d'e-mail
+(lien signé, renvoi — US-12.4). Les **préférences de notifications** (US-4.8) sont couvertes fonctionnellement
+par `PreferencesControllerTest` (affichage du formulaire prérempli, persistance d'une désactivation puis d'une
+réactivation, refus d'accès à un visiteur non authentifié).
 
 **Hors-périmètre méthodologique** (cf. §1) : tests de **charge/performance**, **fuzzing**, et **recette
 utilisateur formelle** (PV signé). Ces activités relèvent d'un dispositif distinct ; le jeu d'essai
@@ -255,16 +260,16 @@ automatisé de §5 fournit une **preuve d'acceptation reproductible** en leur ab
 
 ## 8. Résultats (dossier de compte rendu de tests)
 
-Exécution de référence du **24/07/2026** (branche d'intégration `develop`, environnement Docker, PHP 8.4.22, MySQL 8.0) :
+Exécution de référence du **05/08/2026** (branche d'intégration `develop`, environnement Docker, PHP 8.4.22, MySQL 8.0) :
 
 | Contrôle | Outil | Résultat |
 |---|---|---|
-| Tests automatisés | PHPUnit 13.1.8 | **OK — 336 tests, 1184 assertions** |
+| Tests automatisés | PHPUnit 13.1.8 | **OK — 344 tests, 1223 assertions** |
 | Alertes | PHPUnit (`failOn…="true"`) | **0 deprecation / 0 notice / 0 warning** |
 | Analyse statique | PHPStan 2.2.2, niveau 8, sans baseline | **No errors** |
-| Style de code | PHP-CS-Fixer (`@PSR12` + `@Symfony` + surcharges) | **0 fichier à corriger / 159** |
+| Style de code | PHP-CS-Fixer (`@PSR12` + `@Symfony` + surcharges) | **0 fichier à corriger / 162** |
 | Intégration continue | GitHub Actions — jobs `cs-fixer`, `phpstan`, `phpunit`, `audit` | **4 jobs verts** (push + pull_request `develop`/`preprod`/`main`) |
 
 **Conclusion** : la totalité des critères qualité est satisfaite, sans dette de typage ni de style tolérée,
 et la non-régression est garantie en continu par la CI à chaque modification. Le suivi des anomalies est tenu
-dans `docs/dette-technique.md` (DT-1 … DT-40).
+dans `docs/dette-technique.md` (DT-1 … DT-41).
