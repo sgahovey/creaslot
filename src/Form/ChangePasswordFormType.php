@@ -23,6 +23,8 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  */
 class ChangePasswordFormType extends AbstractType
 {
+    use ProtectionCsrfTrait;
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -45,9 +47,6 @@ class ChangePasswordFormType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults([
-            'csrf_protection' => true,
-            'csrf_token_id'   => 'reset_password',
-        ]);
+        $this->configurerProtectionCsrf($resolver, 'reset_password');
     }
 }

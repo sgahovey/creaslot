@@ -21,6 +21,8 @@ use Symfony\Component\Validator\Constraints\NotBlank;
  */
 class RenvoiConfirmationType extends AbstractType
 {
+    use ProtectionCsrfTrait;
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder->add('email', EmailType::class, [
@@ -35,9 +37,6 @@ class RenvoiConfirmationType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults([
-            'csrf_protection' => true,
-            'csrf_token_id'   => 'renvoi_confirmation',
-        ]);
+        $this->configurerProtectionCsrf($resolver, 'renvoi_confirmation');
     }
 }

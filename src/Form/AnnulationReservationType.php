@@ -15,6 +15,8 @@ use Symfony\Component\Validator\Constraints\Length;
  */
 class AnnulationReservationType extends AbstractType
 {
+    use ProtectionCsrfTrait;
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder->add('motifAnnulation', TextareaType::class, [
@@ -35,10 +37,7 @@ class AnnulationReservationType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults([
-            'csrf_protection' => true,
-            'csrf_token_id'   => 'annulation_reservation',
-        ]);
+        $this->configurerProtectionCsrf($resolver, 'annulation_reservation');
     }
 
     /**
