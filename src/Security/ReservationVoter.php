@@ -57,6 +57,8 @@ final class ReservationVoter extends Voter
         };
     }
 
+    // Comparaison sur les identifiants (getId()) et non sur les objets : Doctrine peut
+    // fournir un proxy à la place de l'entité, auquel cas l'égalité stricte échouerait.
     private function peutVoir(Reservation $reservation, Utilisateur $utilisateur): bool
     {
         return match ($utilisateur->getRole()) {
