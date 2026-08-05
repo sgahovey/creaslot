@@ -7,9 +7,10 @@ ne contient que des procédures et des commandes copiables.
 
 **Périmètre** : déploiement, mise à jour, certificats, e-mail, crons, sauvegarde et
 restauration de la base (§8), rollback simple.
-Hors périmètre : supervision/monitoring applicatif, encore une piste d'évolution (cf. §10).
-La journalisation des échecs de connexion (OWASP A09), initialement renvoyée à une US
-ultérieure, a depuis été livrée (US-9.5, cf. §10).
+La supervision/monitoring applicatif est en place (six sondes Uptime Kuma + route `/health`,
+cf. §3.1 et §10) ; seule l'extension des healthchecks Docker à l'ensemble des services
+(aujourd'hui `db`) reste ouverte. La journalisation des échecs de connexion (OWASP A09) est
+livrée (US-9.5, cf. §10).
 
 ## 1. Accès et environnement
 - VPS OVH Ubuntu, IP **51.178.25.175**, fuseau **`Etc/UTC`**.
@@ -235,8 +236,9 @@ Les chantiers initialement listés ici ont été livrés :
 
 - **US-9.5** — logs Docker bornés (`max-size`/`max-file`) et journalisation dédiée des échecs de connexion (channel Monolog `security`, OWASP A09).
 - **US-10.1** — pipeline CI/CD de déploiement continu (cf. §3.1 et `docs/architecture-deploiement.md` §5).
+- **Supervision applicative** — dispositif Uptime Kuma à **six sondes** : trois interrogations directes (santé applicative via `/health`, préproduction, production publique) et trois sondes en attente de signal (sauvegarde de la base, rappels J-1, purge du journal). La route `/health` (état app + base + file Messenger) est aussi interrogée par le contrôle de disponibilité du §3.1.
 
 Restent ouvertes, par ordre de priorité :
 
 - **Copie hors-VPS des sauvegardes** : la sauvegarde quotidienne par cron est en place (cf. `docs/cron-backup.md`) ; reste à externaliser une copie chiffrée (`scp` ou stockage objet) pour lever le point unique de défaillance.
-- **Supervision applicative** : route `/health` (état app + base + file Messenger) et extension des healthchecks à l'ensemble des services (aujourd'hui sur `db`).
+- **Extension des healthchecks Docker** à l'ensemble des services (aujourd'hui limités à `db`).
