@@ -1,0 +1,54 @@
+@startuml besoin-surveillance
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam rectangle {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam note {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+
+rectangle "Dispositif de surveillance" as SURV
+
+rectangle "Service rendu\nà l'utilisateur" as SERVICE
+rectangle "Réservoir de données" as DONNEES
+rectangle "Traitements à échéance fixe" as AUTO
+
+actor "Exploitant" as EXPLOIT
+
+SURV --> SERVICE : interroge la disponibilité
+SURV --> DONNEES : interroge l'accessibilité
+AUTO ..> SURV : signale son exécution
+SURV --> EXPLOIT : pousse l'alerte
+
+note right of SURV
+  Deux façons opposées de procéder.
+  Interroger ce qui répond.
+  Attendre un signal de ce qui ne répond pas.
+end note
+
+note bottom of AUTO
+  Un traitement qui cesse de s'exécuter ne produit
+  rien : ni erreur, ni message, ni ralentissement.
+  C'est l'absence du signal, et non la présence
+  d'une erreur, qui déclenche l'alerte.
+end note
+
+note right of EXPLOIT
+  L'alerte est poussée sur un canal consulté,
+  jamais déposée sur un tableau de bord qu'il
+  faudrait penser à ouvrir.
+end note
+
+legend bottom
+|= Élément |= Signification |
+| Trait plein | Interrogation régulière, à l'initiative du dispositif |
+| Trait pointillé | Signal émis par le traitement lui-même |
+| <b>Point clé</b> | Une mesure ne mérite d'être surveillée que si son évolution appelle\nune décision d'exploitation. Un indicateur qu'on regarde sans jamais\nrien en faire produit du bruit, et le bruit masque le signal. |
+endlegend
+@enduml

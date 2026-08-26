@@ -68,6 +68,11 @@ final readonly class SlotService
         );
     }
 
+    /**
+     * Journalise (niveau warning) un chevauchement détecté entre un créneau candidat
+     * et un créneau existant, avec le contexte (« creation » ou « modification »).
+     * N'écrit rien en base : le rejet du candidat est assuré par l'appelant.
+     */
     public function enregistrerChevauchementDetecte(
         Creneau $candidat,
         Creneau $conflit,

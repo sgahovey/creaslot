@@ -1,0 +1,58 @@
+@startuml cheminement-modification
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam activity {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam activityDiamond {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+skinparam note {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+
+start
+:développer le lot\nsur sa ligne dédiée;
+:demander l'intégration;
+
+if (les quatre contrôles\npassent-ils ?) then (non)
+  :corriger;
+  detach
+else (oui)
+endif
+
+:intégrer à la ligne d'intégration;
+:déployer vers la validation;
+:vérifier dans des conditions\nidentiques au service;
+
+if (la vérification\nest-elle concluante ?) then (non)
+  :corriger;
+  detach
+else (oui)
+endif
+
+:approuver la mise en service;
+note right
+  Décision d'exploitation, prise par une personne.
+  Elle engage la disponibilité d'un service utilisé
+  et suppose que quelqu'un ait constaté
+  que le moment est opportun.
+end note
+
+:déployer vers le service;
+:contrôler que le service répond;
+stop
+
+legend bottom
+|= Élément |= Signification |
+| Losange | Point de contrôle bloquant : rien ne passe sans lui |
+| <b>Point clé</b> | Tout est automatisé sauf une étape. La construction et le déploiement\nsont reproductibles, la décision de mettre en service relève du jugement. |
+endlegend
+@enduml

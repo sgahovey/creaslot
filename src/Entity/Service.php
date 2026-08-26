@@ -9,6 +9,9 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
+/**
+ * Service administratif du Cnam auquel un membre du Personnel est rattaché.
+ */
 #[ORM\Entity(repositoryClass: ServiceRepository::class)]
 #[ORM\Table(name: 'service')]
 class Service

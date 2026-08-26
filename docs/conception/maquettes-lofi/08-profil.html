@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wireframe lo-fi — Mon profil</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,Arial,sans-serif; background:#fff; color:#444; font-size:14px; line-height:1.5; }
+  .wf-shell { max-width:1000px; margin:0 auto; padding:16px; }
+  header.wf-header, footer.wf-footer { background:#eee; border:1px solid #ccc; border-radius:8px; }
+  .wf-header-inner { display:flex; align-items:center; gap:18px; padding:14px 18px; }
+  .wf-logo { display:flex; align-items:center; gap:8px; font-weight:700; color:#444; }
+  .wf-icon { width:18px; height:18px; border:1px solid #999; border-radius:4px; display:inline-block; flex:0 0 auto; }
+  nav.wf-nav ul { list-style:none; display:flex; gap:14px; flex-wrap:wrap; }
+  nav.wf-nav li { width:78px; height:10px; background:#ccc; border-radius:4px; }
+  .wf-tools { margin-left:auto; display:flex; align-items:center; gap:16px; }
+  .wf-bell { position:relative; }
+  .wf-badge { position:absolute; top:-7px; right:-9px; min-width:16px; height:16px; padding:0 4px; border-radius:8px; background:#999; color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; }
+  .wf-avatar { width:28px; height:28px; border:1px solid #999; border-radius:50%; background:#ccc; }
+  .wf-user { width:90px; height:10px; background:#ccc; border-radius:4px; }
+  main.wf-main { padding:24px 2px; max-width:720px; }
+  .wf-h1 { display:flex; align-items:center; gap:10px; margin-bottom:20px; }
+  .wf-h1 .bar { height:20px; width:180px; background:#999; border-radius:4px; }
+  .wf-h1 .wf-icon { width:24px; height:24px; }
+  .wf-card { border:1px solid #ccc; border-radius:8px; background:#fff; padding:20px; margin-bottom:18px; }
+  .wf-card--danger { border:2px solid #999; }
+  .wf-card-title { height:14px; width:200px; background:#999; border-radius:4px; margin-bottom:16px; }
+  .bar { background:#ccc; border-radius:4px; }
+  .wf-row { display:flex; gap:16px; flex-wrap:wrap; }
+  .wf-col { flex:1; min-width:180px; }
+  .wf-label { display:block; font-size:12px; color:#999; margin-bottom:6px; }
+  .wf-field { border:1px solid #ccc; border-radius:6px; height:36px; background:#fff; }
+  .wf-dl { margin:16px 0; }
+  .wf-dl .row2 { display:flex; gap:16px; padding:8px 0; border-bottom:1px solid #eee; }
+  .wf-dl .dt { width:120px; }
+  .wf-dl .dt .bar { height:9px; width:90px; }
+  .wf-dl .dd { flex:1; }
+  .wf-dl .dd .bar { height:9px; width:60%; }
+  .wf-note { height:8px; width:70%; background:#eee; border:1px solid #eee; border-radius:4px; margin:12px 0 16px; }
+  .wf-btn { display:inline-flex; align-items:center; gap:6px; border:1px solid #999; border-radius:6px; background:#999; color:#fff; padding:10px 18px; font-size:13px; }
+  .wf-btn--ghost { background:#fff; color:#444; }
+  .wf-crosslink { display:flex; align-items:center; gap:8px; margin:6px 2px 20px; }
+  .wf-footer-inner { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; padding:22px 18px; }
+  .wf-cap { text-align:center; color:#999; font-size:12px; font-style:italic; margin-top:14px; padding-top:12px; border-top:1px dashed #ccc; }
+</style>
+</head>
+<body>
+<div class="wf-shell">
+
+  <header class="wf-header">
+    <div class="wf-header-inner">
+      <div class="wf-logo"><span class="wf-icon"></span><span>CreaSlot</span></div>
+      <nav class="wf-nav" aria-label="Navigation"><ul><li></li><li></li><li></li></ul></nav>
+      <div class="wf-tools">
+        <div class="wf-bell"><span class="wf-icon"></span><span class="wf-badge">2</span></div>
+        <span class="wf-avatar"></span><span class="wf-user"></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="wf-main">
+    <div class="wf-h1"><span class="wf-icon"></span><span class="bar"></span></div>
+
+    <!-- Section : Mes informations -->
+    <section class="wf-card" aria-label="Mes informations">
+      <div class="wf-card-title"></div>
+      <div class="wf-row">
+        <div class="wf-col">
+          <label class="wf-label">Prénom</label>
+          <div class="wf-field"></div>
+        </div>
+        <div class="wf-col">
+          <label class="wf-label">Nom</label>
+          <div class="wf-field"></div>
+        </div>
+      </div>
+
+      <!-- Lecture seule : email / rôle / service -->
+      <div class="wf-dl">
+        <div class="row2"><div class="dt"><div class="bar"></div></div><div class="dd"><div class="bar"></div></div></div>
+        <div class="row2"><div class="dt"><div class="bar"></div></div><div class="dd"><div class="bar"></div></div></div>
+        <div class="row2"><div class="dt"><div class="bar"></div></div><div class="dd"><div class="bar"></div></div></div>
+      </div>
+      <div class="wf-note"></div>
+      <button type="button" class="wf-btn">Enregistrer</button>
+    </section>
+
+    <!-- Section : Changer mon mot de passe -->
+    <section class="wf-card" aria-label="Changer mon mot de passe">
+      <div class="wf-card-title"></div>
+      <label class="wf-label">Mot de passe actuel</label>
+      <div class="wf-field"></div>
+      <label class="wf-label" style="margin-top:12px">Nouveau mot de passe</label>
+      <div class="wf-field"></div>
+      <label class="wf-label" style="margin-top:12px">Confirmer le nouveau mot de passe</label>
+      <div class="wf-field"></div>
+      <div style="margin-top:16px"><button type="button" class="wf-btn">Modifier le mot de passe</button></div>
+    </section>
+
+    <!-- Cross-link RGPD -->
+    <div class="wf-crosslink"><span class="wf-icon"></span><span class="bar" style="height:9px;width:280px"></span></div>
+
+    <!-- Zone de danger : suppression de compte (RGPD art. 17) -->
+    <section class="wf-card wf-card--danger" aria-label="Supprimer mon compte">
+      <div class="wf-card-title" style="width:170px"></div>
+      <div class="bar" style="height:9px;width:90%;margin:6px 0"></div>
+      <div class="bar" style="height:9px;width:70%;margin:6px 0 16px"></div>
+      <button type="button" class="wf-btn wf-btn--ghost">Supprimer mon compte</button>
+    </section>
+  </main>
+
+  <footer class="wf-footer">
+    <div class="wf-footer-inner">
+      <div>
+        <div class="wf-logo" style="margin-bottom:8px"><span class="wf-icon"></span><span>CreaSlot</span></div>
+        <div class="bar" style="height:8px;width:90%;margin:6px 0"></div>
+        <div class="bar" style="height:8px;width:75%;margin:6px 0"></div>
+      </div>
+      <div>
+        <div class="bar" style="height:11px;width:120px;background:#999;margin-bottom:10px"></div>
+        <div class="bar" style="height:8px;width:70%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:80%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:65%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:72%;margin:7px 0"></div>
+      </div>
+      <div>
+        <div class="bar" style="height:11px;width:80px;background:#999;margin-bottom:10px"></div>
+        <div class="bar" style="height:8px;width:85%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:60%;margin:7px 0"></div>
+      </div>
+    </div>
+  </footer>
+
+  <footer class="wf-cap">Wireframe lo-fi — Mon profil (self-service RGPD)</footer>
+</div>
+</body>
+</html>

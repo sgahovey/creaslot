@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wireframe lo-fi — Créneaux disponibles (mobile)</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,Arial,sans-serif; background:#eee; color:#444; font-size:14px; line-height:1.5; padding:20px 0; }
+  .device { width:375px; margin:0 auto; background:#fff; border:1px solid #ccc; border-radius:22px; overflow:hidden; }
+  header.wf-header { background:#eee; border-bottom:1px solid #ccc; }
+  .wf-header-inner { display:flex; align-items:center; gap:12px; padding:12px 14px; }
+  .wf-logo { display:flex; align-items:center; gap:8px; font-weight:700; color:#444; }
+  .wf-icon { width:18px; height:18px; border:1px solid #999; border-radius:4px; display:inline-block; flex:0 0 auto; }
+  .wf-icon--round { border-radius:50%; }
+  .wf-tools { margin-left:auto; display:flex; align-items:center; gap:14px; }
+  .wf-bell { position:relative; }
+  .wf-badge { position:absolute; top:-7px; right:-9px; min-width:16px; height:16px; padding:0 4px; border-radius:8px; background:#999; color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; }
+  /* menu replié en burger */
+  .wf-burger { width:26px; height:26px; border:1px solid #999; border-radius:5px; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:3px; }
+  .wf-burger span { width:14px; height:2px; background:#999; border-radius:2px; }
+  main.wf-main { padding:16px 14px; }
+  .wf-h1 { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .wf-h1 .bar { height:16px; width:180px; background:#999; border-radius:4px; }
+  .wf-subcount { height:8px; width:200px; background:#ccc; border-radius:4px; margin-bottom:16px; }
+  .bar { background:#ccc; border-radius:4px; }
+  /* filtres en accordéon (replié) */
+  .wf-accordion { border:1px solid #ccc; border-radius:8px; margin-bottom:16px; }
+  .wf-accordion-head { width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px; background:#eee; border:0; border-radius:8px; padding:12px 14px; color:#444; font-size:13px; }
+  .wf-accordion-head .left { display:flex; align-items:center; gap:8px; }
+  .wf-chevron { width:12px; height:12px; border-right:2px solid #999; border-bottom:2px solid #999; transform:rotate(45deg); }
+  .wf-btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; border:1px solid #999; border-radius:6px; background:#eee; color:#444; padding:9px 14px; font-size:13px; }
+  .wf-btn--primary { background:#999; color:#fff; }
+  .wf-btn--block { display:flex; width:100%; }
+  /* cartes empilées : une seule colonne */
+  .wf-list { display:flex; flex-direction:column; gap:14px; }
+  .wf-slot { border:1px solid #ccc; border-left:5px solid #999; border-radius:8px; padding:14px; display:flex; flex-direction:column; gap:9px; }
+  .wf-slot-row { display:flex; align-items:center; gap:8px; }
+  .wf-avatar { width:28px; height:28px; border:1px solid #999; border-radius:50%; background:#ccc; flex:0 0 auto; }
+  .wf-pagination { display:flex; gap:8px; justify-content:center; margin-top:18px; }
+  .wf-page { width:34px; height:34px; border:1px solid #ccc; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#999; }
+  .wf-page--active { background:#999; color:#fff; border-color:#999; }
+  /* pied de page empilé en une colonne */
+  footer.wf-footer { background:#eee; border-top:1px solid #ccc; }
+  .wf-footer-inner { display:flex; flex-direction:column; gap:20px; padding:20px 16px; }
+  .wf-cap { text-align:center; color:#999; font-size:12px; font-style:italic; margin:14px auto 0; }
+</style>
+</head>
+<body>
+<div class="device">
+
+  <header class="wf-header">
+    <div class="wf-header-inner">
+      <div class="wf-logo"><span class="wf-icon"></span><span>CreaSlot</span></div>
+      <div class="wf-tools">
+        <div class="wf-bell"><span class="wf-icon"></span><span class="wf-badge">2</span></div>
+        <!-- navigation du rôle repliée derrière le burger -->
+        <button class="wf-burger" type="button" aria-label="Ouvrir le menu"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wf-main">
+    <div class="wf-h1"><span class="wf-icon"></span><span class="bar"></span></div>
+    <div class="wf-subcount"></div>
+
+    <!-- Filtres condensés en accordéon (replié sur petit écran) -->
+    <section class="wf-accordion">
+      <button class="wf-accordion-head" type="button" aria-expanded="false">
+        <span class="left"><span class="wf-icon"></span>Filtres</span>
+        <span class="wf-chevron" aria-hidden="true"></span>
+      </button>
+    </section>
+
+    <!-- Cartes de créneaux empilées (1 colonne) -->
+    <div class="wf-list" aria-label="Liste des créneaux disponibles">
+      <article class="wf-slot">
+        <div class="wf-slot-row"><span class="wf-icon wf-icon--round"></span><span class="bar" style="height:9px;width:80px"></span></div>
+        <div class="wf-slot-row"><span class="wf-icon"></span><span class="bar" style="height:11px;width:70%"></span></div>
+        <div class="bar" style="height:9px;width:55%"></div>
+        <div class="wf-slot-row"><span class="wf-avatar"></span><div style="flex:1"><div class="bar" style="height:9px;width:70%;margin-bottom:5px"></div><div class="bar" style="height:8px;width:50%"></div></div></div>
+        <div class="bar" style="height:8px;width:90%"></div>
+        <button type="button" class="wf-btn wf-btn--primary wf-btn--block">Réserver</button>
+      </article>
+      <article class="wf-slot">
+        <div class="wf-slot-row"><span class="wf-icon wf-icon--round"></span><span class="bar" style="height:9px;width:80px"></span></div>
+        <div class="wf-slot-row"><span class="wf-icon"></span><span class="bar" style="height:11px;width:70%"></span></div>
+        <div class="bar" style="height:9px;width:55%"></div>
+        <div class="wf-slot-row"><span class="wf-avatar"></span><div style="flex:1"><div class="bar" style="height:9px;width:70%;margin-bottom:5px"></div><div class="bar" style="height:8px;width:50%"></div></div></div>
+        <button type="button" class="wf-btn wf-btn--primary wf-btn--block">Réserver</button>
+      </article>
+      <article class="wf-slot">
+        <div class="wf-slot-row"><span class="wf-icon wf-icon--round"></span><span class="bar" style="height:9px;width:80px"></span></div>
+        <div class="wf-slot-row"><span class="wf-icon"></span><span class="bar" style="height:11px;width:70%"></span></div>
+        <div class="bar" style="height:9px;width:55%"></div>
+        <div class="wf-slot-row"><span class="wf-avatar"></span><div style="flex:1"><div class="bar" style="height:9px;width:70%;margin-bottom:5px"></div><div class="bar" style="height:8px;width:50%"></div></div></div>
+        <div class="bar" style="height:8px;width:80%"></div>
+        <button type="button" class="wf-btn wf-btn--primary wf-btn--block">Réserver</button>
+      </article>
+      <article class="wf-slot">
+        <div class="wf-slot-row"><span class="wf-icon wf-icon--round"></span><span class="bar" style="height:9px;width:80px"></span></div>
+        <div class="wf-slot-row"><span class="wf-icon"></span><span class="bar" style="height:11px;width:70%"></span></div>
+        <div class="bar" style="height:9px;width:55%"></div>
+        <div class="wf-slot-row"><span class="wf-avatar"></span><div style="flex:1"><div class="bar" style="height:9px;width:70%;margin-bottom:5px"></div><div class="bar" style="height:8px;width:50%"></div></div></div>
+        <button type="button" class="wf-btn wf-btn--primary wf-btn--block">Réserver</button>
+      </article>
+    </div>
+
+    <nav class="wf-pagination" aria-label="Pagination">
+      <span class="wf-page">‹</span>
+      <span class="wf-page wf-page--active">1</span>
+      <span class="wf-page">2</span>
+      <span class="wf-page">›</span>
+    </nav>
+  </main>
+
+  <footer class="wf-footer">
+    <div class="wf-footer-inner">
+      <div>
+        <div class="wf-logo" style="margin-bottom:8px"><span class="wf-icon"></span><span>CreaSlot</span></div>
+        <div class="bar" style="height:8px;width:90%;margin:6px 0"></div>
+        <div class="bar" style="height:8px;width:70%;margin:6px 0"></div>
+      </div>
+      <div>
+        <div class="bar" style="height:11px;width:120px;background:#999;margin-bottom:10px"></div>
+        <div class="bar" style="height:8px;width:70%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:80%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:65%;margin:7px 0"></div>
+      </div>
+      <div>
+        <div class="bar" style="height:11px;width:80px;background:#999;margin-bottom:10px"></div>
+        <div class="bar" style="height:8px;width:85%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:60%;margin:7px 0"></div>
+      </div>
+    </div>
+  </footer>
+
+</div>
+<p class="wf-cap">Wireframe lo-fi — Créneaux disponibles (mobile ~375px)</p>
+</body>
+</html>

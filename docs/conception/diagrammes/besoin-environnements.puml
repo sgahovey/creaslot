@@ -1,0 +1,67 @@
+@startuml besoin-environnements
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam rectangle {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam database {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+skinparam note {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+skinparam package {
+  BorderColor #1F4E79
+  FontColor #1E1E1E
+}
+
+actor "Utilisateur du service" as PUBLIC
+actor "Personne habilitée\nà vérifier" as VERIF
+
+rectangle "Point d'entrée unique\nseul élément exposé au réseau public" as ENTREE
+
+package "Machine unique" {
+  rectangle "Environnement de vérification\naccès restreint" as PREPROD
+  rectangle "Environnement de service\nouvert au public" as PROD
+
+  database "Réservoir de données commun" as RESERVOIR {
+    rectangle "Espace de vérification" as ESPPRE
+    rectangle "Espace de service" as ESPPROD
+  }
+}
+
+PUBLIC --> ENTREE
+VERIF --> ENTREE
+ENTREE --> PREPROD
+ENTREE --> PROD
+
+PREPROD --> ESPPRE
+PROD --> ESPPROD
+
+note right of ESPPRE
+  Chaque environnement dispose d'une identité
+  d'accès propre, dont les droits sont bornés
+  à son seul espace de données.
+end note
+
+note bottom of PROD
+  Les deux environnements exécutent la même
+  configuration : ce qui est vérifié se comporte
+  comme ce qui sera servi.
+end note
+
+legend bottom
+|= Élément |= Signification |
+| Point d'entrée | Seul élément joignable depuis l'extérieur |
+| Trait plein | Accès autorisé |
+| <b>Coût assumé</b> | Les deux environnements partagent la machine, donc ses ressources\net ses défaillances. La fidélité obtenue est fonctionnelle,\nnon matérielle. |
+| <b>Limite de l'isolation</b> | Elle repose sur le périmètre des droits accordés à chaque identité,\nnon sur une séparation matérielle ni réseau. |
+endlegend
+@enduml

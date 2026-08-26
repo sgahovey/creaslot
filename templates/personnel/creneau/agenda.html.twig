@@ -77,65 +77,6 @@
             max-width: min(340px, 92vw);
         }
 
-        /* Barre d'outils : flèches + date sur une même ligne au centre */
-        .cs-agenda-page .fc .fc-toolbar.fc-header-toolbar {
-            flex-wrap: wrap;
-            flex-direction: row;
-            align-items: center;
-            justify-content: space-between;
-            gap: var(--cs-space-md);
-            margin-bottom: var(--cs-space-md);
-        }
-        .cs-agenda-page .fc .fc-toolbar-chunk {
-            display: flex !important;
-            flex-direction: row !important;
-            flex-wrap: wrap;
-            align-items: center !important;
-            gap: var(--cs-space-xs);
-        }
-        /* Centre : précédent, titre, suivant sans retour vertical */
-        .cs-agenda-page .fc .fc-toolbar-chunk:nth-child(2) {
-            justify-content: center;
-            flex-wrap: nowrap !important;
-            gap: var(--cs-space-sm);
-        }
-        .cs-agenda-page .fc .fc-toolbar-chunk:nth-child(2) .fc-button-group {
-            flex-direction: row !important;
-            gap: var(--cs-space-xs);
-        }
-        .cs-agenda-page .fc .fc-toolbar-chunk:nth-child(2) .fc-prev-button,
-        .cs-agenda-page .fc .fc-toolbar-chunk:nth-child(2) .fc-next-button {
-            flex: 0 0 auto !important;
-        }
-        .cs-agenda-page .fc .fc-toolbar-title {
-            margin: 0 !important;
-            padding: 0 var(--cs-space-xs);
-            white-space: nowrap;
-            line-height: 1.25;
-            display: inline-block;
-        }
-
-        .cs-agenda-page .fc .fc-toolbar-chunk:first-child .fc-button-group {
-            gap: 0;
-        }
-        .cs-agenda-page .fc .fc-button {
-            border-radius: var(--cs-radius-md) !important;
-            font-weight: var(--cs-fw-medium);
-        }
-        .cs-agenda-page .fc .fc-button-primary:not(:disabled):not(.fc-button-active),
-        .cs-agenda-page .fc .fc-button:not(.fc-button-active):not(:disabled) {
-            background-color: var(--cs-bg-subtle);
-            border-color: var(--cs-border);
-            color: var(--cs-text-primary);
-        }
-        .cs-agenda-page .fc .fc-button-primary:not(:disabled).fc-button-active,
-        .cs-agenda-page .fc .fc-button-primary:not(:disabled):hover,
-        .cs-agenda-page .fc .fc-button:not(.fc-button-active):not(:disabled):hover {
-            background-color: var(--cs-blue-primary) !important;
-            border-color: var(--cs-blue-primary) !important;
-            color: var(--cs-text-light) !important;
-        }
-
         /* Pause déjeuner — bandeau sous les créneaux (non cliquable, pointer-events: none en JS) */
         .cs-fc-pause-dejeuner {
             border: none !important;
@@ -184,7 +125,7 @@
 {% endblock %}
 
 {% block body %}
-<div class="container py-4 cs-agenda-page"
+<div class="container py-4 cs-agenda-page cs-fc-calendar"
      id="agenda-root"
      data-controller="agenda"
      data-agenda-url-api-value="{{ path('api_creneaux_personnel') }}"

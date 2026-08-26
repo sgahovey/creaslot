@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wireframe lo-fi — Mon agenda</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,Arial,sans-serif; background:#fff; color:#444; font-size:14px; line-height:1.5; }
+  .wf-shell { max-width:1000px; margin:0 auto; padding:16px; }
+  header.wf-header, footer.wf-footer { background:#eee; border:1px solid #ccc; border-radius:8px; }
+  .wf-header-inner { display:flex; align-items:center; gap:18px; padding:14px 18px; }
+  .wf-logo { display:flex; align-items:center; gap:8px; font-weight:700; color:#444; }
+  .wf-icon { width:18px; height:18px; border:1px solid #999; border-radius:4px; display:inline-block; flex:0 0 auto; }
+  nav.wf-nav ul { list-style:none; display:flex; gap:14px; flex-wrap:wrap; }
+  nav.wf-nav li { width:78px; height:10px; background:#ccc; border-radius:4px; }
+  .wf-tools { margin-left:auto; display:flex; align-items:center; gap:16px; }
+  .wf-bell { position:relative; }
+  .wf-badge { position:absolute; top:-7px; right:-9px; min-width:16px; height:16px; padding:0 4px; border-radius:8px; background:#999; color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; }
+  .wf-avatar { width:28px; height:28px; border:1px solid #999; border-radius:50%; background:#ccc; }
+  .wf-user { width:90px; height:10px; background:#ccc; border-radius:4px; }
+  main.wf-main { padding:24px 2px; }
+  .wf-titlebar { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:10px; }
+  .wf-h1 .bar { height:20px; width:180px; background:#999; border-radius:4px; }
+  .wf-titlebar .actions { display:flex; gap:10px; }
+  .wf-btn { display:inline-flex; align-items:center; gap:6px; border:1px solid #999; border-radius:6px; background:#eee; color:#444; padding:8px 14px; font-size:13px; }
+  .wf-btn--primary { background:#999; color:#fff; }
+  .wf-breadcrumb { display:flex; align-items:center; gap:10px; margin-bottom:14px; color:#999; }
+  .wf-breadcrumb .bar { height:8px; width:70px; background:#ccc; border-radius:4px; }
+  .bar { background:#ccc; border-radius:4px; }
+  .wf-help { margin-bottom:14px; }
+  .wf-toggle { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  .wf-switch { width:40px; height:22px; border:1px solid #999; border-radius:11px; background:#eee; position:relative; flex:0 0 auto; }
+  .wf-switch::after { content:""; position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%; background:#999; }
+  .wf-cal { border:1px solid #ccc; border-radius:8px; padding:16px; }
+  .wf-cal-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .wf-cal-toolbar .grp { display:flex; gap:6px; align-items:center; }
+  .wf-nav-btn { width:32px; height:32px; border:1px solid #ccc; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#999; }
+  .wf-cal-title { height:12px; width:160px; background:#999; border-radius:4px; }
+  .wf-viewbtn { height:32px; width:60px; border:1px solid #ccc; border-radius:6px; }
+  .wf-grid-cal { display:grid; grid-template-columns:50px repeat(5,1fr); grid-auto-rows:34px; border:1px solid #eee; }
+  .wf-grid-cal .cell { border-right:1px solid #eee; border-bottom:1px solid #eee; position:relative; }
+  .wf-grid-cal .hcell { border-right:1px solid #eee; border-bottom:1px solid #eee; display:flex; align-items:center; justify-content:center; }
+  .wf-grid-cal .hcell .bar { height:8px; width:40px; }
+  .wf-grid-cal .tcell { border-bottom:1px solid #eee; display:flex; align-items:center; justify-content:flex-end; padding-right:6px; }
+  .wf-grid-cal .tcell .bar { height:7px; width:26px; }
+  .wf-event { position:absolute; inset:3px; background:#999; border-radius:4px; }
+  .wf-lunch { position:absolute; inset:0; background:repeating-linear-gradient(-45deg,#e6e6e6,#e6e6e6 5px,#f4f4f4 5px,#f4f4f4 10px); }
+  .wf-legend { display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-top:14px; padding-top:12px; border-top:1px solid #eee; }
+  .wf-legend .dot { width:10px; height:10px; border-radius:50%; background:#999; display:inline-block; }
+  .wf-legend .li { display:flex; align-items:center; gap:6px; }
+  .wf-legend .bar { height:8px; width:80px; }
+  .wf-footer-inner { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; padding:22px 18px; }
+  .wf-cap { text-align:center; color:#999; font-size:12px; font-style:italic; margin-top:14px; padding-top:12px; border-top:1px dashed #ccc; }
+</style>
+</head>
+<body>
+<div class="wf-shell">
+
+  <header class="wf-header">
+    <div class="wf-header-inner">
+      <div class="wf-logo"><span class="wf-icon"></span><span>CreaSlot</span></div>
+      <nav class="wf-nav" aria-label="Navigation personnel"><ul><li></li><li></li><li></li></ul></nav>
+      <div class="wf-tools">
+        <div class="wf-bell"><span class="wf-icon"></span><span class="wf-badge">2</span></div>
+        <span class="wf-avatar"></span><span class="wf-user"></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="wf-main">
+    <div class="wf-titlebar">
+      <div class="wf-h1"><span class="bar"></span></div>
+      <div class="actions">
+        <button type="button" class="wf-btn">Liste complète</button>
+        <button type="button" class="wf-btn wf-btn--primary">Nouveau créneau</button>
+      </div>
+    </div>
+
+    <nav class="wf-breadcrumb" aria-label="Fil d'Ariane"><span class="bar"></span><span>›</span><span class="bar"></span></nav>
+
+    <div class="wf-help">
+      <div class="bar" style="height:8px;width:60%;margin:5px 0"></div>
+      <div class="bar" style="height:8px;width:40%;margin:5px 0"></div>
+    </div>
+
+    <!-- Interrupteur : afficher aussi les créneaux libres -->
+    <div class="wf-toggle">
+      <span class="wf-switch" aria-hidden="true"></span>
+      <span class="bar" style="height:9px;width:220px"></span>
+    </div>
+
+    <!-- Calendrier (FullCalendar) -->
+    <section class="wf-cal" aria-label="Calendrier des créneaux">
+      <div class="wf-cal-toolbar">
+        <div class="grp"><span class="wf-nav-btn">‹</span><span class="wf-nav-btn">›</span><span class="wf-cal-title"></span></div>
+        <div class="grp"><span class="wf-viewbtn"></span><span class="wf-viewbtn"></span></div>
+      </div>
+
+      <div class="wf-grid-cal" role="grid">
+        <!-- ligne d'en-tête : heure vide + 5 jours -->
+        <div class="hcell"></div>
+        <div class="hcell"><span class="bar"></span></div>
+        <div class="hcell"><span class="bar"></span></div>
+        <div class="hcell"><span class="bar"></span></div>
+        <div class="hcell"><span class="bar"></span></div>
+        <div class="hcell"><span class="bar"></span></div>
+
+        <!-- rangée 1 -->
+        <div class="tcell"><span class="bar"></span></div>
+        <div class="cell"><span class="wf-event"></span></div>
+        <div class="cell"></div>
+        <div class="cell"></div>
+        <div class="cell"><span class="wf-event"></span></div>
+        <div class="cell"></div>
+
+        <!-- rangée 2 -->
+        <div class="tcell"><span class="bar"></span></div>
+        <div class="cell"></div>
+        <div class="cell"><span class="wf-event"></span></div>
+        <div class="cell"></div>
+        <div class="cell"></div>
+        <div class="cell"><span class="wf-event"></span></div>
+
+        <!-- rangée 3 : pause déjeuner (bande hachurée) -->
+        <div class="tcell"><span class="bar"></span></div>
+        <div class="cell"><span class="wf-lunch"></span></div>
+        <div class="cell"><span class="wf-lunch"></span></div>
+        <div class="cell"><span class="wf-lunch"></span></div>
+        <div class="cell"><span class="wf-lunch"></span></div>
+        <div class="cell"><span class="wf-lunch"></span></div>
+
+        <!-- rangée 4 -->
+        <div class="tcell"><span class="bar"></span></div>
+        <div class="cell"><span class="wf-event"></span></div>
+        <div class="cell"></div>
+        <div class="cell"><span class="wf-event"></span></div>
+        <div class="cell"></div>
+        <div class="cell"></div>
+
+        <!-- rangée 5 -->
+        <div class="tcell"><span class="bar"></span></div>
+        <div class="cell"></div>
+        <div class="cell"></div>
+        <div class="cell"></div>
+        <div class="cell"><span class="wf-event"></span></div>
+        <div class="cell"></div>
+      </div>
+
+      <!-- Légende -->
+      <div class="wf-legend">
+        <span class="li"><span class="dot"></span><span class="bar"></span></span>
+        <span class="li"><span class="dot"></span><span class="bar"></span></span>
+        <span class="li"><span class="dot"></span><span class="bar"></span></span>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wf-footer">
+    <div class="wf-footer-inner">
+      <div>
+        <div class="wf-logo" style="margin-bottom:8px"><span class="wf-icon"></span><span>CreaSlot</span></div>
+        <div class="bar" style="height:8px;width:90%;margin:6px 0"></div>
+        <div class="bar" style="height:8px;width:75%;margin:6px 0"></div>
+      </div>
+      <div>
+        <div class="bar" style="height:11px;width:120px;background:#999;margin-bottom:10px"></div>
+        <div class="bar" style="height:8px;width:70%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:80%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:65%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:72%;margin:7px 0"></div>
+      </div>
+      <div>
+        <div class="bar" style="height:11px;width:80px;background:#999;margin-bottom:10px"></div>
+        <div class="bar" style="height:8px;width:85%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:60%;margin:7px 0"></div>
+      </div>
+    </div>
+  </footer>
+
+  <footer class="wf-cap">Wireframe lo-fi — Mon agenda (personnel)</footer>
+</div>
+</body>
+</html>

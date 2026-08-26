@@ -22,6 +22,8 @@ use Symfony\Component\Validator\Constraints\NotBlank;
  */
 class ResetPasswordRequestFormType extends AbstractType
 {
+    use ProtectionCsrfTrait;
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -37,9 +39,6 @@ class ResetPasswordRequestFormType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults([
-            'csrf_protection' => true,
-            'csrf_token_id'   => 'reset_password_request',
-        ]);
+        $this->configurerProtectionCsrf($resolver, 'reset_password_request');
     }
 }

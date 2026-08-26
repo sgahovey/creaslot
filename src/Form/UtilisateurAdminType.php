@@ -32,6 +32,8 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  */
 class UtilisateurAdminType extends AbstractType
 {
+    use ProtectionCsrfTrait;
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -113,14 +115,13 @@ class UtilisateurAdminType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class'        => Utilisateur::class,
-            'csrf_protection'   => true,
-            'csrf_token_id'     => 'utilisateur_admin',
             'avec_mot_de_passe' => false,
             // Amélioration progressive : grise le service quand le rôle Auditeur
             // est choisi (la cohérence reste garantie côté serveur, cf. POST_SUBMIT).
             'attr' => ['data-controller' => 'compte-role-service'],
         ]);
-
         $resolver->setAllowedTypes('avec_mot_de_passe', 'bool');
+
+        $this->configurerProtectionCsrf($resolver, 'utilisateur_admin');
     }
 }

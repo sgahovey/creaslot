@@ -12,6 +12,11 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+/**
+ * Liste des réservations de l'Auditeur courant (US-3.2).
+ *
+ * Accès réservé à ROLE_AUDITEUR (IsGranted de classe).
+ */
 #[IsGranted('ROLE_AUDITEUR')]
 class ReservationListeController extends AbstractController
 {
@@ -22,6 +27,13 @@ class ReservationListeController extends AbstractController
     ) {
     }
 
+    /**
+     * Liste paginée des réservations de l'Auditeur, filtrable par état
+     * (toutes, à venir, passées, annulées).
+     *
+     * Pas de Voter : la requête est bornée à l'Auditeur courant (getUser()), qui ne
+     * voit donc que ses propres réservations. Un filtre inconnu retombe sur « toutes ».
+     */
     #[Route('/mes-reservations', name: 'app_mes_reservations', methods: ['GET'])]
     public function liste(Request $request): Response
     {

@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Enum;
 
+/**
+ * Rôle d'un Utilisateur, aligné sur la hiérarchie de sécurité Symfony
+ * (SUPER_ADMIN ⊃ PERSONNEL ⊃ AUDITEUR).
+ */
 enum RoleUtilisateur: string
 {
     case AUDITEUR = 'ROLE_AUDITEUR';

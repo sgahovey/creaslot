@@ -12,6 +12,10 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
+/**
+ * Créneau de rendez-vous proposé par un membre du Personnel, caractérisé par un type
+ * de RDV et réservable par un Auditeur.
+ */
 #[ORM\Entity(repositoryClass: CreneauRepository::class)]
 #[ORM\Table(name: 'creneau')]
 #[ORM\Index(columns: ['id_utilisateur', 'date_debut'], name: 'idx_creneau_utilisateur_debut')]

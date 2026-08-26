@@ -1,11 +1,12 @@
 name: CI
 
-# Intégration continue (US-7.3). Trois portes qualité indépendantes :
+# Intégration continue (US-7.3). Quatre portes qualité indépendantes :
 #   - cs-fixer : style PER/@Symfony (US-7.1) ;
 #   - phpstan  : analyse statique niveau 8 (US-7.2) ;
-#   - phpunit  : suite de tests sur MySQL 8 (migrations + fixtures).
-# cs-fixer et phpstan ne touchent pas la base → pas de service MySQL, exécution
-# rapide en parallèle de phpunit (le seul à provisionner une base).
+#   - phpunit  : suite de tests sur MySQL 8 (migrations + fixtures) ;
+#   - audit    : vulnérabilités connues des dépendances Composer (OWASP A06).
+# cs-fixer, phpstan et audit ne touchent pas la base → pas de service MySQL,
+# exécution rapide en parallèle de phpunit (le seul à provisionner une base).
 
 on:
   push:
@@ -52,6 +53,50 @@ jobs:
 
       - name: Vérifier le style (dry-run)
         run: vendor/bin/php-cs-fixer fix --dry-run --diff --verbose
+
+  # ---------------------------------------------------------------------------
+  # Dépendances — vulnérabilités connues (aucune base)
+  # ---------------------------------------------------------------------------
+  audit:
+    name: Audit de sécurité (Composer)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurer PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_mysql, intl, zip, ctype, iconv
+          tools: composer:v2
+          coverage: none
+
+      - name: Répertoire de cache Composer
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache des dépendances Composer
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      # Pas de `composer install` : --locked lit composer.lock directement, sans
+      # vendor/. Le job reste donc le plus court des quatre.
+
+      - name: Auditer les dépendances de production (bloquant)
+        # Périmètre = ce qui part réellement en production : le stage `build` du
+        # Dockerfile installe avec --no-dev et le stage `runtime` n'embarque même
+        # pas Composer. Un avis ici concerne du code exécuté sur le VPS.
+        run: composer audit --locked --no-dev --no-interaction
+
+      - name: Auditer les dépendances de développement (informatif)
+        # PHPUnit, PHPStan, PHP-CS-Fixer et consorts ne sont jamais déployés : un
+        # avis les concernant ne doit pas bloquer une fusion. Il reste affiché car
+        # il expose le poste de développement et le runner CI.
+        continue-on-error: true
+        run: composer audit --locked --no-interaction
 
   # ---------------------------------------------------------------------------
   # Analyse statique — PHPStan niveau 8 (aucune base vivante)

@@ -1,0 +1,40 @@
+@startuml enchainement-visiteur
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam rectangle {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+
+rectangle "Connexion" as CONNEX
+rectangle "Inscription" as INSCR
+rectangle "Confirmation d'adresse\nà effectuer" as ATTENTE
+rectangle "Renvoi de la\nconfirmation" as RENVOI
+rectangle "Demande de\nréinitialisation" as DEMANDE
+rectangle "Demande\nenregistrée" as ACCUSE
+rectangle "Nouveau mot\nde passe" as NOUVEAU
+rectangle "Espace correspondant\nau rôle" as ESPACE #F1F3F5
+
+CONNEX --> INSCR : pas encore de compte
+CONNEX --> DEMANDE : mot de passe oublié
+CONNEX ..> ESPACE : s'authentifier
+
+INSCR ..> ATTENTE : créer le compte
+ATTENTE --> RENVOI : message non reçu
+RENVOI ..> ATTENTE : redemander un lien
+ATTENTE --> CONNEX : adresse confirmée
+
+DEMANDE ..> ACCUSE : demander un lien
+ACCUSE --> CONNEX
+DEMANDE --> NOUVEAU : lien reçu par courriel
+NOUVEAU ..> CONNEX : définir le mot de passe
+
+legend bottom
+|= Trait |= Signification |
+| Trait plein | Navigation : conduit à un autre écran sans rien modifier |
+| Trait pointillé | Action : déclenche un traitement modifiant l'état du système |
+| <b>Point clé</b> | Tous les chemins ramènent à la connexion, seule porte d'entrée.\nL'inscription ne donne pas accès à l'application avant\nconfirmation de l'adresse. |
+endlegend
+@enduml

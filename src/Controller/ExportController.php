@@ -20,7 +20,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Export des données personnelles (RGPD, US-5.6).
  *
  * Contrôleur transverse (hors `Admin/`) : il porte la voie super-admin (export
- * d'un compte sur demande d'accès, journalisée) et, à terme, la voie self-service.
+ * d'un compte sur demande d'accès, journalisée) et la voie self-service (/mes-donnees).
  * La sécurité est appliquée au niveau de chaque méthode.
  */
 final class ExportController extends AbstractController
@@ -33,6 +33,13 @@ final class ExportController extends AbstractController
     ) {
     }
 
+    /**
+     * Exporte les données personnelles d'un compte au format JSON téléchargeable, sur
+     * demande d'accès traitée par un super-admin.
+     *
+     * Réservé à ROLE_SUPER_ADMIN. Le téléchargement est tracé dans le journal
+     * d'accountability (COMPTE_EXPORT) : c'est une communication de données nominatives.
+     */
     #[Route('/admin/comptes/{id}/export', name: 'app_admin_compte_export', methods: ['GET'])]
     #[IsGranted('ROLE_SUPER_ADMIN')]
     public function exporter(Utilisateur $compte): Response
@@ -48,6 +55,12 @@ final class ExportController extends AbstractController
         return $this->telechargerJson($donnees, 'donnees-' . $compte->getId());
     }
 
+    /**
+     * Affiche à l'écran les données personnelles d'un compte (même contenu que l'export).
+     *
+     * Réservé à ROLE_SUPER_ADMIN. Simple consultation : tracée en Monolog seulement,
+     * sans entrée d'accountability (COMPTE_EXPORT réservé au téléchargement effectif).
+     */
     #[Route('/admin/comptes/{id}/donnees', name: 'app_admin_compte_donnees', methods: ['GET'])]
     #[IsGranted('ROLE_SUPER_ADMIN')]
     public function donnees(Utilisateur $compte): Response
@@ -69,6 +82,12 @@ final class ExportController extends AbstractController
         ]);
     }
 
+    /**
+     * Affiche à l'utilisateur ses propres données personnelles (droit d'accès RGPD).
+     *
+     * Ouvert à tout utilisateur authentifié, borné à son propre compte (getUser()).
+     * Lecture pure : ni journal d'administration, ni log.
+     */
     #[Route('/mes-donnees', name: 'app_mes_donnees', methods: ['GET'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function mesDonnees(): Response
@@ -83,6 +102,13 @@ final class ExportController extends AbstractController
         ]);
     }
 
+    /**
+     * Télécharge au format JSON les données personnelles de l'utilisateur courant
+     * (droit à la portabilité RGPD).
+     *
+     * Borné au propre compte (getUser()). Trace technique Monolog uniquement : un
+     * self-service n'alimente pas le journal d'administration.
+     */
     #[Route('/mes-donnees/export', name: 'app_mes_donnees_export', methods: ['GET'])]
     #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function exporterMesDonnees(): Response

@@ -1,0 +1,39 @@
+@startuml etats-reservation
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam state {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+
+[*] --> Active : l'auditeur réserve un créneau libre
+
+Active --> Annulee : annuler\n[créneau à venir]\n[par le propriétaire\nou un administrateur]
+Active --> Annulee : le créneau est supprimé\npar celui qui l'a publié
+
+Annulee --> [*]
+
+note right of Active
+  Immobilise le créneau : aucune autre réservation
+  active ne peut porter sur le même créneau
+  sur une période qui se chevauche.
+
+  L'émission du rappel la veille ne change pas
+  l'état, elle horodate seulement l'envoi.
+end note
+
+note right of Annulee
+  État terminal. La réservation n'est jamais supprimée
+  du stockage : elle est conservée à des fins
+  d'historique, et le créneau redevient libre.
+end note
+
+legend bottom
+|= Élément |= Signification |
+| Crochets | Condition à remplir pour que la transition soit permise |
+| État terminal | Aucune transition n'en sort |
+| <b>Point clé</b> | Un créneau libéré par une annulation peut être réservé à nouveau,\nce qui crée une réservation distincte et non un retour à l'état actif. |
+endlegend
+@enduml

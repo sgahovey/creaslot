@@ -1,0 +1,131 @@
+@startuml modele-physique-plantuml
+' Variante PlantUML du modèle physique (même contenu que modele-physique.mmd).
+' Seuls l'outil et la disposition changent : left to right direction pour un rendu paysage.
+left to right direction
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 12
+skinparam class {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam ArrowColor #1F4E79
+hide circle
+hide empty methods
+
+class service {
+  id : INT <<PK>>
+  --
+  nom : VARCHAR(100)
+  description : LONGTEXT
+  est_actif : TINYINT(1)
+}
+
+class type_rdv {
+  id : INT <<PK>>
+  --
+  code : VARCHAR(20) <<UK>>
+  libelle : VARCHAR(50)
+  couleur_hex : VARCHAR(7)
+  icone : VARCHAR(50)
+  description : LONGTEXT
+  est_actif : TINYINT(1)
+}
+
+class utilisateur {
+  id : INT <<PK>>
+  --
+  email : VARCHAR(180) <<UK>>
+  mot_de_passe_hash : VARCHAR(255)
+  nom : VARCHAR(100)
+  prenom : VARCHAR(100)
+  role : VARCHAR(30)
+  date_creation : DATETIME
+  derniere_connexion : DATETIME
+  est_actif : TINYINT(1)
+  email_verifie : TINYINT(1)
+  email_modification_commentaire : TINYINT(1)
+  email_rappel_j1 : TINYINT(1)
+  id_service : INT <<FK>> nullable
+}
+
+class creneau {
+  id : INT <<PK>>
+  --
+  date_debut : DATETIME
+  date_fin : DATETIME
+  commentaire_auditeur : LONGTEXT
+  date_creation : DATETIME
+  est_actif : TINYINT(1)
+  id_utilisateur : INT <<FK>>
+  id_type_rdv : INT <<FK>>
+}
+
+class reservation {
+  id : INT <<PK>>
+  --
+  date_reservation : DATETIME
+  commentaire_auditeur : LONGTEXT
+  statut : VARCHAR(20)
+  date_annulation : DATETIME
+  motif_annulation : LONGTEXT
+  rappel_envoye_at : DATETIME
+  id_creneau : INT <<FK>>
+  id_utilisateur : INT <<FK>>
+}
+
+class notification {
+  id : INT <<PK>>
+  --
+  type : VARCHAR(30)
+  titre : VARCHAR(255)
+  message : LONGTEXT
+  lu : TINYINT(1)
+  date_creation : DATETIME
+  id_destinataire : INT <<FK>>
+  id_reservation : INT <<FK>> nullable, ON DELETE SET NULL
+}
+
+class reset_password_request {
+  id : INT <<PK>>
+  --
+  selector : VARCHAR(20)
+  hashed_token : VARCHAR(100)
+  requested_at : DATETIME
+  expires_at : DATETIME
+  id_utilisateur : INT <<FK>>
+}
+
+class journal_admin {
+  id : INT <<PK>>
+  --
+  date_action : DATETIME
+  type_action : VARCHAR(40)
+  acteur_id : INT
+  acteur_libelle : VARCHAR(201)
+  cible_id : INT
+  cible_libelle : VARCHAR(201)
+  details : LONGTEXT
+}
+
+class historique_utilisateur {
+  id : INT <<PK>>
+  --
+  utilisateur_id : INT
+  champ_modifie : VARCHAR(50)
+  ancienne_valeur : VARCHAR(255)
+  nouvelle_valeur : VARCHAR(255)
+  date_modification : DATETIME
+}
+
+service |o--o{ utilisateur : id_service
+utilisateur ||--o{ creneau : id_utilisateur
+type_rdv ||--o{ creneau : id_type_rdv
+creneau ||--o{ reservation : id_creneau
+utilisateur ||--o{ reservation : id_utilisateur
+utilisateur ||--o{ notification : id_destinataire
+reservation |o--o{ notification : id_reservation
+utilisateur ||--o{ reset_password_request : id_utilisateur
+
+@enduml

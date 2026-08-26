@@ -39,6 +39,14 @@ final class OccupationController extends AbstractController
     ) {
     }
 
+    /**
+     * Vue hebdomadaire occupé/libre de toute l'organisation, filtrable par service
+     * et par type de RDV.
+     *
+     * Lecture seule ; accès super-admin porté par le `#[IsGranted]` de classe. Les
+     * créneaux occupés sont signalés par leur seul identifiant, sans jamais révéler
+     * l'auditeur qui a réservé (RGPD).
+     */
     #[Route('/admin/occupation', name: 'app_admin_occupation', methods: ['GET'])]
     public function page(Request $request): Response
     {
@@ -62,6 +70,14 @@ final class OccupationController extends AbstractController
         ]);
     }
 
+    /**
+     * Source d'événements JSON du calendrier FullCalendar, pour la plage demandée.
+     *
+     * Pendant asynchrone de la vue serveur : mêmes filtres, même anonymisation des
+     * créneaux occupés (RGPD). Accès super-admin porté par le `#[IsGranted]` de classe.
+     * Renvoie un tableau vide (ou 400) sur bornes absentes ou non analysables, sans
+     * jamais faire échouer le calendrier.
+     */
     #[Route('/admin/occupation/evenements', name: 'app_admin_occupation_evenements', methods: ['GET'])]
     public function evenements(Request $request): JsonResponse
     {

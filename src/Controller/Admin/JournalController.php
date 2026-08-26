@@ -29,6 +29,12 @@ final class JournalController extends AbstractController
     ) {
     }
 
+    /**
+     * Consultation paginée du journal, filtrable par type d'action.
+     *
+     * Lecture seule par principe (l'immuabilité de la trace fait sa valeur probante) ;
+     * accès super-admin porté par le `#[IsGranted]` de classe.
+     */
     #[Route('/admin/journal', name: 'app_admin_journal', methods: ['GET'])]
     public function index(Request $request): Response
     {

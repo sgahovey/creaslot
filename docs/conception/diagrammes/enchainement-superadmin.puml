@@ -1,0 +1,40 @@
+@startuml enchainement-superadmin
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam rectangle {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+
+rectangle "Tableau de bord" as BOARD
+rectangle "Gestion des comptes" as COMPTES
+rectangle "Nouveau compte" as NOUVEAU
+rectangle "Modifier un compte" as MODIF
+rectangle "Données d'un compte" as DONNEES
+rectangle "Journal des actions" as JOURNAL
+rectangle "Occupation globale" as OCCUP
+rectangle "Statistiques" as STATS
+
+BOARD --> COMPTES
+BOARD --> JOURNAL
+BOARD --> OCCUP
+BOARD --> STATS
+
+COMPTES --> NOUVEAU : créer
+COMPTES --> MODIF : ouvrir un compte
+COMPTES --> DONNEES : consulter les données
+DONNEES --> COMPTES
+
+NOUVEAU ..> COMPTES : enregistrer
+MODIF ..> COMPTES : enregistrer
+COMPTES ..> COMPTES : activer ou désactiver
+
+legend bottom
+|= Trait |= Signification |
+| Trait plein | Navigation : conduit à un autre écran sans rien modifier |
+| Trait pointillé | Action : déclenche un traitement modifiant l'état du système |
+| <b>Point clé</b> | Toute action sur un compte ramène à la liste et laisse une trace\ndans le journal. |
+endlegend
+@enduml

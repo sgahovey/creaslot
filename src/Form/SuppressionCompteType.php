@@ -21,6 +21,8 @@ use Symfony\Component\Validator\Constraints\IsTrue;
  */
 class SuppressionCompteType extends AbstractType
 {
+    use ProtectionCsrfTrait;
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder->add('confirmation', CheckboxType::class, [
@@ -35,9 +37,6 @@ class SuppressionCompteType extends AbstractType
 
     public function configureOptions(OptionsResolver $resolver): void
     {
-        $resolver->setDefaults([
-            'csrf_protection' => true,
-            'csrf_token_id'   => 'suppression_compte',
-        ]);
+        $this->configurerProtectionCsrf($resolver, 'suppression_compte');
     }
 }

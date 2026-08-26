@@ -64,6 +64,14 @@ final class ReservationRereservationApresAnnulationTest extends KernelTestCase
         parent::tearDown();
     }
 
+    /**
+     * Vérifie le cycle réserver, annuler, réserver à nouveau sur un même créneau.
+     *
+     * Non-régression de DT-1, l'incident du 18/05/2026 où la contrainte d'unicité
+     * bloquait définitivement un créneau libéré par une annulation. L'invariant
+     * « une seule réservation active par créneau » repose désormais sur la logique
+     * applicative (verrou pessimiste + revérification), et non plus sur le schéma.
+     */
     public function test_un_creneau_peut_etre_reserve_apres_annulation_de_la_reservation_precedente(): void
     {
         $personnel = $this->creerPersonnel();

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wireframe lo-fi — Mot de passe oublié</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,Arial,sans-serif; background:#fff; color:#444; font-size:14px; line-height:1.5; }
+  .wf-auth { min-height:92vh; display:flex; align-items:center; justify-content:center; padding:30px 16px; }
+  .wf-auth-card { width:100%; max-width:420px; border:1px solid #ccc; border-radius:10px; padding:30px; }
+  .wf-brand { display:flex; align-items:center; gap:8px; margin-bottom:22px; }
+  .wf-icon { width:20px; height:20px; border:1px solid #999; border-radius:5px; display:inline-block; flex:0 0 auto; }
+  .wf-brand .word { font-weight:700; color:#444; }
+  .bar { background:#ccc; border-radius:4px; }
+  .bar--title { height:18px; width:190px; background:#999; margin-bottom:10px; }
+  .bar--sub { height:9px; margin-bottom:6px; }
+  .wf-label { display:block; font-size:12px; color:#999; margin:18px 0 5px; }
+  .wf-field { border:1px solid #ccc; border-radius:6px; height:38px; background:#fff; }
+  .wf-btn { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; border:1px solid #999; border-radius:6px; background:#999; color:#fff; padding:12px; font-size:14px; margin-top:26px; }
+  .wf-foot { text-align:center; margin-top:22px; }
+  .wf-foot .bar { height:9px; width:150px; margin:0 auto; }
+  .wf-cap { text-align:center; color:#999; font-size:12px; font-style:italic; padding:14px; border-top:1px dashed #ccc; }
+</style>
+</head>
+<body>
+<main class="wf-auth">
+  <section class="wf-auth-card" aria-label="Carte de réinitialisation du mot de passe">
+    <div class="wf-brand"><span class="wf-icon"></span><span class="word">CreaSlot</span></div>
+
+    <div class="bar bar--title"></div>
+    <div class="bar bar--sub" style="width:95%"></div>
+    <div class="bar bar--sub" style="width:70%"></div>
+
+    <form>
+      <label class="wf-label">Adresse email</label>
+      <div class="wf-field"></div>
+      <button type="button" class="wf-btn">Envoyer le lien de réinitialisation</button>
+    </form>
+
+    <div class="wf-foot"><div class="bar"></div></div>
+  </section>
+</main>
+<footer class="wf-cap">Wireframe lo-fi — Mot de passe oublié</footer>
+</body>
+</html>

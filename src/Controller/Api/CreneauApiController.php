@@ -15,6 +15,12 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+/**
+ * Endpoints JSON alimentant l'agenda du Personnel (US-2.x).
+ *
+ * Accès réservé à ROLE_PERSONNEL (IsGranted de classe). Chaque réponse est privée et
+ * non mise en cache (JsonSansCacheTrait), pour refléter l'état courant après édition.
+ */
 #[Route('/api')]
 #[IsGranted('ROLE_PERSONNEL')]
 final class CreneauApiController extends AbstractController
@@ -27,6 +33,10 @@ final class CreneauApiController extends AbstractController
     ) {
     }
 
+    /**
+     * Date du prochain créneau réservé à venir du Personnel courant, ou null s'il n'y
+     * en a aucun. Sert au bandeau « prochain RDV » de l'agenda.
+     */
     #[Route('/creneaux/next-reserved', name: 'api_creneaux_next_reserved', methods: ['GET'])]
     public function nextReserved(): JsonResponse
     {
@@ -40,6 +50,13 @@ final class CreneauApiController extends AbstractController
         ]);
     }
 
+    /**
+     * Créneaux du Personnel courant dans la plage demandée par le calendrier, avec un
+     * mode « réservés seulement ».
+     *
+     * Renvoie un tableau vide (ou 400) sur bornes absentes ou non analysables, sans
+     * jamais faire échouer le calendrier.
+     */
     #[Route('/creneaux', name: 'api_creneaux_personnel', methods: ['GET'])]
     public function listForCalendar(Request $request): JsonResponse
     {

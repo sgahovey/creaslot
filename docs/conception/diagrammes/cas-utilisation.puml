@@ -1,0 +1,258 @@
+@startuml cas-utilisation
+' =====================================================================
+' CreaSlot — Diagramme de cas d'utilisation (section 5.6 du dossier CDA)
+'
+' Fidele au code : chaque cas d'usage correspond a une route reellement
+' declaree dans src/Controller/ et protegee par un attribut de securite
+' (#[IsGranted], access_control) ou par un Voter (src/Security/).
+'
+' Hierarchie d'acteurs conforme a la role_hierarchy reelle
+' (config/packages/security.yaml) :
+'     ROLE_SUPER_ADMIN: [ROLE_PERSONNEL, ROLE_AUDITEUR]
+'     ROLE_PERSONNEL:   [ROLE_AUDITEUR]
+' Le Personnel HERITE donc de l'Auditeur (chaine, et non deux branches
+' paralleles) : un membre du Personnel peut acceder au parcours Auditeur.
+'
+' Routes techniques volontairement exclues (hors perimetre metier) :
+'   app_home (aiguilleur /), app_health (sonde), api_creneaux_personnel,
+'   api_creneaux_next_reserved, app_admin_occupation_evenements
+'   (endpoints JSON alimentant les calendriers FullCalendar).
+' =====================================================================
+
+left to right direction
+skinparam shadowing false
+skinparam actorStyle awesome
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam usecase {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam actor {
+  BorderColor #1F4E79
+  FontColor #1E1E1E
+}
+skinparam participant {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam sequence {
+  ArrowColor #1F4E79
+  LifeLineBorderColor #1F4E79
+  GroupBorderColor #1F4E79
+}
+skinparam package {
+  BorderColor #1F4E79
+  FontColor #1E1E1E
+}
+skinparam note {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+
+' ---------------------------------------------------------------------
+' Acteurs
+' ---------------------------------------------------------------------
+actor "Visiteur" as VISITEUR
+actor "Utilisateur authentifie" as UTILISATEUR
+actor "Auditeur" as AUDITEUR
+actor "Personnel" as PERSONNEL
+actor "Super-administrateur" as SUPERADMIN
+
+' Heritage conforme a la role_hierarchy reelle (chaine)
+AUDITEUR   --|> UTILISATEUR
+PERSONNEL  --|> AUDITEUR
+SUPERADMIN --|> PERSONNEL
+
+rectangle CreaSlot {
+
+    ' -----------------------------------------------------------------
+    package "Acces public" {
+        usecase "Se connecter"                     as UC_CONNEXION
+        usecase "S'inscrire"                       as UC_INSCRIPTION
+        usecase "Demander une reinitialisation\ndu mot de passe" as UC_MDP_DEMANDE
+        usecase "Reinitialiser son mot de passe"   as UC_MDP_RESET
+        usecase "Consulter les pages legales"      as UC_LEGAL
+    }
+
+    ' -----------------------------------------------------------------
+    package "Commun (authentifie)" {
+        usecase "Se deconnecter"                   as UC_DECONNEXION
+        usecase "Consulter son profil"             as UC_PROFIL
+        usecase "Modifier ses informations"        as UC_PROFIL_INFOS
+        usecase "Changer son mot de passe"         as UC_PROFIL_MDP
+        usecase "Consulter ses notifications"      as UC_NOTIFICATIONS
+        usecase "Consulter ses donnees\npersonnelles (RGPD)" as UC_DONNEES
+        usecase "Exporter ses donnees\npersonnelles (RGPD)"  as UC_DONNEES_EXPORT
+        usecase "Supprimer son compte\n(anonymisation, RGPD art. 17)" as UC_SUPPRESSION
+    }
+
+    ' -----------------------------------------------------------------
+    package "Auditeur" {
+        usecase "Consulter les creneaux\ndisponibles" as UC_CRENEAUX_DISPO
+        usecase "Reserver un creneau"                 as UC_RESERVER
+        usecase "Consulter ses reservations"          as UC_MES_RESERVATIONS
+        usecase "Consulter le detail\nd'une reservation" as UC_RESA_DETAIL
+        usecase "Annuler une reservation"             as UC_RESA_ANNULER
+        usecase "Regler ses preferences\nde notification" as UC_PREFERENCES
+    }
+
+    ' -----------------------------------------------------------------
+    package "Personnel" {
+        usecase "Consulter son agenda"                as UC_AGENDA
+        usecase "Consulter la liste\nde ses creneaux" as UC_CRENEAU_LISTE
+        usecase "Publier un creneau"                  as UC_CRENEAU_NOUVEAU
+        usecase "Modifier un creneau"                 as UC_CRENEAU_MODIFIER
+        usecase "Supprimer un creneau"                as UC_CRENEAU_SUPPRIMER
+        usecase "Consulter ses collegues"             as UC_COLLEGUES
+    }
+
+    ' -----------------------------------------------------------------
+    package "Super-administrateur" {
+        usecase "Consulter le tableau de bord"        as UC_DASHBOARD
+        usecase "Consulter la liste des comptes"      as UC_COMPTES_LISTE
+        usecase "Creer un compte"                     as UC_COMPTE_CREER
+        usecase "Modifier un compte"                  as UC_COMPTE_MODIFIER
+        usecase "Activer ou desactiver\nun compte"    as UC_COMPTE_ACTIVATION
+        usecase "Consulter les donnees\nd'un compte"  as UC_COMPTE_DONNEES
+        usecase "Exporter les donnees\nd'un compte"   as UC_COMPTE_EXPORT
+        usecase "Consulter le journal\nd'administration" as UC_JOURNAL_CONSULTER
+        usecase "Consulter les statistiques"          as UC_STATISTIQUES
+        usecase "Consulter l'occupation"              as UC_OCCUPATION
+    }
+
+    ' -----------------------------------------------------------------
+    ' Cas d'usage transverses, cibles des relations <<include>>
+    ' -----------------------------------------------------------------
+    usecase "Notifier les utilisateurs\nconcernes" as UC_NOTIFIER
+    usecase "Journaliser l'action\nd'administration" as UC_JOURNALISER
+}
+
+' ---------------------------------------------------------------------
+' Associations acteur / cas d'usage
+' ---------------------------------------------------------------------
+
+' Visiteur (routes PUBLIC_ACCESS)
+VISITEUR -- UC_CONNEXION
+VISITEUR -- UC_INSCRIPTION
+VISITEUR -- UC_MDP_DEMANDE
+VISITEUR -- UC_MDP_RESET
+VISITEUR -- UC_LEGAL
+
+' Utilisateur authentifie (IS_AUTHENTICATED_FULLY)
+UTILISATEUR -- UC_DECONNEXION
+UTILISATEUR -- UC_PROFIL
+UTILISATEUR -- UC_PROFIL_INFOS
+UTILISATEUR -- UC_PROFIL_MDP
+UTILISATEUR -- UC_NOTIFICATIONS
+UTILISATEUR -- UC_DONNEES
+UTILISATEUR -- UC_DONNEES_EXPORT
+UTILISATEUR -- UC_SUPPRESSION
+
+' Auditeur (ROLE_AUDITEUR)
+AUDITEUR -- UC_CRENEAUX_DISPO
+AUDITEUR -- UC_RESERVER
+AUDITEUR -- UC_MES_RESERVATIONS
+AUDITEUR -- UC_RESA_DETAIL
+AUDITEUR -- UC_RESA_ANNULER
+AUDITEUR -- UC_PREFERENCES
+
+' Personnel (ROLE_PERSONNEL)
+PERSONNEL -- UC_AGENDA
+PERSONNEL -- UC_CRENEAU_LISTE
+PERSONNEL -- UC_CRENEAU_NOUVEAU
+PERSONNEL -- UC_CRENEAU_MODIFIER
+PERSONNEL -- UC_CRENEAU_SUPPRIMER
+PERSONNEL -- UC_COLLEGUES
+
+' Super-administrateur (ROLE_SUPER_ADMIN)
+SUPERADMIN -- UC_DASHBOARD
+SUPERADMIN -- UC_COMPTES_LISTE
+SUPERADMIN -- UC_COMPTE_CREER
+SUPERADMIN -- UC_COMPTE_MODIFIER
+SUPERADMIN -- UC_COMPTE_ACTIVATION
+SUPERADMIN -- UC_COMPTE_DONNEES
+SUPERADMIN -- UC_COMPTE_EXPORT
+SUPERADMIN -- UC_JOURNAL_CONSULTER
+SUPERADMIN -- UC_STATISTIQUES
+SUPERADMIN -- UC_OCCUPATION
+
+' ---------------------------------------------------------------------
+' Relations <<include>> et <<extend>> — toutes verifiees dans le code
+' ---------------------------------------------------------------------
+
+' ReservationService::reserver() appelle notifierAuditeurReservation()
+' et notifierPersonnelReservation().
+UC_RESERVER          ..> UC_NOTIFIER : <<include>>
+
+' ReservationService::annuler() appelle notifierAuditeurAnnulationReservation()
+' et notifierPersonnelAnnulationReservation().
+UC_RESA_ANNULER      ..> UC_NOTIFIER : <<include>>
+
+' Extend — notification CONDITIONNELLE (le cas d'extension pointe vers le cas de base).
+' CreneauController : suppression -> notifierAuditeurSuppressionCreneau(),
+' declenchee UNIQUEMENT si le creneau etait reserve.
+UC_NOTIFIER ..> UC_CRENEAU_SUPPRIMER : <<extend>>
+
+' CreneauController : modification -> notifierAuditeurCommentaireCreneau(),
+' declenchee UNIQUEMENT si le creneau est reserve ET que le commentaire visible change.
+UC_NOTIFIER ..> UC_CRENEAU_MODIFIER : <<extend>>
+
+' Reinitialisation du mot de passe = envoi d'un E-MAIL (NotificationService::envoyer
+' via Mailer), PAS une notification in-app : aucune relation <<include>> vers UC_NOTIFIER.
+
+' CompteController : JournalAdminService::enregistrer() sur creation,
+' modification et (des)activation d'un compte.
+UC_COMPTE_CREER      ..> UC_JOURNALISER : <<include>>
+UC_COMPTE_MODIFIER   ..> UC_JOURNALISER : <<include>>
+UC_COMPTE_ACTIVATION ..> UC_JOURNALISER : <<include>>
+
+' ExportController : journalisation de l'export (TypeActionJournal::COMPTE_EXPORT).
+UC_COMPTE_EXPORT     ..> UC_JOURNALISER : <<include>>
+
+' ---------------------------------------------------------------------
+' Notes : autorisations contextuelles par Voter
+' ---------------------------------------------------------------------
+note right of UC_RESA_DETAIL
+  ReservationVoter::VIEW
+  Seul le proprietaire de la reservation
+  (ou le Super-admin) peut la consulter.
+end note
+
+note right of UC_RESA_ANNULER
+  ReservationVoter::CANCEL
+end note
+
+note right of UC_CRENEAU_MODIFIER
+  CreneauVoter::EDIT
+  Seul le createur du creneau
+  (ou le Super-admin) peut le modifier.
+end note
+
+note right of UC_CRENEAU_SUPPRIMER
+  CreneauVoter::DELETE
+end note
+
+note right of UC_COMPTE_MODIFIER
+  UtilisateurVoter::EDIT
+  et UtilisateurVoter::CHANGE_ROLE
+  si le role est modifie.
+end note
+
+note right of UC_COMPTE_ACTIVATION
+  UtilisateurVoter::ACTIVATE
+  et UtilisateurVoter::DEACTIVATE
+  (un admin ne peut pas se desactiver
+  lui-meme).
+end note
+
+note top of UTILISATEUR
+  Acteur abstrait : represente tout
+  compte authentifie, quel que soit
+  son role (IS_AUTHENTICATED_FULLY).
+end note
+
+@enduml

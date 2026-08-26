@@ -21,6 +21,8 @@ use Symfony\Component\Validator\Constraints\IsTrue;
  */
 class InscriptionType extends AbstractType
 {
+    use ProtectionCsrfTrait;
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -76,9 +78,9 @@ class InscriptionType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-            'data_class'      => Utilisateur::class,
-            'csrf_protection' => true,
-            'csrf_token_id'   => 'inscription',
+            'data_class' => Utilisateur::class,
         ]);
+
+        $this->configurerProtectionCsrf($resolver, 'inscription');
     }
 }

@@ -1,0 +1,43 @@
+@startuml charte-graphique
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 12
+skinparam rectangle {
+  FontColor #1E1E1E
+  BorderColor #DEE2E6
+}
+
+package "Couleurs de marque" {
+  rectangle "Bleu principal\n<U+0023>1F4E79" as B1 #1F4E79
+  rectangle "Bleu secondaire\n<U+0023>2E75B6" as B2 #2E75B6
+  rectangle "Bleu clair\n<U+0023>A5C8FF" as B3 #A5C8FF
+  rectangle "Bleu administration\n<U+0023>0F3556" as B4 #0F3556
+}
+
+package "Couleurs de type de rendez-vous" {
+  rectangle "Présentiel\n<U+0023>28A745" as T1 #28A745
+  rectangle "Visioconférence\n<U+0023>FD7E14" as T2 #FD7E14
+  rectangle "Téléphone\n<U+0023>007BFF" as T3 #007BFF
+}
+
+package "Couleurs d'état" {
+  rectangle "Succès\n<U+0023>28A745" as E1 #28A745
+  rectangle "Erreur\n<U+0023>DC3545" as E2 #DC3545
+  rectangle "Avertissement\n<U+0023>FD7E14" as E3 #FD7E14
+  rectangle "Information\n<U+0023>17A2B8" as E4 #17A2B8
+}
+
+package "Fonds et textes" {
+  rectangle "Fond de page\n<U+0023>F8F9FA" as F1 #F8F9FA
+  rectangle "Fond de carte\n<U+0023>FFFFFF" as F2 #FFFFFF
+  rectangle "Texte principal\n<U+0023>1E1E1E" as F3 #F1F3F5
+  rectangle "Texte secondaire\n<U+0023>6C757D" as F4 #F1F3F5
+  rectangle "Bordure\n<U+0023>DEE2E6" as F5 #F1F3F5
+}
+
+legend bottom
+|= Élément |= Signification |
+| Jetons centralisés | Chaque couleur est déclarée une fois, sous forme de variable réutilisée |
+| <b>Point clé</b> | La couleur du type de rendez-vous est portée par la donnée métier,\nnon par la feuille de style : elle est injectée à l'affichage, ce qui\npermet d'ajouter un type sans toucher au code de présentation. |
+endlegend
+@enduml

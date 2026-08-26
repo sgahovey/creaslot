@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wireframe lo-fi — Bandeau de pré-production</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,Arial,sans-serif; background:#fff; color:#444; font-size:14px; line-height:1.5; }
+  .wf-shell { max-width:1000px; margin:0 auto; padding:16px; }
+  header.wf-header, footer.wf-footer { background:#eee; border:1px solid #ccc; border-radius:8px; }
+  .wf-header-inner { display:flex; align-items:center; gap:18px; padding:14px 18px; }
+  .wf-logo { display:flex; align-items:center; gap:8px; font-weight:700; color:#444; }
+  .wf-icon { width:18px; height:18px; border:1px solid #999; border-radius:4px; display:inline-block; flex:0 0 auto; }
+  .wf-icon--round { border-radius:50%; }
+  nav.wf-nav ul { list-style:none; display:flex; gap:14px; flex-wrap:wrap; }
+  nav.wf-nav li { width:78px; height:10px; background:#ccc; border-radius:4px; }
+  .wf-tools { margin-left:auto; display:flex; align-items:center; gap:16px; }
+  .wf-bell { position:relative; }
+  .wf-badge { position:absolute; top:-7px; right:-9px; min-width:16px; height:16px; padding:0 4px; border-radius:8px; background:#999; color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; }
+  .wf-avatar { width:28px; height:28px; border:1px solid #999; border-radius:50%; background:#ccc; }
+  .wf-user { width:90px; height:10px; background:#ccc; border-radius:4px; }
+  main.wf-main { padding:24px 2px; }
+  .wf-h1 { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .wf-h1 .bar { height:18px; width:240px; background:#999; border-radius:4px; }
+  .wf-h1 .wf-icon { width:22px; height:22px; }
+  .wf-subcount { height:9px; width:300px; background:#ccc; border-radius:4px; margin-bottom:22px; }
+  .wf-card { border:1px solid #ccc; border-radius:8px; background:#fff; padding:18px; margin-bottom:18px; }
+  .bar { background:#ccc; border-radius:4px; }
+  .wf-label { display:block; font-size:12px; color:#999; margin-bottom:6px; }
+  .wf-field { border:1px solid #ccc; border-radius:6px; height:36px; background:#fff; }
+  .wf-btn { display:inline-flex; align-items:center; gap:6px; border:1px solid #999; border-radius:6px; background:#eee; color:#444; padding:9px 16px; font-size:13px; }
+  .wf-btn--primary { background:#999; color:#fff; }
+  .wf-btn--block { display:flex; justify-content:center; width:100%; }
+  .wf-footer-inner { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; padding:22px 18px; }
+  .wf-cap { text-align:center; color:#999; font-size:12px; font-style:italic; margin-top:14px; padding-top:12px; border-top:1px dashed #ccc; }
+  /* Bandeau d'environnement préproduction (illustration lo-fi du bandeau réel) */
+  .wf-env-banner { width:100%; background:#ccc; color:#444; text-align:center; font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; padding:8px; border-bottom:1px solid #999; display:flex; align-items:center; justify-content:center; gap:8px; }
+  .wf-env-icon { width:14px; height:14px; border:1px solid #999; border-radius:3px; background:#eee; display:inline-block; flex:0 0 auto; }
+  /* Marqueur 2 : liseré persistant en tête de header, 3 px (plus épais que les bordures ordinaires en 1 px) */
+  .wf-header--preprod { border-top:3px solid #999; }
+</style>
+</head>
+<body>
+
+<!-- Marqueur 1 : bandeau d'environnement, bande pleine largeur au-dessus du header -->
+<div class="wf-env-banner" role="status" aria-label="Environnement pré-production">
+  <span class="wf-env-icon" aria-hidden="true"></span>
+  PRÉ-PRODUCTION — LES DONNÉES DE CET ENVIRONNEMENT NE SONT PAS RÉELLES
+</div>
+
+<div class="wf-shell">
+
+  <!-- Marqueur 2 : liseré 3 px en tête de header (wf-header--preprod) -->
+  <header class="wf-header wf-header--preprod">
+    <div class="wf-header-inner">
+      <!-- Marqueur 3 : mention du titre de fenêtre figurée par le préfixe [PRÉPROD] sur la marque -->
+      <div class="wf-logo"><span class="wf-icon"></span><span>[PRÉPROD] CreaSlot</span></div>
+      <nav class="wf-nav" aria-label="Navigation principale"><ul><li></li><li></li><li></li></ul></nav>
+      <div class="wf-tools">
+        <div class="wf-bell"><span class="wf-icon"></span><span class="wf-badge">2</span></div>
+        <span class="wf-avatar"></span><span class="wf-user"></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="wf-main">
+    <div class="wf-h1"><span class="wf-icon"></span><span class="bar"></span></div>
+    <div class="wf-subcount"></div>
+
+    <div class="wf-card" aria-label="Contenu">
+      <div class="bar" style="height:11px;width:55%;margin-bottom:14px"></div>
+      <div class="bar" style="height:9px;width:92%;margin:7px 0"></div>
+      <div class="bar" style="height:9px;width:84%;margin:7px 0"></div>
+      <div class="bar" style="height:9px;width:88%;margin:7px 0"></div>
+      <div class="bar" style="height:9px;width:70%;margin:7px 0"></div>
+      <button type="button" class="wf-btn wf-btn--primary" style="margin-top:14px">Action</button>
+    </div>
+  </main>
+
+  <footer class="wf-footer">
+    <div class="wf-footer-inner">
+      <div>
+        <div class="wf-logo" style="margin-bottom:8px"><span class="wf-icon"></span><span>CreaSlot</span></div>
+        <div class="bar" style="height:8px;width:90%;margin:6px 0"></div>
+        <div class="bar" style="height:8px;width:75%;margin:6px 0"></div>
+      </div>
+      <div>
+        <div class="bar" style="height:11px;width:120px;background:#999;margin-bottom:10px"></div>
+        <div class="bar" style="height:8px;width:70%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:80%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:65%;margin:7px 0"></div>
+      </div>
+      <div>
+        <div class="bar" style="height:11px;width:80px;background:#999;margin-bottom:10px"></div>
+        <div class="bar" style="height:8px;width:85%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:60%;margin:7px 0"></div>
+      </div>
+    </div>
+  </footer>
+
+  <footer class="wf-cap">L'environnement de service ne porte aucun marqueur : l'absence de signal est elle-même le signal. Les trois états se distinguent par le nombre et la forme des marqueurs — la couleur relève de la charte graphique, non de la maquette.</footer>
+</div>
+</body>
+</html>

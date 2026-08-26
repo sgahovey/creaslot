@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wireframe lo-fi — Tableau de bord</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,Arial,sans-serif; background:#fff; color:#444; font-size:14px; line-height:1.5; }
+  .wf-shell { max-width:1000px; margin:0 auto; padding:16px; }
+  header.wf-header, footer.wf-footer { background:#eee; border:1px solid #ccc; border-radius:8px; }
+  .wf-header-inner { display:flex; align-items:center; gap:18px; padding:14px 18px; }
+  .wf-logo { display:flex; align-items:center; gap:8px; font-weight:700; color:#444; }
+  .wf-icon { width:18px; height:18px; border:1px solid #999; border-radius:4px; display:inline-block; flex:0 0 auto; }
+  nav.wf-nav ul { list-style:none; display:flex; gap:12px; flex-wrap:wrap; }
+  nav.wf-nav li { width:64px; height:10px; background:#ccc; border-radius:4px; }
+  .wf-tools { margin-left:auto; display:flex; align-items:center; gap:16px; }
+  .wf-bell { position:relative; }
+  .wf-badge { position:absolute; top:-7px; right:-9px; min-width:16px; height:16px; padding:0 4px; border-radius:8px; background:#999; color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; }
+  .wf-avatar { width:28px; height:28px; border:1px solid #999; border-radius:50%; background:#ccc; }
+  .wf-user { width:90px; height:10px; background:#ccc; border-radius:4px; }
+  main.wf-main { padding:24px 2px; }
+  .wf-h1 { display:flex; align-items:center; gap:10px; margin-bottom:24px; }
+  .wf-h1 .bar { height:20px; width:200px; background:#999; border-radius:4px; }
+  .wf-h1 .wf-icon { width:24px; height:24px; }
+  .bar { background:#ccc; border-radius:4px; }
+  .wf-kpis { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:26px; }
+  .wf-card { border:1px solid #ccc; border-radius:8px; background:#fff; padding:22px; }
+  .wf-kpi-label { display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+  .wf-kpi-label .bar { height:9px; width:140px; }
+  .wf-kpi-num { height:44px; width:120px; background:#999; border-radius:6px; margin-bottom:12px; }
+  .wf-kpi-sub { height:8px; width:70%; background:#ccc; border-radius:4px; }
+  .wf-section-title { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+  .wf-section-title .bar { height:13px; width:260px; background:#999; }
+  .wf-chart { display:flex; align-items:flex-end; gap:10px; height:220px; padding:10px 4px; border-bottom:1px solid #ccc; }
+  .wf-chart .pair { display:flex; align-items:flex-end; gap:3px; flex:1; height:100%; }
+  .wf-chart .b1 { flex:1; background:#999; border-radius:3px 3px 0 0; }
+  .wf-chart .b2 { flex:1; background:#ccc; border-radius:3px 3px 0 0; }
+  .wf-details { height:10px; width:200px; background:#eee; border:1px solid #ccc; border-radius:4px; margin-top:16px; }
+  .wf-footer-inner { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; padding:22px 18px; }
+  .wf-cap { text-align:center; color:#999; font-size:12px; font-style:italic; margin-top:14px; padding-top:12px; border-top:1px dashed #ccc; }
+</style>
+</head>
+<body>
+<div class="wf-shell">
+
+  <header class="wf-header">
+    <div class="wf-header-inner">
+      <div class="wf-logo"><span class="wf-icon"></span><span>CreaSlot</span></div>
+      <nav class="wf-nav" aria-label="Navigation super-admin"><ul><li></li><li></li><li></li><li></li><li></li><li></li></ul></nav>
+      <div class="wf-tools">
+        <div class="wf-bell"><span class="wf-icon"></span><span class="wf-badge">2</span></div>
+        <span class="wf-avatar"></span><span class="wf-user"></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="wf-main">
+    <div class="wf-h1"><span class="wf-icon"></span><span class="bar"></span></div>
+
+    <!-- KPIs -->
+    <div class="wf-kpis">
+      <article class="wf-card" aria-label="KPI Réservations à venir">
+        <div class="wf-kpi-label"><span class="wf-icon"></span><span class="bar"></span></div>
+        <div class="wf-kpi-num"></div>
+        <div class="wf-kpi-sub"></div>
+      </article>
+      <article class="wf-card" aria-label="KPI Taux d'occupation">
+        <div class="wf-kpi-label"><span class="wf-icon"></span><span class="bar"></span></div>
+        <div class="wf-kpi-num"></div>
+        <div class="wf-kpi-sub"></div>
+      </article>
+    </div>
+
+    <!-- Graphique d'occupation 30 jours -->
+    <section aria-label="Occupation des 30 derniers jours">
+      <div class="wf-section-title"><span class="wf-icon"></span><span class="bar"></span></div>
+      <div class="wf-card">
+        <div class="wf-chart" role="img" aria-label="Graphique en barres offre vs réservés">
+          <div class="pair"><span class="b1" style="height:60%"></span><span class="b2" style="height:40%"></span></div>
+          <div class="pair"><span class="b1" style="height:80%"></span><span class="b2" style="height:55%"></span></div>
+          <div class="pair"><span class="b1" style="height:45%"></span><span class="b2" style="height:30%"></span></div>
+          <div class="pair"><span class="b1" style="height:90%"></span><span class="b2" style="height:70%"></span></div>
+          <div class="pair"><span class="b1" style="height:65%"></span><span class="b2" style="height:50%"></span></div>
+          <div class="pair"><span class="b1" style="height:75%"></span><span class="b2" style="height:35%"></span></div>
+          <div class="pair"><span class="b1" style="height:55%"></span><span class="b2" style="height:45%"></span></div>
+          <div class="pair"><span class="b1" style="height:85%"></span><span class="b2" style="height:60%"></span></div>
+          <div class="pair"><span class="b1" style="height:50%"></span><span class="b2" style="height:25%"></span></div>
+          <div class="pair"><span class="b1" style="height:70%"></span><span class="b2" style="height:52%"></span></div>
+          <div class="pair"><span class="b1" style="height:95%"></span><span class="b2" style="height:80%"></span></div>
+          <div class="pair"><span class="b1" style="height:40%"></span><span class="b2" style="height:20%"></span></div>
+        </div>
+        <div class="wf-details"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wf-footer">
+    <div class="wf-footer-inner">
+      <div>
+        <div class="wf-logo" style="margin-bottom:8px"><span class="wf-icon"></span><span>CreaSlot</span></div>
+        <div class="bar" style="height:8px;width:90%;margin:6px 0"></div>
+        <div class="bar" style="height:8px;width:75%;margin:6px 0"></div>
+      </div>
+      <div>
+        <div class="bar" style="height:11px;width:120px;background:#999;margin-bottom:10px"></div>
+        <div class="bar" style="height:8px;width:70%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:80%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:65%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:72%;margin:7px 0"></div>
+      </div>
+      <div>
+        <div class="bar" style="height:11px;width:80px;background:#999;margin-bottom:10px"></div>
+        <div class="bar" style="height:8px;width:85%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:60%;margin:7px 0"></div>
+      </div>
+    </div>
+  </footer>
+
+  <footer class="wf-cap">Wireframe lo-fi — Tableau de bord (super-admin)</footer>
+</div>
+</body>
+</html>

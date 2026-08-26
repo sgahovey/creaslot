@@ -18,6 +18,13 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
+/**
+ * Parcours d'authentification public : connexion, déconnexion et inscription (US-1.x,
+ * US-12.4).
+ *
+ * Seules routes accessibles sans être connecté. Les messages restent neutres pour ne
+ * pas révéler l'existence d'un compte (anti-énumération, OWASP).
+ */
 class SecurityController extends AbstractController
 {
     public function __construct(
@@ -27,6 +34,11 @@ class SecurityController extends AbstractController
     ) {
     }
 
+    /**
+     * Page de connexion. Redirige un utilisateur déjà authentifié, et distingue le cas
+     * « e-mail non confirmé » (message ciblé + lien de renvoi) du générique
+     * « Identifiants incorrects ».
+     */
     #[Route('/connexion', name: 'app_login', methods: ['GET', 'POST'])]
     public function login(AuthenticationUtils $authenticationUtils): Response
     {
@@ -45,6 +57,10 @@ class SecurityController extends AbstractController
         ]);
     }
 
+    /**
+     * Point d'entrée de déconnexion, intercepté par le firewall Symfony Security :
+     * le corps n'est jamais exécuté.
+     */
     #[Route('/deconnexion', name: 'app_logout')]
     public function logout(): never
     {
@@ -52,6 +68,10 @@ class SecurityController extends AbstractController
         throw new \LogicException('La déconnexion est gérée par le firewall Symfony Security.');
     }
 
+    /**
+     * Inscription d'un nouvel Auditeur. Le compte est créé actif mais non vérifié : la
+     * connexion reste bloquée jusqu'à confirmation de l'e-mail (voir inscrireAuditeur).
+     */
     #[Route('/inscription', name: 'app_inscription', methods: ['GET', 'POST'])]
     public function inscription(Request $request): Response
     {
