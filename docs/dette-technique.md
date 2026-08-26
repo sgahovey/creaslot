@@ -1075,3 +1075,63 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 **Hors périmètre** : la logique de construction des champs et les contraintes de validation (inchangées) ; la duplication résiduelle du champ textarea RGPD ci-dessus (assumée) ; les autres mesures de qualité de #133, au vert (couverture 94,1 %, notes de fiabilité, sécurité et maintenabilité au niveau maximal).
 
 **Priorité** : 🟢 basse (duplication de configuration, sans impact fonctionnel ni sécurité ; la protection CSRF elle-même n'a jamais été affaiblie, chaque formulaire conservant son jeton propre).
+
+---
+
+## DT-43 — La fusion en squash à chaque promotion efface l'ancêtre commun entre `develop` et `preprod` (🟡 MOYEN) — ⏳ OUVERTE (26/08/2026)
+
+> **⏳ OUVERTE le 26/08/2026** — découverte en tentant de promouvoir `develop` vers `preprod` pour
+> le déploiement du TLS applicatif (demande d'intégration #142, refusée par GitHub avec
+> `mergeable: CONFLICTING`).
+>
+> **Origine** : le ruleset des branches protégées impose la fusion en **squash**
+> (`allowed_merge_methods: ["squash"]`). À chaque promotion, l'intégralité de `develop` arrive
+> donc sur `preprod` sous la forme d'**un seul commit neuf**, sans lien de parenté avec les
+> commits d'origine. Les deux branches se retrouvent avec le même contenu mais **plus aucun
+> commit en commun**. À la promotion suivante, Git remonte jusqu'au dernier ancêtre réellement
+> partagé et traite comme divergent tout ce qui a bougé des deux côtés depuis.
+>
+> **Le symptôme s'aggrave à chaque cycle** : plus les promotions s'espacent, plus l'ancêtre
+> commun recule et plus le nombre de fichiers vus comme divergents augmente.
+
+**Détecté** : 26/08/2026, lors de la promotion `develop` vers `preprod` portant DT-42.
+
+**Constat, mesuré à cette date** : trois cycles de promotion en squash (demandes d'intégration
+#111 du 16/07, #116 du 18/07 et #118 du 22/07) ont suffi à produire l'état suivant. L'ancêtre
+commun réel remontait à `cc521c9` (demande #99, juillet), soit **37 commits de divergence** côté
+`develop` et 3 côté `preprod`. La fusion échouait sur **8 conflits**, dont **7 faux** : sur ces
+sept fichiers, `develop` contenait strictement le contenu de `preprod`, augmenté, la divergence
+n'étant qu'une reformulation ou un ajout. Le seul conflit réel, `.env`, se tranchait sans perte,
+l'étiquette de préproduction étant portée par `.env.preprod`, injecté par `env_file`.
+
+Plus grave que les conflits eux-mêmes : **7 fichiers passaient en fusion automatique, sans
+conflit, et auraient été dupliqués**. Il s'agit des six diagrammes de cas d'utilisation et du
+script de création de base, déplacés vers `docs/conception/` sur `develop`, restés à l'ancien
+chemin `docs/diagrammes/` sur `preprod`. Git, ne voyant pas la parenté, aurait conclu à un ajout
+côté `preprod` et réintroduit chaque figure **en double, à deux chemins différents**. Une fusion
+ordinaire, même avec les huit conflits correctement résolus, aurait donc produit un dépôt
+incorrect sans qu'aucun signal ne l'indique.
+
+**Cause racine** : la fusion en squash sur une branche de longue durée est incompatible avec la
+notion d'ancêtre commun de Git. Elle convient à l'intégration de branches de fonctionnalité
+éphémères, qui disparaissent après fusion, mais pas à la promotion entre deux branches
+permanentes qui doivent continuer à se comparer entre elles. Ce n'est pas un incident, c'est le
+comportement attendu de l'outil dans cette configuration.
+
+**Contournement appliqué le 26/08/2026** : fusion `git merge -s ours origin/preprod` dans
+`develop`, qui restaure la parenté entre les deux branches **sans modifier l'arbre**. Contrôle
+effectué avant poussée : l'arbre résultant est identique à celui d'`origin/develop`, même
+empreinte `62d52e06`. Ce geste répare l'état du moment, il ne traite pas la cause : le problème
+se reproduira au cycle de promotion suivant.
+
+**Condition de levée** : la dette sera close lorsque les promotions entre branches permanentes ne
+produiront plus de divergence structurelle, c'est-à-dire lorsque deux promotions consécutives
+s'enchaîneront sans conflit ni fichier dupliqué, sans intervention manuelle et sans fusion
+`-s ours` de rattrapage.
+
+**Hors périmètre** : le choix d'une solution. Plusieurs voies existent, elles engagent la
+politique de branches et le ruleset, et méritent d'être arbitrées à froid plutôt que sous la
+contrainte d'un déploiement.
+
+**Priorité** : 🟡 moyenne. Sans impact sur le code livré ni sur la production, mais bloquant à
+chaque déploiement et porteur d'un risque silencieux de duplication de fichiers.
