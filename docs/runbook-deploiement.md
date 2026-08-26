@@ -28,6 +28,55 @@ livrée (US-9.5, cf. §10).
   docker compose -f compose.prod.yml --env-file .env.deploy.local <...>
   ```
 
+### 2.1 TLS applicatif vers MySQL
+
+Le serveur MySQL sait faire du TLS depuis son premier démarrage : `have_ssl = YES`, et les
+certificats auto-signés ont été générés dans le datadir le **16/06/2026**. Ce qui manquait était
+côté client : PDO n'ouvre pas de session chiffrée sans qu'on le lui demande.
+
+**Ce qui a été mis en place**
+
+1. L'autorité `ca.pem` a été extraite du conteneur `db` et **versionnée** dans
+   `docker/mysql/ca.pem`. C'est une clé publique, pas un secret.
+2. Elle est montée en lecture seule sur `/etc/mysql/ca.pem` dans les **quatre** services
+   applicatifs, `app-preprod`, `app-prod`, `worker-preprod` et `worker-prod`. Les workers
+   sont concernés au même titre : leur transport Messenger est `doctrine://default`, donc
+   la même connexion.
+3. `config/packages/doctrine.yaml` pose `MYSQL_ATTR_SSL_CA` et
+   `MYSQL_ATTR_SSL_VERIFY_SERVER_CERT = false` dans le bloc **`when@prod` uniquement**.
+   La vérification du nom est désactivée parce que le certificat auto-signé porte le CN
+   `MySQL_Server_8.0.46_Auto_Generated_CA_Certificate`, qui ne correspond pas à l'hôte `db` ;
+   le chiffrement du transport, lui, reste effectif.
+
+> ⚠️ **Ne jamais écrire ces options dans le bloc `dbal` commun** : l'intégration continue
+> monte son propre service MySQL sans ce certificat, et les trois jobs qui touchent la base
+> échoueraient.
+
+**Vérification** (la session doit être chiffrée, pas seulement autorisée) :
+
+```bash
+$PFX exec -T app-prod php bin/console dbal:run-sql \
+  "SELECT variable_name, variable_value FROM performance_schema.session_status \
+   WHERE variable_name IN ('Ssl_cipher','Ssl_version')"
+```
+
+Deux valeurs vides signifient session en clair. Une suite du type `TLS_AES_256_GCM_SHA384`
+signifie que le chiffrement est actif.
+
+**Retour arrière**, en une ligne : retirer le bloc `options` de `when@prod` dans
+`doctrine.yaml`, redéployer, et les connexions repassent en clair. Aucune action serveur n'est
+nécessaire : `require_secure_transport` reste à `OFF` et aucun compte ne porte de `REQUIRE SSL`.
+C'est délibéré, et cela doit le rester : poser `REQUIRE SSL` sur un compte est le seul geste
+de ce chantier qui ne se défait pas sans intervention en base.
+
+> ⚠️ **Réserve importante, l'autorité est liée au volume de données.** Un `down -v` sur la
+> stack de production détruirait `mysql_data_prod`, et MySQL régénérerait au démarrage suivant
+> une **nouvelle** autorité. Le `ca.pem` versionné deviendrait alors obsolète et **plus aucune
+> connexion applicative ne s'établirait**, puisque la vérification de la chaîne échouerait.
+> Dans ce cas, réextraire l'autorité et la recommiter :
+> `$PFX cp db:/var/lib/mysql/ca.pem docker/mysql/ca.pem`. Ce scénario transforme une remise à
+> zéro anodine en panne bloquante : à garder en tête avant tout `down -v` sur ce serveur.
+
 ## 3. Mise à jour de code (procédure courante)
 
 ### 3.1 Procédure nominale (pipeline CI/CD via Pull Request)
