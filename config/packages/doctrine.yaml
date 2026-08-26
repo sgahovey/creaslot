@@ -30,6 +30,19 @@ when@test:
 
 when@prod:
     doctrine:
+        dbal:
+            # TLS applicatif vers MySQL. Le driver est pdo_mysql : les parametres
+            # ssl_* nommes ne sont lus que par le driver mysqli, il faut donc passer
+            # par driverOptions et les constantes PDO.
+            # Le certificat serveur est auto-signe et porte le CN
+            # « MySQL_Server_8.0.46_Auto_Generated_CA_Certificate », qui ne correspond
+            # pas a l'hote « db » : la verification du nom est donc desactivee, le
+            # chiffrement du transport reste effectif.
+            # Ce bloc est volontairement hors du `dbal` commun : la CI monte son propre
+            # MySQL sans ce certificat, l'y placer ferait echouer les jobs de test.
+            options:
+                !php/const PDO::MYSQL_ATTR_SSL_CA: '/etc/mysql/ca.pem'
+                !php/const PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT: false
         orm:
             query_cache_driver:
                 type: pool

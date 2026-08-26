@@ -60,6 +60,9 @@ services:
         required: false
     volumes:
       - assets_preprod:/srv-assets
+      # Autorite auto-signee de MySQL, extraite du datadir : elle permet a PDO
+      # d'ouvrir la connexion en TLS (cf. doctrine.yaml, bloc when@prod).
+      - ./docker/mysql/ca.pem:/etc/mysql/ca.pem:ro
     networks:
       - creaslot-prod-net
       - web
@@ -76,6 +79,7 @@ services:
         required: false
     volumes:
       - assets_prod:/srv-assets
+      - ./docker/mysql/ca.pem:/etc/mysql/ca.pem:ro
     networks:
       - creaslot-prod-net
       - web
@@ -88,6 +92,8 @@ services:
       - .env.preprod
       - path: .env.preprod.local
         required: false
+    volumes:
+      - ./docker/mysql/ca.pem:/etc/mysql/ca.pem:ro
     networks:
       - creaslot-prod-net
 
@@ -99,6 +105,8 @@ services:
       - .env.prod
       - path: .env.prod.local
         required: false
+    volumes:
+      - ./docker/mysql/ca.pem:/etc/mysql/ca.pem:ro
     networks:
       - creaslot-prod-net
 
