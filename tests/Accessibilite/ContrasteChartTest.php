@@ -329,7 +329,7 @@ final class ContrasteChartTest extends TestCase
             $capture,
         );
 
-        $this->assertSame(1, $trouve, "La couleur du texte des évènements est introuvable dans la charte.");
+        $this->assertSame(1, $trouve, 'La couleur du texte des évènements est introuvable dans la charte.');
 
         return strtoupper($capture[1]);
     }
