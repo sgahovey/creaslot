@@ -52,9 +52,13 @@ final class ContrasteChartTest extends TestCase
 
     public function test_tous_les_jetons_attendus_sont_declares(): void
     {
-        foreach (['cs-text-primary', 'cs-text-secondary', 'cs-bg-page', 'cs-bg-card',
-                  'cs-blue-primary', 'cs-blue-secondary', 'cs-warning', 'cs-info',
-                  'cs-border-input', 'bs-link-color'] as $jeton) {
+        $attendus = [
+            'cs-text-primary', 'cs-text-secondary', 'cs-bg-page', 'cs-bg-card',
+            'cs-blue-primary', 'cs-blue-secondary', 'cs-warning', 'cs-info',
+            'cs-border-input', 'bs-link-color',
+        ];
+
+        foreach ($attendus as $jeton) {
             $this->assertArrayHasKey($jeton, self::jetons(), sprintf('Jeton "%s" absent de la charte.', $jeton));
         }
     }
@@ -92,24 +96,25 @@ final class ContrasteChartTest extends TestCase
     public static function couplesOpaques(): array
     {
         return [
-            'corps de texte sur page'      => ['Corps de texte sur page',      'cs-text-primary',   'cs-bg-page',   self::TEXTE_NORMAL],
-            'corps de texte sur carte'     => ['Corps de texte sur carte',     'cs-text-primary',   'cs-bg-card',   self::TEXTE_NORMAL],
-            'texte secondaire sur page'    => ['Texte secondaire sur page',    'cs-text-secondary', 'cs-bg-page',   self::TEXTE_NORMAL],
-            'texte secondaire sur carte'   => ['Texte secondaire sur carte',   'cs-text-secondary', 'cs-bg-card',   self::TEXTE_NORMAL],
-            'lien sur page'                => ['Lien sur page',                'bs-link-color',     'cs-bg-page',   self::TEXTE_NORMAL],
-            'lien sur carte'               => ['Lien sur carte',               'bs-link-color',     'cs-bg-card',   self::TEXTE_NORMAL],
-            'bouton primaire'              => ['Bouton primaire',              'cs-text-light',     'cs-blue-primary',   self::TEXTE_NORMAL],
-            'bouton primaire au focus'     => ['Bouton primaire au focus',     'cs-text-light',     'cs-blue-secondary', self::TEXTE_NORMAL],
-            'bouton secondaire sur page'   => ['Bouton secondaire sur page',   'cs-blue-primary',   'cs-bg-page',   self::TEXTE_NORMAL],
-            'marque navbar'                => ['Marque navbar',                'cs-text-light',     'cs-blue-primary',   self::TEXTE_NORMAL],
-            'marque navbar survolee'       => ['Marque navbar survolée',       'cs-blue-light',     'cs-blue-primary',   self::TEXTE_NORMAL],
-            'avatar'                       => ['Avatar',                       'cs-text-light',     'cs-blue-secondary', self::TEXTE_NORMAL],
-            'bandeau preproduction'        => ['Bandeau de préproduction',     'cs-text-light',     'cs-warning',   self::TEXTE_NORMAL],
-            'bandeau developpement'        => ['Bandeau de développement',     'cs-text-light',     'cs-info',      self::TEXTE_NORMAL],
-            'evenement presentiel'         => ['Événement présentiel',         '#1A1A1A',           'cs-green-presentiel', self::TEXTE_NORMAL],
-            'evenement visio'              => ['Événement visio',              '#1A1A1A',           'cs-orange-visio',     self::TEXTE_NORMAL],
-            'bordure de champ'             => ['Bordure de champ de saisie',   'cs-border-input',   'cs-bg-card',   self::COMPOSANT],
-            'code d erreur'                => ["Code d'erreur, 96px gras",     'cs-blue-primary',   'cs-bg-page',   self::COMPOSANT],
+            'corps de texte sur page'    => ['Corps de texte sur page',      'cs-text-primary',   'cs-bg-page',   self::TEXTE_NORMAL],
+            'corps de texte sur carte'   => ['Corps de texte sur carte',     'cs-text-primary',   'cs-bg-card',   self::TEXTE_NORMAL],
+            'texte secondaire sur page'  => ['Texte secondaire sur page',    'cs-text-secondary', 'cs-bg-page',   self::TEXTE_NORMAL],
+            'texte secondaire sur carte' => ['Texte secondaire sur carte',   'cs-text-secondary', 'cs-bg-card',   self::TEXTE_NORMAL],
+            'lien sur page'              => ['Lien sur page',                'bs-link-color',     'cs-bg-page',   self::TEXTE_NORMAL],
+            'lien sur carte'             => ['Lien sur carte',               'bs-link-color',     'cs-bg-card',   self::TEXTE_NORMAL],
+            'bouton primaire'            => ['Bouton primaire',              'cs-text-light',     'cs-blue-primary',   self::TEXTE_NORMAL],
+            'bouton primaire au focus'   => ['Bouton primaire au focus',     'cs-text-light',     'cs-blue-secondary', self::TEXTE_NORMAL],
+            'bouton secondaire sur page' => ['Bouton secondaire sur page',   'cs-blue-primary',   'cs-bg-page',   self::TEXTE_NORMAL],
+            'marque navbar'              => ['Marque navbar',                'cs-text-light',     'cs-blue-primary',   self::TEXTE_NORMAL],
+            'marque navbar survolee'     => ['Marque navbar survolée',       'cs-blue-light',     'cs-blue-primary',   self::TEXTE_NORMAL],
+            'avatar'                     => ['Avatar',                       'cs-text-light',     'cs-blue-secondary', self::TEXTE_NORMAL],
+            'bandeau preproduction'      => ['Bandeau de préproduction',     'cs-text-light',     'cs-warning',   self::TEXTE_NORMAL],
+            'bandeau developpement'      => ['Bandeau de développement',     'cs-text-light',     'cs-info',      self::TEXTE_NORMAL],
+            'evenement presentiel'       => ['Événement présentiel',         '#1A1A1A',           'cs-green-presentiel', self::TEXTE_NORMAL],
+            'evenement visio'            => ['Événement visio',              '#1A1A1A',           'cs-orange-visio',     self::TEXTE_NORMAL],
+            'bordure de champ'           => ['Bordure de champ de saisie',   'cs-border-input',   'cs-bg-card',   self::COMPOSANT],
+            'code d erreur'              => ["Code d'erreur, 96px gras",     'cs-blue-primary',   'cs-bg-page',   self::COMPOSANT],
+
         ];
     }
 
@@ -141,10 +146,11 @@ final class ContrasteChartTest extends TestCase
     public static function couplesSemiTransparents(): array
     {
         return [
-            'lien navbar'          => ['Lien de la navbar',      'cs-text-light', 0.80, 'cs-blue-primary', self::TEXTE_NORMAL],
-            'texte pied de page'   => ['Texte du pied de page',  'cs-text-light', 0.75, 'cs-blue-primary', self::TEXTE_NORMAL],
-            'lien pied de page'    => ['Lien du pied de page',   'cs-text-light', 0.65, 'cs-blue-primary', self::TEXTE_NORMAL],
-            'copyright'            => ['Mention de copyright',   'cs-text-light', 0.63, 'cs-blue-primary', self::TEXTE_NORMAL],
+            'lien navbar'        => ['Lien de la navbar',      'cs-text-light', 0.80, 'cs-blue-primary', self::TEXTE_NORMAL],
+            'texte pied de page' => ['Texte du pied de page',  'cs-text-light', 0.75, 'cs-blue-primary', self::TEXTE_NORMAL],
+            'lien pied de page'  => ['Lien du pied de page',   'cs-text-light', 0.65, 'cs-blue-primary', self::TEXTE_NORMAL],
+            'copyright'          => ['Mention de copyright',   'cs-text-light', 0.63, 'cs-blue-primary', self::TEXTE_NORMAL],
+
         ];
     }
 
@@ -179,6 +185,7 @@ final class ContrasteChartTest extends TestCase
             'presentiel' => ['Badge présentiel', '#1A6E2E', 'cs-green-presentiel'],
             'visio'      => ['Badge visio',      '#A85200', 'cs-orange-visio'],
             'telephone'  => ['Badge téléphone',  '#004A99', 'cs-blue-telephone'],
+
         ];
     }
 
@@ -211,6 +218,7 @@ final class ContrasteChartTest extends TestCase
         return [
             'presentiel' => ['Créneau passé présentiel', 'cs-green-presentiel'],
             'visio'      => ['Créneau passé visio',      'cs-orange-visio'],
+
         ];
     }
 
