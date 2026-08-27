@@ -248,6 +248,71 @@ s'applique.
 - Logs : `~/cron-logs/backup-db.log`, `~/cron-logs/rappels-j1.log` et `~/cron-logs/purger-journal.log`.
 - Lignes exactes et procédures détaillées : `docs/cron-backup.md`, `docs/cron-rappels-j1.md` et `docs/cron-purger-journal.md`.
 
+### 6.1 Alerte de sécurité poussée (blocage après plafonnement, OWASP A09)
+
+Le canal de journalisation `security` conserve la trace d'un blocage, mais personne ne lit un
+fichier de journal en continu. Un moniteur Uptime Kuma dédié transforme cette trace en
+notification Discord immédiate.
+
+**Principe.** Le moniteur est de type **push**, en **mode inversé** (*Upside Down Mode*). Un
+moniteur push signale normalement l'ABSENCE de battement ; le mode inversé retourne cette
+logique, de sorte que l'absence de sollicitation vaut situation normale et la sollicitation vaut
+incident. L'application ne pousse donc que lorsqu'un blocage survient, et le moniteur se réarme
+tout seul une fois l'intervalle écoulé sans nouvelle sollicitation.
+
+**Configuration du moniteur, à créer dans l'interface** (`https://status.creaslot.re`, un moniteur
+par environnement) :
+
+| Champ | Valeur préproduction | Valeur production |
+|---|---|---|
+| Monitor Type | Push | Push |
+| Friendly Name | `CreaSlot : Blocages de connexion (preprod)` | `CreaSlot : Blocages de connexion (prod)` |
+| Heartbeat Interval | `300` | `300` |
+| Retries | `0` | `0` |
+| Resend Notification if Down X times | `0` | `0` |
+| Advanced : Upside Down Mode | **coché** | **coché** |
+| Notifications | `Discord CreaSlot` | `Discord CreaSlot` |
+
+Le champ *Push URL* affiché par Kuma contient le jeton du moniteur. Seul ce jeton est reporté dans
+la configuration de l'application, jamais l'URL complète.
+
+**Câblage côté application.** Deux variables, séparées selon leur sensibilité :
+
+| Variable | Fichier | Versionné | Rôle |
+|---|---|---|---|
+| `SUPERVISION_URL_BASE` | `.env.preprod` / `.env.prod` | oui | Adresse interne de Kuma, `http://uptime-kuma:3001` |
+| `SUPERVISION_JETON_BLOCAGE_CONNEXION` | `.env.preprod.local` / `.env.prod.local` | **non** | Jeton du moniteur |
+
+L'appel emprunte le réseau Docker interne : il ne sort jamais sur l'internet public, et le jeton ne
+transite donc pas par le proxy. **Jeton vide ou absent : aucun appel n'est tenté**, l'écriture du
+journal restant assurée. C'est l'état normal en développement, en test et dans l'intégration
+continue.
+
+**Ce qui part vers Kuma.** Le message dit qu'un blocage a eu lieu et sur quel environnement, jamais
+qui en est l'objet. L'adresse tentée reste dans le journal applicatif. Kuma est un tiers du point de
+vue des données, il n'a pas à connaître d'adresse.
+
+**Provoquer un blocage pour tester.** Six tentatives de connexion avec un mot de passe erroné sur la
+même adresse, `login_throttling` étant réglé à cinq (`config/packages/security.yaml`) :
+
+```bash
+for i in $(seq 1 6); do
+  curl -s -c /tmp/cookies -b /tmp/cookies https://preprod.creaslot.re/connexion > /tmp/page.html
+  jeton=$(grep -o 'name="_csrf_token" value="[^"]*"' /tmp/page.html | cut -d'"' -f4)
+  curl -s -o /dev/null -c /tmp/cookies -b /tmp/cookies -X POST https://preprod.creaslot.re/connexion \
+    -d "email=<adresse-de-test>&password=motdepasse-errone&_csrf_token=$jeton"
+done
+```
+
+La sixième tentative produit la ligne `Connexion bloquée après plafonnement des tentatives` dans
+`var/log/security-<date>.log` et déclenche la notification Discord.
+
+**Si l'alerte n'arrive pas.** Le journal fait foi : la présence de la ligne prouve que le blocage a
+bien eu lieu. Chercher ensuite dans le même fichier `Alerte de supervision injoignable` ou
+`Alerte de supervision refusée`, qui tracent l'échec de l'appel sortant sans jamais divulguer le
+jeton. Une supervision en panne ne peut pas empêcher une connexion d'aboutir, c'est une propriété
+couverte par les tests.
+
 ## 7. Administration courante
 ```bash
 # Créer un super-administrateur (interactif, mot de passe masqué)
