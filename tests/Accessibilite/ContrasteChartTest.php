@@ -30,8 +30,7 @@ use PHPUnit\Framework\TestCase;
  * rendez-vous et la bordure de carte, toutes décoratives (les pastilles portent
  * `aria-hidden` et sont doublées du libellé en clair, la carte est déjà
  * distinguée par son fond) ; le jeton `--cs-text-disabled`, déclaré mais
- * appliqué nulle part. Le couple du bleu téléphone est traité à part, cf.
- * test_le_bleu_telephone_reste_en_ecart_documente.
+ * appliqué nulle part.
  */
 final class ContrasteChartTest extends TestCase
 {
@@ -40,6 +39,9 @@ final class ContrasteChartTest extends TestCase
     private const TEXTE_NORMAL = 4.5;
 
     private const COMPOSANT = 3.0;
+
+    /** Nom conventionnel : cette couleur n'est pas un jeton, elle vit dans une règle. */
+    private const TEXTE_EVENEMENT = 'texte-evenement';
 
     /** @var array<string, string>|null */
     private static ?array $jetons = null;
@@ -110,8 +112,9 @@ final class ContrasteChartTest extends TestCase
             'avatar'                     => ['Avatar',                       'cs-text-light',     'cs-blue-secondary', self::TEXTE_NORMAL],
             'bandeau preproduction'      => ['Bandeau de préproduction',     'cs-text-light',     'cs-warning',   self::TEXTE_NORMAL],
             'bandeau developpement'      => ['Bandeau de développement',     'cs-text-light',     'cs-info',      self::TEXTE_NORMAL],
-            'evenement presentiel'       => ['Événement présentiel',         '#1A1A1A',           'cs-green-presentiel', self::TEXTE_NORMAL],
-            'evenement visio'            => ['Événement visio',              '#1A1A1A',           'cs-orange-visio',     self::TEXTE_NORMAL],
+            'evenement presentiel'       => ['Événement présentiel',         'texte-evenement',   'cs-green-presentiel', self::TEXTE_NORMAL],
+            'evenement visio'            => ['Événement visio',              'texte-evenement',   'cs-orange-visio',     self::TEXTE_NORMAL],
+            'evenement telephone'        => ['Événement téléphone',          'texte-evenement',   'cs-blue-telephone',   self::TEXTE_NORMAL],
             'bordure de champ'           => ['Bordure de champ de saisie',   'cs-border-input',   'cs-bg-card',   self::COMPOSANT],
             'code d erreur'              => ["Code d'erreur, 96px gras",     'cs-blue-primary',   'cs-bg-page',   self::COMPOSANT],
         ];
@@ -195,7 +198,7 @@ final class ContrasteChartTest extends TestCase
     {
         $opacite = $this->opaciteDesCreneauxPasses();
 
-        $texte = $this->aplatit('#1A1A1A', $opacite, '#FFFFFF');
+        $texte = $this->aplatit($this->resout('texte-evenement'), $opacite, '#FFFFFF');
         $fond = $this->aplatit($this->resout($couleurType), $opacite, '#FFFFFF');
 
         $mesure = $this->contrasteRvb($texte, $fond);
@@ -215,27 +218,8 @@ final class ContrasteChartTest extends TestCase
         return [
             'presentiel' => ['Créneau passé présentiel', 'cs-green-presentiel'],
             'visio'      => ['Créneau passé visio',      'cs-orange-visio'],
+            'telephone'  => ['Créneau passé téléphone',  'cs-blue-telephone'],
         ];
-    }
-
-    /**
-     * Écart connu et assumé, ouvert en DT-45.
-     *
-     * Le bleu de la charte porte du texte `#1A1A1A` dans le calendrier et
-     * plafonne sous le seuil, quelle que soit l'atténuation. Ce test **fige
-     * l'écart** : il échouera le jour où la teinte sera corrigée, ce qui obligera
-     * à venir clore DT-45 plutôt qu'à laisser la dette se refermer en silence.
-     */
-    public function test_le_bleu_telephone_reste_en_ecart_documente(): void
-    {
-        $mesure = $this->contraste('#1A1A1A', $this->resout('cs-blue-telephone'));
-
-        $this->assertLessThan(
-            self::TEXTE_NORMAL,
-            $mesure,
-            'Le bleu téléphone atteint désormais le seuil : corriger ce test et clore DT-45.',
-        );
-        $this->assertEqualsWithDelta(4.37, $mesure, 0.01);
     }
 
     // ─ Calcul ────────────────────────────────────────────────────────────────
@@ -318,11 +302,36 @@ final class ContrasteChartTest extends TestCase
             return $valeur;
         }
 
+        if (self::TEXTE_EVENEMENT === $valeur) {
+            return $this->couleurDuTexteDesEvenements();
+        }
+
         $jetons = self::jetons();
 
         $this->assertArrayHasKey($valeur, $jetons, sprintf('Jeton "%s" introuvable dans la charte.', $valeur));
 
         return $jetons[$valeur];
+    }
+
+    /**
+     * Couleur du texte des évènements du calendrier, lue dans sa règle.
+     *
+     * Elle n'est pas un jeton de `:root` : c'est une valeur littérale, et c'est
+     * précisément pour cela qu'elle doit être relue ici. Sa valeur et l'opacité
+     * d'atténuation se tiennent l'une l'autre, la marge sur le bleu téléphone
+     * étant de 0,01 (DT-45).
+     */
+    private function couleurDuTexteDesEvenements(): string
+    {
+        $trouve = preg_match(
+            '/cs-fc-creneau\s+\.fc-event-time\s*\{.*?color:\s*(#[0-9A-Fa-f]{6})/s',
+            self::charte(),
+            $capture,
+        );
+
+        $this->assertSame(1, $trouve, "La couleur du texte des évènements est introuvable dans la charte.");
+
+        return strtoupper($capture[1]);
     }
 
     private function opaciteDesCreneauxPasses(): float
