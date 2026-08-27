@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Service;
 
 use App\Service\AlerteSecuriteService;
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpClient\Exception\TransportException;
@@ -19,6 +18,10 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
  * Trois propriétés y sont vérifiées, dans cet ordre d'importance :
  * l'échec de l'appel sortant ne se propage jamais, aucune donnée personnelle
  * ne quitte l'application, et le jeton du point d'entrée n'est jamais journalisé.
+ *
+ * Le journal est une doublure observée (mock) uniquement dans les tests qui
+ * portent sur la trace ; ailleurs c'est une doublure muette (stub), le service
+ * étant alors interrogé sur l'appel qu'il émet et non sur ce qu'il journalise.
  */
 final class AlerteSecuriteServiceTest extends TestCase
 {
@@ -26,24 +29,14 @@ final class AlerteSecuriteServiceTest extends TestCase
 
     private const JETON = 'jeton-de-test-abc123';
 
-    private LoggerInterface&MockObject $securityLogger;
-
-    protected function setUp(): void
-    {
-        $this->securityLogger = $this->createMock(LoggerInterface::class);
-    }
-
     public function test_l_echec_de_l_appel_ne_se_propage_pas(): void
     {
-        $clientEnEchec = new MockHttpClient(
-            static fn (): never => throw new TransportException('supervision injoignable'),
-        );
-
-        $this->securityLogger->expects($this->once())
+        $journal = $this->createMock(LoggerInterface::class);
+        $journal->expects($this->once())
             ->method('warning')
             ->with('Alerte de supervision injoignable', ['exception' => TransportException::class]);
 
-        $service = $this->creerService($clientEnEchec);
+        $service = $this->creerServiceAvecJournal($this->clientQuiEchoue(), $journal);
 
         $service->signaleBlocageApresPlafonnement();
     }
@@ -54,34 +47,30 @@ final class AlerteSecuriteServiceTest extends TestCase
             static fn (): never => throw new TransportException('délai maximal dépassé'),
         );
 
-        $this->securityLogger->expects($this->once())->method('warning');
+        $journal = $this->createMock(LoggerInterface::class);
+        $journal->expects($this->once())->method('warning');
 
-        $this->creerService($clientQuiExpire)->signaleBlocageApresPlafonnement();
+        $this->creerServiceAvecJournal($clientQuiExpire, $journal)->signaleBlocageApresPlafonnement();
     }
 
     public function test_une_reponse_en_erreur_est_tracee_sans_exception(): void
     {
         $clientRefusant = new MockHttpClient(new MockResponse('', ['http_code' => 404]));
 
-        $this->securityLogger->expects($this->once())
+        $journal = $this->createMock(LoggerInterface::class);
+        $journal->expects($this->once())
             ->method('warning')
             ->with('Alerte de supervision refusée', ['code_http' => 404]);
 
-        $this->creerService($clientRefusant)->signaleBlocageApresPlafonnement();
+        $this->creerServiceAvecJournal($clientRefusant, $journal)->signaleBlocageApresPlafonnement();
     }
 
     public function test_l_appel_vise_le_point_d_entree_push_du_jeton(): void
     {
         $urlSollicitee = '';
-        $client = new MockHttpClient(
-            static function (string $methode, string $url) use (&$urlSollicitee): ResponseInterface {
-                $urlSollicitee = $url;
 
-                return new MockResponse('{"ok":true}');
-            },
-        );
-
-        $this->creerService($client)->signaleBlocageApresPlafonnement();
+        $this->creerService($this->clientQuiReleveLUrl($urlSollicitee))
+            ->signaleBlocageApresPlafonnement();
 
         $this->assertStringStartsWith(
             self::URL_BASE . '/api/push/' . self::JETON,
@@ -92,15 +81,9 @@ final class AlerteSecuriteServiceTest extends TestCase
     public function test_le_statut_pousse_est_up_pour_le_mode_inverse(): void
     {
         $urlSollicitee = '';
-        $client = new MockHttpClient(
-            static function (string $methode, string $url) use (&$urlSollicitee): ResponseInterface {
-                $urlSollicitee = $url;
 
-                return new MockResponse('{"ok":true}');
-            },
-        );
-
-        $this->creerService($client)->signaleBlocageApresPlafonnement();
+        $this->creerService($this->clientQuiReleveLUrl($urlSollicitee))
+            ->signaleBlocageApresPlafonnement();
 
         $this->assertStringContainsString('status=up', $urlSollicitee);
     }
@@ -108,15 +91,9 @@ final class AlerteSecuriteServiceTest extends TestCase
     public function test_aucune_donnee_personnelle_ne_quitte_l_application(): void
     {
         $urlSollicitee = '';
-        $client = new MockHttpClient(
-            static function (string $methode, string $url) use (&$urlSollicitee): ResponseInterface {
-                $urlSollicitee = $url;
 
-                return new MockResponse('{"ok":true}');
-            },
-        );
-
-        $this->creerService($client)->signaleBlocageApresPlafonnement();
+        $this->creerService($this->clientQuiReleveLUrl($urlSollicitee))
+            ->signaleBlocageApresPlafonnement();
 
         $message = urldecode($urlSollicitee);
 
@@ -128,18 +105,15 @@ final class AlerteSecuriteServiceTest extends TestCase
     public function test_le_jeton_n_est_jamais_journalise(): void
     {
         $contextesJournalises = [];
-        $this->securityLogger->method('warning')
-            ->willReturnCallback(
-                function (\Stringable|string $message, array $context) use (&$contextesJournalises): void {
-                    $contextesJournalises[] = $context;
-                },
-            );
 
-        $clientEnEchec = new MockHttpClient(
-            static fn (): never => throw new TransportException('supervision injoignable'),
+        $journal = $this->createStub(LoggerInterface::class);
+        $journal->method('warning')->willReturnCallback(
+            function (\Stringable|string $message, array $context) use (&$contextesJournalises): void {
+                $contextesJournalises[] = $context;
+            },
         );
 
-        $this->creerService($clientEnEchec)->signaleBlocageApresPlafonnement();
+        $this->creerServiceAvecJournal($this->clientQuiEchoue(), $journal)->signaleBlocageApresPlafonnement();
 
         $this->assertStringNotContainsString(
             self::JETON,
@@ -149,13 +123,14 @@ final class AlerteSecuriteServiceTest extends TestCase
 
     public function test_sans_jeton_aucun_appel_n_est_tente(): void
     {
-        $client = new MockHttpClient(
-            static fn (): never => throw new \LogicException('Aucun appel ne devait être tenté.'),
+        $client = $this->clientQuiRefuseTouteSollicitation();
+
+        $service = new AlerteSecuriteService(
+            $client,
+            $this->createStub(LoggerInterface::class),
+            'dev',
+            self::URL_BASE,
         );
-
-        $this->securityLogger->expects($this->never())->method('warning');
-
-        $service = new AlerteSecuriteService($client, $this->securityLogger, 'dev', self::URL_BASE, null);
 
         $service->signaleBlocageApresPlafonnement();
 
@@ -164,11 +139,15 @@ final class AlerteSecuriteServiceTest extends TestCase
 
     public function test_sans_url_de_base_aucun_appel_n_est_tente(): void
     {
-        $client = new MockHttpClient(
-            static fn (): never => throw new \LogicException('Aucun appel ne devait être tenté.'),
-        );
+        $client = $this->clientQuiRefuseTouteSollicitation();
 
-        $service = new AlerteSecuriteService($client, $this->securityLogger, 'dev', null, self::JETON);
+        $service = new AlerteSecuriteService(
+            $client,
+            $this->createStub(LoggerInterface::class),
+            'dev',
+            null,
+            self::JETON,
+        );
 
         $service->signaleBlocageApresPlafonnement();
 
@@ -177,12 +156,47 @@ final class AlerteSecuriteServiceTest extends TestCase
 
     private function creerService(MockHttpClient $httpClient): AlerteSecuriteService
     {
+        return $this->creerServiceAvecJournal($httpClient, $this->createStub(LoggerInterface::class));
+    }
+
+    private function creerServiceAvecJournal(
+        MockHttpClient $httpClient,
+        LoggerInterface $journal,
+    ): AlerteSecuriteService {
         return new AlerteSecuriteService(
             $httpClient,
-            $this->securityLogger,
+            $journal,
             'preprod',
             self::URL_BASE,
             self::JETON,
+        );
+    }
+
+    private function clientQuiEchoue(): MockHttpClient
+    {
+        return new MockHttpClient(
+            static fn (): never => throw new TransportException('supervision injoignable'),
+        );
+    }
+
+    private function clientQuiRefuseTouteSollicitation(): MockHttpClient
+    {
+        return new MockHttpClient(
+            static fn (): never => throw new \LogicException('Aucun appel ne devait être tenté.'),
+        );
+    }
+
+    /**
+     * Client qui répond favorablement et consigne l'URL sollicitée dans $urlSollicitee.
+     */
+    private function clientQuiReleveLUrl(string &$urlSollicitee): MockHttpClient
+    {
+        return new MockHttpClient(
+            static function (string $methode, string $url) use (&$urlSollicitee): ResponseInterface {
+                $urlSollicitee = $url;
+
+                return new MockResponse('{"ok":true}');
+            },
         );
     }
 }

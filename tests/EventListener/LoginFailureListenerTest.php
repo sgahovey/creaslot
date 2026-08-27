@@ -155,8 +155,8 @@ final class LoginFailureListenerTest extends TestCase
     /**
      * Service d'alerte dont l'appel sortant échoue systématiquement.
      *
-     * Le logger du service est distinct de celui de l'écouteur : on veut isoler
-     * l'assertion sur la ligne de journal produite par l'écouteur.
+     * Le journal du service est une doublure muette, distincte de celle de
+     * l'écouteur : on veut isoler l'assertion sur la ligne produite par l'écouteur.
      */
     private function creerAlerteEnEchec(): AlerteSecuriteService
     {
@@ -166,7 +166,7 @@ final class LoginFailureListenerTest extends TestCase
 
         return new AlerteSecuriteService(
             $clientEnEchec,
-            $this->createMock(LoggerInterface::class),
+            $this->createStub(LoggerInterface::class),
             'test',
             'http://uptime-kuma:3001',
             'jeton-de-test',
@@ -181,7 +181,7 @@ final class LoginFailureListenerTest extends TestCase
     {
         return new AlerteSecuriteService(
             new MockHttpClient(),
-            $this->createMock(LoggerInterface::class),
+            $this->createStub(LoggerInterface::class),
             'test',
         );
     }
