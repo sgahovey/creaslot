@@ -23,8 +23,8 @@
     /* Couleurs sémantiques */
     --cs-success: #28A745;
     --cs-danger:  #DC3545;
-    --cs-warning: #FD7E14;
-    --cs-info:    #17A2B8;
+    --cs-warning: #C05802;   /* RGAA : blanc a 4,53 (etait #FD7E14, 2,57). Distinct de --cs-orange-visio, qui garde sa teinte */
+    --cs-info:    #128294;   /* RGAA : blanc a 4,52 (etait #17A2B8, 3,04) */
 
     /* Fonds */
     --cs-bg-page:   #F8F9FA;
@@ -34,13 +34,13 @@
 
     /* Textes */
     --cs-text-primary:   #1E1E1E;
-    --cs-text-secondary: #6C757D;
+    --cs-text-secondary: #6B747C;   /* RGAA : 4,51 sur --cs-bg-page (etait #6C757D, 4,45) */
     --cs-text-light:     #FFFFFF;
     --cs-text-disabled:  #ADB5BD;
 
     /* Bordures */
     --cs-border:       #DEE2E6;
-    --cs-border-input: #CED4DA;
+    --cs-border-input: #8896A5;   /* RGAA : 3,02 sur blanc (etait #CED4DA, 1,49) */
     --cs-border-focus: #1F4E79;
 
     /* Typographie */
@@ -87,6 +87,14 @@
     --bs-border-color:   #DEE2E6;
     --bs-font-sans-serif: 'Inter', system-ui, sans-serif;
     --bs-border-radius:  var(--cs-radius-md);
+
+    /* RGAA. Ces trois variables sont celles que Bootstrap lit reellement.
+       Surcharger --bs-primary ne change pas la couleur des liens : la regle
+       `a { color: rgba(var(--bs-link-color-rgb), ...) }` ignore --bs-primary.
+       De meme, .text-secondary et .text-muted lisent --bs-secondary-rgb. */
+    --bs-link-color:     #0368FD;   /* 4,53 sur --cs-bg-page, 4,77 sur --cs-bg-card (etait #0D6EFD : 4,27 et 4,50) */
+    --bs-link-color-rgb: 3, 104, 253;
+    --bs-secondary-rgb:  107, 116, 124;   /* #6B747C, aligne sur --cs-text-secondary */
 }
 
 /* ============================================================
@@ -253,7 +261,8 @@
 }
 
 .cs-footer-copyright {
-    color: rgba(255, 255, 255, 0.45);
+    /* RGAA : 4,52 sur --cs-blue-primary (l'opacite etait 0.45, soit 3,10). */
+    color: rgba(255, 255, 255, 0.63);
     font-size: var(--cs-fs-tiny);
 }
 
@@ -586,7 +595,11 @@
 }
 .cs-fc-calendar .fc-event.cs-fc-creneau.fc-event-passe,
 .cs-fc-calendar .fc-event.cs-fc-creneau.fc-event-past {
-    opacity: 0.62 !important;
+    /* RGAA : l'attenuation s'applique au texte comme au fond. A 0.62, le couple
+       tombait a 2,44 (presentiel), 2,69 (visio) et 2,08 (telephone). A 0.89, les
+       deux premiers repassent au dessus de 4,5. Le telephone reste en ecart, son
+       couple plafonnant a 4,37 meme sans attenuation (DT-45). */
+    opacity: 0.89 !important;
     filter: grayscale(0.08);
 }
 
