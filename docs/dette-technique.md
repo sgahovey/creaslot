@@ -1205,7 +1205,13 @@ chaque déploiement et porteur d'un risque silencieux de duplication de fichiers
 
 **Fichiers concernés** : `config/packages/monolog.yaml` (handler `security`, lignes 57 à 63) ; `compose.prod.yml` (politique de journalisation Docker, ancre `x-logging`). Aucun code applicatif n'est en cause.
 
-**Condition de levée** : la dette sera close lorsqu'une ligne du canal `security` écrite avant une recréation de conteneur restera consultable après cette recréation, et qu'une fenêtre de rétention aura été fixée et documentée.
+**Correctif en cours, temps 1 (27/08/2026)** : un second handler `security_fichier` est ajouté au canal, en plus de celui sur `stderr` qui reste en place. Type `rotating_file`, rotation quotidienne, `max_files: 180`, soit **six mois glissants**, écrivant dans `%kernel.logs_dir%/security.log` sur un volume Docker nommé (`logs_preprod`, `logs_prod`). Le point de montage `/var/www/html/var/log` existe déjà dans l'image en `app:app`, le volume hérite donc des droits sans modification du Dockerfile, sur le modèle éprouvé de `/srv-assets`.
+
+**Pourquoi six mois et non douze** : la durée est volontairement plus courte que celle du journal d'administration (`JournalAdmin::DUREE_CONSERVATION_MOIS = 12`), et cet écart est assumé. Les deux traces n'ont pas la même finalité. Le journal d'administration sert l'**accountability** (RGPD art. 5.2) sur des actes administratifs accomplis par des personnes habilitées : sa valeur ne décroît pas. Le canal `security` est une trace de **détection technique**, dont la valeur décroît vite et qui journalise l'adresse **tentée**, y compris celle de personnes qui n'ont pas de compte et ne sauront jamais qu'elle a été enregistrée. Une durée plus courte sert donc la minimisation (art. 5.1.c) et la limitation de la conservation (art. 5.1.e). Six mois est par ailleurs la durée de référence pour les journaux de connexion.
+
+**Réserve** : le volume n'est pas sauvegardé. `scripts/backup-db.sh` ne couvre que la base. Les journaux survivent désormais à la recréation d'un conteneur, ce qui est l'objet de cette dette, mais pas à la perte du VPS.
+
+**Condition de levée** : la dette sera close lorsqu'une ligne du canal `security` écrite avant une recréation de conteneur restera consultable après cette recréation, **en production**, et qu'une fenêtre de rétention aura été fixée et documentée. La fenêtre est fixée à six mois. La preuve de survie reste à faire, d'abord en préproduction puis en production.
 
 **Hors périmètre** : le choix du mécanisme. Plusieurs voies existent, du simple montage d'un volume persistant jusqu'à un collecteur externe, et elles n'engagent pas le même coût d'exploitation ni la même surface à sauvegarder. L'arbitrage mérite d'être fait à froid. Hors périmètre également, l'alerte elle-même, qui dépend de cette dette et non l'inverse.
 
