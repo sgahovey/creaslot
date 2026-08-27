@@ -1096,21 +1096,37 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 
 **Détecté** : 26/08/2026, lors de la promotion `develop` vers `preprod` portant DT-42.
 
-**Constat, mesuré à cette date** : trois cycles de promotion en squash (demandes d'intégration
-#111 du 16/07, #116 du 18/07 et #118 du 22/07) ont suffi à produire l'état suivant. L'ancêtre
-commun réel remontait à `cc521c9` (demande #99, juillet), soit **37 commits de divergence** côté
-`develop` et 3 côté `preprod`. La fusion échouait sur **8 conflits**, dont **7 faux** : sur ces
-sept fichiers, `develop` contenait strictement le contenu de `preprod`, augmenté, la divergence
-n'étant qu'une reformulation ou un ajout. Le seul conflit réel, `.env`, se tranchait sans perte,
-l'étiquette de préproduction étant portée par `.env.preprod`, injecté par `env_file`.
+**Constat : le défaut touche les DEUX arêtes de la chaîne de promotion.** Mesuré le 26/08/2026 sur
+`develop` vers `preprod`, puis le même jour sur `preprod` vers `main`, à quelques heures
+d'intervalle et sans aucun lien entre les deux mesures.
 
-Plus grave que les conflits eux-mêmes : **7 fichiers passaient en fusion automatique, sans
-conflit, et auraient été dupliqués**. Il s'agit des six diagrammes de cas d'utilisation et du
-script de création de base, déplacés vers `docs/conception/` sur `develop`, restés à l'ancien
-chemin `docs/diagrammes/` sur `preprod`. Git, ne voyant pas la parenté, aurait conclu à un ajout
-côté `preprod` et réintroduit chaque figure **en double, à deux chemins différents**. Une fusion
-ordinaire, même avec les huit conflits correctement résolus, aurait donc produit un dépôt
-incorrect sans qu'aucun signal ne l'indique.
+| Arête | Ancêtre commun réel | Divergence | Conflits | Dont faux | Fichiers dupliqués en silence |
+|---|---|---:|---:|---:|---:|
+| `develop` vers `preprod` | `cc521c9` (demande #99) | 37 commits contre 3 | **8** | **7** | **7** |
+| `preprod` vers `main` | `afa9f14` (US-7.5, demande #82) | 21 commits contre 4 | **9** | 8 | **7** |
+
+Les deux arêtes présentent le **même profil** : une écrasante majorité de faux conflits, où la
+branche amont contient strictement le contenu de la branche aval, augmenté, la divergence n'étant
+qu'une reformulation ou un ajout. Les rares conflits réels se tranchent sans perte : `.env` porte
+en aval `APP_ENVIRONMENT_LABEL` et `APP_PREPROD` figés, vestige d'une approche remplacée depuis par
+`.env.preprod` et `.env.prod`, injectés par `env_file` et donc prioritaires. Vérifié dans le
+conteneur de production : bien que le `.env` de `main` déclare `APP_PREPROD=true` et
+`APP_ENVIRONMENT_LABEL=preprod`, les valeurs effectives sont `false` et `prod`, et la page de
+connexion publique ne porte ni bandeau de préproduction ni préfixe dans son titre.
+
+Plus grave que les conflits eux-mêmes : **7 fichiers passent en fusion automatique, sans conflit,
+et seraient dupliqués**. Ce sont **exactement les mêmes sept** sur les deux arêtes : les six
+diagrammes de cas d'utilisation et le script de création de base, déplacés vers `docs/conception/`
+en amont, restés à l'ancien chemin `docs/diagrammes/` en aval. Git, ne voyant pas la parenté,
+conclut à un ajout côté aval et réintroduit chaque figure **en double, à deux chemins différents**.
+Une fusion ordinaire, même avec tous les conflits correctement résolus, produirait donc un dépôt
+incorrect **sans qu'aucun signal ne l'indique**.
+
+**C'est ce qui établit le caractère structurel du défaut** : deux arêtes indépendantes, deux
+ancêtres communs différents, deux volumes de divergence différents, et pourtant le même profil de
+conflits et rigoureusement les mêmes sept fichiers dupliqués. Il ne s'agit pas d'un incident de
+fusion mal résolu une fois, mais du comportement déterministe de l'outil dans cette configuration
+de branches.
 
 **Cause racine** : la fusion en squash sur une branche de longue durée est incompatible avec la
 notion d'ancêtre commun de Git. Elle convient à l'intégration de branches de fonctionnalité
@@ -1118,11 +1134,18 @@ notion d'ancêtre commun de Git. Elle convient à l'intégration de branches de 
 permanentes qui doivent continuer à se comparer entre elles. Ce n'est pas un incident, c'est le
 comportement attendu de l'outil dans cette configuration.
 
-**Contournement appliqué le 26/08/2026** : fusion `git merge -s ours origin/preprod` dans
-`develop`, qui restaure la parenté entre les deux branches **sans modifier l'arbre**. Contrôle
-effectué avant poussée : l'arbre résultant est identique à celui d'`origin/develop`, même
-empreinte `62d52e06`. Ce geste répare l'état du moment, il ne traite pas la cause : le problème
-se reproduira au cycle de promotion suivant.
+**Contournement appliqué le 26/08/2026, arête `develop` vers `preprod`** : fusion
+`git merge -s ours origin/preprod` dans `develop`, qui restaure la parenté entre les deux branches
+**sans modifier l'arbre**. Contrôle effectué avant poussée : arbre identique à celui
+d'`origin/develop`, même empreinte `62d52e06`. La promotion, jusque-là refusée avec
+`mergeable: CONFLICTING`, est passée à `MERGEABLE` sans autre intervention.
+
+Ce geste a demandé une **levée temporaire du ruleset** : la branche n'autorisait que la fusion en
+squash, laquelle aurait supprimé le second parent et rendu l'opération sans effet. Le ruleset a été
+rétabli aussitôt après. La même levée sera nécessaire sur `preprod` pour l'arête suivante.
+
+Ces contournements réparent l'état du moment, ils ne traitent pas la cause : le problème se
+reproduira à chaque cycle de promotion, sur les deux arêtes.
 
 **Condition de levée** : la dette sera close lorsque les promotions entre branches permanentes ne
 produiront plus de divergence structurelle, c'est-à-dire lorsque deux promotions consécutives
