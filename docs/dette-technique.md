@@ -1,6 +1,6 @@
 # Dette technique CreaSlot — Suivi
 
-Date dernière mise à jour : 22/07/2026.
+Date dernière mise à jour : 27/08/2026.
 Convention : DT-N = Dette Technique numéro N.
 
 ---
@@ -1078,6 +1078,34 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 
 ---
 
+## DT-42 — Connexion applicative vers MySQL en clair sur les quatre services (🟡 MOYEN) — ✅ RÉSOLUE (27/08/2026)
+
+> **✅ RÉSOLUE le 27/08/2026**, après un diagnostic en lecture seule mené le 23/08 puis un déploiement en deux temps, préproduction le 26/08 et production le 27/08.
+>
+> **Origine** : le serveur MySQL savait déjà faire du TLS (`have_ssl = YES`, `have_openssl = YES`) et ses certificats auto-signés étaient présents dans le datadir depuis le premier démarrage, le 16/06/2026. Rien ne manquait côté serveur. Côté client, PDO sous mysqlnd **ne négocie pas TLS spontanément** : sans option explicite, il ouvre une session en clair, même face à un serveur qui accepte le chiffrement.
+>
+> **Résumé fix** : l'autorité `ca.pem` est extraite du conteneur `db` et versionnée dans `docker/mysql/ca.pem` (clé publique, pas un secret), puis montée en lecture seule sur `/etc/mysql/ca.pem` dans les **quatre** services applicatifs. Les options TLS sont posées via `driverOptions` et les constantes PDO (`PDO::MYSQL_ATTR_SSL_CA`, et `PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT` à `false`), dans le bloc **`when@prod` uniquement**. Commits `5416b2e` (demande d'intégration #141) et `8a9d6ae` (demande #144).
+
+**Détecté** : 23/08/2026, lors d'un état des lieux de la catégorie cryptographique de l'audit OWASP.
+
+**Constat** : les quatre connexions applicatives vers MySQL circulaient **en clair** sur le réseau Docker interne. Mesuré depuis les applications elles-mêmes, et non depuis le conteneur MySQL : `Ssl_cipher` et `Ssl_version` étaient **vides** sur `app-prod`, `app-preprod`, `worker-prod` et `worker-preprod`. C'est la limite que `docs/audit-securite-owasp.md` déclarait en toutes lettres, et qui maintenait la catégorie cryptographique en **partiel** dans le tableau de synthèse.
+
+**Cause racine** : PDO sous mysqlnd n'active pas TLS sans option explicite. Le paramètre nommé `ssl_ca` de DBAL n'est lu que par le driver `mysqli` ; le projet utilisant `pdo_mysql`, il fallait passer par `driverOptions` et les constantes PDO. La vérification du nom du serveur est désactivée parce que le certificat auto-signé porte le CN `MySQL_Server_8.0.46_Auto_Generated_CA_Certificate`, qui ne correspond pas à l'hôte `db` ; le chiffrement du transport reste effectif.
+
+**Fichiers concernés** : `docker/mysql/ca.pem` (nouveau), `compose.prod.yml` (montage sur les quatre services), `config/packages/doctrine.yaml` (bloc `when@prod`), et `docs/runbook-deploiement.md` (nouvelle section 2.1 : procédure, vérification, retour arrière et réserve).
+
+**Action réalisée** : déploiement en deux temps par le pipeline, préproduction d'abord. Résultat mesuré sur les quatre services, après recréation des conteneurs : `Ssl_cipher = TLS_AES_256_GCM_SHA384` et `Ssl_version = TLSv1.3`. Le worker de production a bien été recréé, son `RestartCount` passant de 505 à 0, et ses journaux affichent `[OK] Consuming messages from transport "async"` sans aucune occurrence de `SQLSTATE`, `Connection refused`, `certificate` ni `exception` : la preuve que sa connexion chiffrée s'ouvre, son transport étant `doctrine://default`.
+
+**Point de vigilance** : les workers ont été inclus dans le montage parce qu'ils ouvrent la **même** connexion Doctrine. Les omettre aurait activé le TLS pour tout le monde via `when@prod` tout en les laissant sans certificat, donc incapables de démarrer, et les rappels J-1 auraient cessé.
+
+**Réserve** : l'autorité est liée au volume de données. Un `down -v` sur la stack de production détruirait `mysql_data_prod`, MySQL régénérerait une **nouvelle** autorité au démarrage suivant, et le `ca.pem` versionné deviendrait obsolète : plus aucune connexion applicative ne s'établirait. La remise en état consiste à réextraire l'autorité et à la recommiter.
+
+**Hors périmètre** : le **chiffrement au repos**, écarté délibérément. Sur un serveur unique, la clé maîtresse vivrait sur la même machine que les données qu'elle protège : le gain serait de façade. Écarté également, toute contrainte `REQUIRE SSL` sur les comptes MySQL : `require_secure_transport` reste à `OFF` et aucun compte ne porte cette contrainte, ce qui maintient le retour arrière à une seule ligne de configuration à retirer. C'est le seul geste de ce chantier qui ne se déferait pas sans intervention en base.
+
+**Priorité** : 🟡 moyenne (défense en profondeur sur un réseau Docker interne non exposé ; aucune porte ouverte n'était refermée, mais la limite était déclarée dans l'audit et affaiblissait la catégorie cryptographique).
+
+---
+
 ## DT-43 — La fusion en squash à chaque promotion efface l'ancêtre commun entre `develop` et `preprod` (🟡 MOYEN) — ⏳ OUVERTE (26/08/2026)
 
 > **⏳ OUVERTE le 26/08/2026** — découverte en tentant de promouvoir `develop` vers `preprod` pour
@@ -1096,7 +1124,7 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 
 **Détecté** : 26/08/2026, lors de la promotion `develop` vers `preprod` portant DT-42.
 
-**Constat : le défaut touche les DEUX arêtes de la chaîne de promotion.** Mesuré le 26/08/2026 sur
+**Constat** : le défaut touche les **deux arêtes** de la chaîne de promotion. Mesuré le 26/08/2026 sur
 `develop` vers `preprod`, puis le même jour sur `preprod` vers `main`, à quelques heures
 d'intervalle et sans aucun lien entre les deux mesures.
 
@@ -1122,7 +1150,7 @@ conclut à un ajout côté aval et réintroduit chaque figure **en double, à de
 Une fusion ordinaire, même avec tous les conflits correctement résolus, produirait donc un dépôt
 incorrect **sans qu'aucun signal ne l'indique**.
 
-**C'est ce qui établit le caractère structurel du défaut** : deux arêtes indépendantes, deux
+C'est ce qui établit le **caractère structurel** du défaut : deux arêtes indépendantes, deux
 ancêtres communs différents, deux volumes de divergence différents, et pourtant le même profil de
 conflits et rigoureusement les mêmes sept fichiers dupliqués. Il ne s'agit pas d'un incident de
 fusion mal résolu une fois, mais du comportement déterministe de l'outil dans cette configuration
@@ -1134,9 +1162,9 @@ notion d'ancêtre commun de Git. Elle convient à l'intégration de branches de 
 permanentes qui doivent continuer à se comparer entre elles. Ce n'est pas un incident, c'est le
 comportement attendu de l'outil dans cette configuration.
 
-**Contournement appliqué le 26/08/2026, arête `develop` vers `preprod`** : fusion
+**Contournement appliqué** : le 26/08/2026, sur l'arête `develop` vers `preprod`, fusion
 `git merge -s ours origin/preprod` dans `develop`, qui restaure la parenté entre les deux branches
-**sans modifier l'arbre**. Contrôle effectué avant poussée : arbre identique à celui
+sans modifier l'arbre. Contrôle effectué avant poussée : arbre identique à celui
 d'`origin/develop`, même empreinte `62d52e06`. La promotion, jusque-là refusée avec
 `mergeable: CONFLICTING`, est passée à `MERGEABLE` sans autre intervention.
 
