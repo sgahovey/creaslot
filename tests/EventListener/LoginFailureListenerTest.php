@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Tests\EventListener;
 
 use App\EventListener\LoginFailureListener;
+use App\Service\AlerteSecuriteService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpClient\Exception\TransportException;
+use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Core\Exception\BadCredentialsException;
@@ -27,6 +30,10 @@ use Symfony\Component\Security\Http\Event\LoginFailureEvent;
  *
  * Le logger est le seul collaborateur observé ; l'authenticator est un stub, il
  * n'est présent que pour satisfaire le constructeur de l'évènement.
+ *
+ * Le dernier test porte sur l'isolation de l'alerte de supervision : c'est le
+ * point critique du dispositif, une supervision en panne ne devant ni interrompre
+ * l'authentification, ni empêcher l'écriture de la trace.
  */
 final class LoginFailureListenerTest extends TestCase
 {
@@ -37,7 +44,10 @@ final class LoginFailureListenerTest extends TestCase
     protected function setUp(): void
     {
         $this->securityLogger = $this->createMock(LoggerInterface::class);
-        $this->listener = new LoginFailureListener($this->securityLogger);
+        $this->listener = new LoginFailureListener(
+            $this->securityLogger,
+            $this->creerAlerteMuette(),
+        );
     }
 
     public function test_compte_desactive_est_journalise_en_notice(): void
@@ -120,6 +130,60 @@ final class LoginFailureListenerTest extends TestCase
             new TooManyLoginAttemptsAuthenticationException(5),
             null,
         ));
+    }
+
+    public function test_l_echec_de_l_alerte_n_interrompt_pas_le_traitement(): void
+    {
+        $this->securityLogger->expects($this->once())
+            ->method('error')
+            ->with(
+                'Connexion bloquée après plafonnement des tentatives',
+                ['email' => 'auditeur@example.test'],
+            );
+
+        $ecouteur = new LoginFailureListener(
+            $this->securityLogger,
+            $this->creerAlerteEnEchec(),
+        );
+
+        $ecouteur($this->creerEvenement(
+            new TooManyLoginAttemptsAuthenticationException(5),
+            'auditeur@example.test',
+        ));
+    }
+
+    /**
+     * Service d'alerte dont l'appel sortant échoue systématiquement.
+     *
+     * Le logger du service est distinct de celui de l'écouteur : on veut isoler
+     * l'assertion sur la ligne de journal produite par l'écouteur.
+     */
+    private function creerAlerteEnEchec(): AlerteSecuriteService
+    {
+        $clientEnEchec = new MockHttpClient(
+            static fn (): never => throw new TransportException('supervision injoignable'),
+        );
+
+        return new AlerteSecuriteService(
+            $clientEnEchec,
+            $this->createMock(LoggerInterface::class),
+            'test',
+            'http://uptime-kuma:3001',
+            'jeton-de-test',
+        );
+    }
+
+    /**
+     * Service d'alerte non configuré, donc silencieux : c'est l'état des autres
+     * tests, qui portent sur le niveau de journalisation et non sur l'alerte.
+     */
+    private function creerAlerteMuette(): AlerteSecuriteService
+    {
+        return new AlerteSecuriteService(
+            new MockHttpClient(),
+            $this->createMock(LoggerInterface::class),
+            'test',
+        );
     }
 
     private function creerEvenement(AuthenticationException $exception, ?string $email): LoginFailureEvent
