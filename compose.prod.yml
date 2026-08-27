@@ -60,6 +60,10 @@ services:
         required: false
     volumes:
       - assets_preprod:/srv-assets
+      # Journaux applicatifs persistants : le canal security y ecrit un fichier
+      # rotatif qui survit a la recreation du conteneur (DT-44). Le chemin existe
+      # deja dans l'image en app:app (Dockerfile), le volume herite donc des droits.
+      - logs_preprod:/var/www/html/var/log
       # Autorite auto-signee de MySQL, extraite du datadir : elle permet a PDO
       # d'ouvrir la connexion en TLS (cf. doctrine.yaml, bloc when@prod).
       - ./docker/mysql/ca.pem:/etc/mysql/ca.pem:ro
@@ -79,6 +83,10 @@ services:
         required: false
     volumes:
       - assets_prod:/srv-assets
+      # Journaux applicatifs persistants : le canal security y ecrit un fichier
+      # rotatif qui survit a la recreation du conteneur (DT-44). Le chemin existe
+      # deja dans l'image en app:app (Dockerfile), le volume herite donc des droits.
+      - logs_prod:/var/www/html/var/log
       - ./docker/mysql/ca.pem:/etc/mysql/ca.pem:ro
     networks:
       - creaslot-prod-net
@@ -113,6 +121,8 @@ services:
 volumes:
   assets_preprod:
   assets_prod:
+  logs_preprod:
+  logs_prod:
   mysql_data_prod:
 
 networks:

@@ -1,6 +1,6 @@
 # Dette technique CreaSlot — Suivi
 
-Date dernière mise à jour : 22/07/2026.
+Date dernière mise à jour : 27/08/2026.
 Convention : DT-N = Dette Technique numéro N.
 
 ---
@@ -1078,6 +1078,34 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 
 ---
 
+## DT-42 — Connexion applicative vers MySQL en clair sur les quatre services (🟡 MOYEN) — ✅ RÉSOLUE (27/08/2026)
+
+> **✅ RÉSOLUE le 27/08/2026**, après un diagnostic en lecture seule mené le 23/08 puis un déploiement en deux temps, préproduction le 26/08 et production le 27/08.
+>
+> **Origine** : le serveur MySQL savait déjà faire du TLS (`have_ssl = YES`, `have_openssl = YES`) et ses certificats auto-signés étaient présents dans le datadir depuis le premier démarrage, le 16/06/2026. Rien ne manquait côté serveur. Côté client, PDO sous mysqlnd **ne négocie pas TLS spontanément** : sans option explicite, il ouvre une session en clair, même face à un serveur qui accepte le chiffrement.
+>
+> **Résumé fix** : l'autorité `ca.pem` est extraite du conteneur `db` et versionnée dans `docker/mysql/ca.pem` (clé publique, pas un secret), puis montée en lecture seule sur `/etc/mysql/ca.pem` dans les **quatre** services applicatifs. Les options TLS sont posées via `driverOptions` et les constantes PDO (`PDO::MYSQL_ATTR_SSL_CA`, et `PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT` à `false`), dans le bloc **`when@prod` uniquement**. Commits `5416b2e` (demande d'intégration #141) et `8a9d6ae` (demande #144).
+
+**Détecté** : 23/08/2026, lors d'un état des lieux de la catégorie cryptographique de l'audit OWASP.
+
+**Constat** : les quatre connexions applicatives vers MySQL circulaient **en clair** sur le réseau Docker interne. Mesuré depuis les applications elles-mêmes, et non depuis le conteneur MySQL : `Ssl_cipher` et `Ssl_version` étaient **vides** sur `app-prod`, `app-preprod`, `worker-prod` et `worker-preprod`. C'est la limite que `docs/audit-securite-owasp.md` déclarait en toutes lettres, et qui maintenait la catégorie cryptographique en **partiel** dans le tableau de synthèse.
+
+**Cause racine** : PDO sous mysqlnd n'active pas TLS sans option explicite. Le paramètre nommé `ssl_ca` de DBAL n'est lu que par le driver `mysqli` ; le projet utilisant `pdo_mysql`, il fallait passer par `driverOptions` et les constantes PDO. La vérification du nom du serveur est désactivée parce que le certificat auto-signé porte le CN `MySQL_Server_8.0.46_Auto_Generated_CA_Certificate`, qui ne correspond pas à l'hôte `db` ; le chiffrement du transport reste effectif.
+
+**Fichiers concernés** : `docker/mysql/ca.pem` (nouveau), `compose.prod.yml` (montage sur les quatre services), `config/packages/doctrine.yaml` (bloc `when@prod`), et `docs/runbook-deploiement.md` (nouvelle section 2.1 : procédure, vérification, retour arrière et réserve).
+
+**Action réalisée** : déploiement en deux temps par le pipeline, préproduction d'abord. Résultat mesuré sur les quatre services, après recréation des conteneurs : `Ssl_cipher = TLS_AES_256_GCM_SHA384` et `Ssl_version = TLSv1.3`. Le worker de production a bien été recréé, son `RestartCount` passant de 505 à 0, et ses journaux affichent `[OK] Consuming messages from transport "async"` sans aucune occurrence de `SQLSTATE`, `Connection refused`, `certificate` ni `exception` : la preuve que sa connexion chiffrée s'ouvre, son transport étant `doctrine://default`.
+
+**Point de vigilance** : les workers ont été inclus dans le montage parce qu'ils ouvrent la **même** connexion Doctrine. Les omettre aurait activé le TLS pour tout le monde via `when@prod` tout en les laissant sans certificat, donc incapables de démarrer, et les rappels J-1 auraient cessé.
+
+**Réserve** : l'autorité est liée au volume de données. Un `down -v` sur la stack de production détruirait `mysql_data_prod`, MySQL régénérerait une **nouvelle** autorité au démarrage suivant, et le `ca.pem` versionné deviendrait obsolète : plus aucune connexion applicative ne s'établirait. La remise en état consiste à réextraire l'autorité et à la recommiter.
+
+**Hors périmètre** : le **chiffrement au repos**, écarté délibérément. Sur un serveur unique, la clé maîtresse vivrait sur la même machine que les données qu'elle protège : le gain serait de façade. Écarté également, toute contrainte `REQUIRE SSL` sur les comptes MySQL : `require_secure_transport` reste à `OFF` et aucun compte ne porte cette contrainte, ce qui maintient le retour arrière à une seule ligne de configuration à retirer. C'est le seul geste de ce chantier qui ne se déferait pas sans intervention en base.
+
+**Priorité** : 🟡 moyenne (défense en profondeur sur un réseau Docker interne non exposé ; aucune porte ouverte n'était refermée, mais la limite était déclarée dans l'audit et affaiblissait la catégorie cryptographique).
+
+---
+
 ## DT-43 — La fusion en squash à chaque promotion efface l'ancêtre commun entre `develop` et `preprod` (🟡 MOYEN) — ⏳ OUVERTE (26/08/2026)
 
 > **⏳ OUVERTE le 26/08/2026** — découverte en tentant de promouvoir `develop` vers `preprod` pour
@@ -1096,21 +1124,37 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 
 **Détecté** : 26/08/2026, lors de la promotion `develop` vers `preprod` portant DT-42.
 
-**Constat, mesuré à cette date** : trois cycles de promotion en squash (demandes d'intégration
-#111 du 16/07, #116 du 18/07 et #118 du 22/07) ont suffi à produire l'état suivant. L'ancêtre
-commun réel remontait à `cc521c9` (demande #99, juillet), soit **37 commits de divergence** côté
-`develop` et 3 côté `preprod`. La fusion échouait sur **8 conflits**, dont **7 faux** : sur ces
-sept fichiers, `develop` contenait strictement le contenu de `preprod`, augmenté, la divergence
-n'étant qu'une reformulation ou un ajout. Le seul conflit réel, `.env`, se tranchait sans perte,
-l'étiquette de préproduction étant portée par `.env.preprod`, injecté par `env_file`.
+**Constat** : le défaut touche les **deux arêtes** de la chaîne de promotion. Mesuré le 26/08/2026 sur
+`develop` vers `preprod`, puis le même jour sur `preprod` vers `main`, à quelques heures
+d'intervalle et sans aucun lien entre les deux mesures.
 
-Plus grave que les conflits eux-mêmes : **7 fichiers passaient en fusion automatique, sans
-conflit, et auraient été dupliqués**. Il s'agit des six diagrammes de cas d'utilisation et du
-script de création de base, déplacés vers `docs/conception/` sur `develop`, restés à l'ancien
-chemin `docs/diagrammes/` sur `preprod`. Git, ne voyant pas la parenté, aurait conclu à un ajout
-côté `preprod` et réintroduit chaque figure **en double, à deux chemins différents**. Une fusion
-ordinaire, même avec les huit conflits correctement résolus, aurait donc produit un dépôt
-incorrect sans qu'aucun signal ne l'indique.
+| Arête | Ancêtre commun réel | Divergence | Conflits | Dont faux | Fichiers dupliqués en silence |
+|---|---|---:|---:|---:|---:|
+| `develop` vers `preprod` | `cc521c9` (demande #99) | 37 commits contre 3 | **8** | **7** | **7** |
+| `preprod` vers `main` | `afa9f14` (US-7.5, demande #82) | 21 commits contre 4 | **9** | 8 | **7** |
+
+Les deux arêtes présentent le **même profil** : une écrasante majorité de faux conflits, où la
+branche amont contient strictement le contenu de la branche aval, augmenté, la divergence n'étant
+qu'une reformulation ou un ajout. Les rares conflits réels se tranchent sans perte : `.env` porte
+en aval `APP_ENVIRONMENT_LABEL` et `APP_PREPROD` figés, vestige d'une approche remplacée depuis par
+`.env.preprod` et `.env.prod`, injectés par `env_file` et donc prioritaires. Vérifié dans le
+conteneur de production : bien que le `.env` de `main` déclare `APP_PREPROD=true` et
+`APP_ENVIRONMENT_LABEL=preprod`, les valeurs effectives sont `false` et `prod`, et la page de
+connexion publique ne porte ni bandeau de préproduction ni préfixe dans son titre.
+
+Plus grave que les conflits eux-mêmes : **7 fichiers passent en fusion automatique, sans conflit,
+et seraient dupliqués**. Ce sont **exactement les mêmes sept** sur les deux arêtes : les six
+diagrammes de cas d'utilisation et le script de création de base, déplacés vers `docs/conception/`
+en amont, restés à l'ancien chemin `docs/diagrammes/` en aval. Git, ne voyant pas la parenté,
+conclut à un ajout côté aval et réintroduit chaque figure **en double, à deux chemins différents**.
+Une fusion ordinaire, même avec tous les conflits correctement résolus, produirait donc un dépôt
+incorrect **sans qu'aucun signal ne l'indique**.
+
+C'est ce qui établit le **caractère structurel** du défaut : deux arêtes indépendantes, deux
+ancêtres communs différents, deux volumes de divergence différents, et pourtant le même profil de
+conflits et rigoureusement les mêmes sept fichiers dupliqués. Il ne s'agit pas d'un incident de
+fusion mal résolu une fois, mais du comportement déterministe de l'outil dans cette configuration
+de branches.
 
 **Cause racine** : la fusion en squash sur une branche de longue durée est incompatible avec la
 notion d'ancêtre commun de Git. Elle convient à l'intégration de branches de fonctionnalité
@@ -1118,11 +1162,18 @@ notion d'ancêtre commun de Git. Elle convient à l'intégration de branches de 
 permanentes qui doivent continuer à se comparer entre elles. Ce n'est pas un incident, c'est le
 comportement attendu de l'outil dans cette configuration.
 
-**Contournement appliqué le 26/08/2026** : fusion `git merge -s ours origin/preprod` dans
-`develop`, qui restaure la parenté entre les deux branches **sans modifier l'arbre**. Contrôle
-effectué avant poussée : l'arbre résultant est identique à celui d'`origin/develop`, même
-empreinte `62d52e06`. Ce geste répare l'état du moment, il ne traite pas la cause : le problème
-se reproduira au cycle de promotion suivant.
+**Contournement appliqué** : le 26/08/2026, sur l'arête `develop` vers `preprod`, fusion
+`git merge -s ours origin/preprod` dans `develop`, qui restaure la parenté entre les deux branches
+sans modifier l'arbre. Contrôle effectué avant poussée : arbre identique à celui
+d'`origin/develop`, même empreinte `62d52e06`. La promotion, jusque-là refusée avec
+`mergeable: CONFLICTING`, est passée à `MERGEABLE` sans autre intervention.
+
+Ce geste a demandé une **levée temporaire du ruleset** : la branche n'autorisait que la fusion en
+squash, laquelle aurait supprimé le second parent et rendu l'opération sans effet. Le ruleset a été
+rétabli aussitôt après. La même levée sera nécessaire sur `preprod` pour l'arête suivante.
+
+Ces contournements réparent l'état du moment, ils ne traitent pas la cause : le problème se
+reproduira à chaque cycle de promotion, sur les deux arêtes.
 
 **Condition de levée** : la dette sera close lorsque les promotions entre branches permanentes ne
 produiront plus de divergence structurelle, c'est-à-dire lorsque deux promotions consécutives
@@ -1135,3 +1186,33 @@ contrainte d'un déploiement.
 
 **Priorité** : 🟡 moyenne. Sans impact sur le code livré ni sur la production, mais bloquant à
 chaque déploiement et porteur d'un risque silencieux de duplication de fichiers.
+
+---
+
+## DT-44 — Aucune rétention des journaux applicatifs : le canal de sécurité disparaît avec le conteneur (🟡 MOYEN) — ⏳ OUVERTE (27/08/2026)
+
+> **⏳ OUVERTE le 27/08/2026** — constatée en instruisant la faisabilité d'une alerte automatique sur les évènements de sécurité.
+>
+> **Origine** : le canal `security` est correctement isolé et toujours écrit, hors `fingers_crossed` (US-9.5, cf. DT-42 pour le contexte OWASP A09). Mais son handler écrit sur `php://stderr`, [config/packages/monolog.yaml](../config/packages/monolog.yaml) lignes 57 à 63, et **rien ne recueille cette sortie au delà de Docker**. Il n'existe aucun fichier de journal applicatif sur le disque du VPS : ni dans `var/log`, ni dans `~/cron-logs`, qui ne contient que les sorties des tâches planifiées.
+
+**Détecté** : 27/08/2026, lors du diagnostic de faisabilité d'une alerte sur les évènements de sécurité.
+
+**Constat** : la sortie standard d'erreur est captée par le driver `json-file` de Docker, configuré dans `compose.prod.yml` avec `max-size: 10m` et `max-file: 3`, soit **30 Mo au maximum et aucune conservation au delà**. Le fichier physique vit sous `/var/lib/docker/containers/<id>/<id>-json.log` et **est détruit avec le conteneur**. Preuve mesurée : après la recréation du conteneur de production du 27/08/2026 à 01h45, lors du déploiement du TLS, une recherche sur **trente jours** de journaux ne remonte **aucune ligne** portant `"channel":"security"`. L'historique d'avant la recréation n'existe plus.
+
+**Cause racine** : la journalisation applicative s'arrête au conteneur. Écrire sur la sortie standard d'erreur est le bon choix pour une application conteneurisée, mais il suppose un collecteur en aval qui persiste et indexe. Ce collecteur n'existe pas : le cycle de vie des journaux est donc celui du conteneur, alors qu'une trace de sécurité doit survivre au redéploiement qui suit l'incident.
+
+**Ce qui en fait un chantier unique avec l'alerte** : une alerte temps réel sans rétention n'aurait pas de sens. Le signal partirait, mais l'enquête qui suit n'aurait **rien à lire** : ni l'historique des tentatives, ni le contexte, ni même la trace de l'alerte une fois le conteneur recréé. Traiter l'alerte avant la rétention reviendrait à installer une sirène dans un bâtiment sans caméra. C'est la raison pour laquelle cette dette est ouverte séparément et non fondue dans le renvoi que l'audit fait déjà sur l'alerte temps réel (`docs/audit-securite-owasp.md`, ligne 79).
+
+**Fichiers concernés** : `config/packages/monolog.yaml` (handler `security`, lignes 57 à 63) ; `compose.prod.yml` (politique de journalisation Docker, ancre `x-logging`). Aucun code applicatif n'est en cause.
+
+**Correctif en cours, temps 1 (27/08/2026)** : un second handler `security_fichier` est ajouté au canal, en plus de celui sur `stderr` qui reste en place. Type `rotating_file`, rotation quotidienne, `max_files: 180`, soit **six mois glissants**, écrivant dans `%kernel.logs_dir%/security.log` sur un volume Docker nommé (`logs_preprod`, `logs_prod`). Le point de montage `/var/www/html/var/log` existe déjà dans l'image en `app:app`, le volume hérite donc des droits sans modification du Dockerfile, sur le modèle éprouvé de `/srv-assets`.
+
+**Pourquoi six mois et non douze** : la durée est volontairement plus courte que celle du journal d'administration (`JournalAdmin::DUREE_CONSERVATION_MOIS = 12`), et cet écart est assumé. Les deux traces n'ont pas la même finalité. Le journal d'administration sert l'**accountability** (RGPD art. 5.2) sur des actes administratifs accomplis par des personnes habilitées : sa valeur ne décroît pas. Le canal `security` est une trace de **détection technique**, dont la valeur décroît vite et qui journalise l'adresse **tentée**, y compris celle de personnes qui n'ont pas de compte et ne sauront jamais qu'elle a été enregistrée. Une durée plus courte sert donc la minimisation (art. 5.1.c) et la limitation de la conservation (art. 5.1.e). Six mois est par ailleurs la durée de référence pour les journaux de connexion.
+
+**Réserve** : le volume n'est pas sauvegardé. `scripts/backup-db.sh` ne couvre que la base. Les journaux survivent désormais à la recréation d'un conteneur, ce qui est l'objet de cette dette, mais pas à la perte du VPS.
+
+**Condition de levée** : la dette sera close lorsqu'une ligne du canal `security` écrite avant une recréation de conteneur restera consultable après cette recréation, **en production**, et qu'une fenêtre de rétention aura été fixée et documentée. La fenêtre est fixée à six mois. La preuve de survie reste à faire, d'abord en préproduction puis en production.
+
+**Hors périmètre** : le choix du mécanisme. Plusieurs voies existent, du simple montage d'un volume persistant jusqu'à un collecteur externe, et elles n'engagent pas le même coût d'exploitation ni la même surface à sauvegarder. L'arbitrage mérite d'être fait à froid. Hors périmètre également, l'alerte elle-même, qui dépend de cette dette et non l'inverse.
+
+**Priorité** : 🟡 moyenne (aucun impact sur le service rendu ; mais toute capacité d'investigation après incident est aujourd'hui limitée à la durée de vie du conteneur, et elle conditionne l'alerte automatique).

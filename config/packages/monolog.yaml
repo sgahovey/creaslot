@@ -55,9 +55,29 @@ when@prod:
                 path: php://stderr
                 formatter: monolog.formatter.json
             # Évènements de sécurité (A09) : toujours écrits, hors fingers_crossed.
+            # Deux destinations volontairement redondantes.
+            # 1. stderr : capté par Docker, immédiat, pratique pour `docker compose logs`,
+            #    mais détruit avec le conteneur (DT-44).
             security:
                 type: stream
                 channels: [security]
                 path: php://stderr
                 level: info
+                formatter: monolog.formatter.json
+            # 2. fichier rotatif sur volume persistant : survit à la recréation du
+            #    conteneur. Rotation quotidienne, 180 fichiers conservés, soit six mois
+            #    glissants. Durée volontairement plus courte que les 12 mois du journal
+            #    d'administration (JournalAdmin::DUREE_CONSERVATION_MOIS) : ce dernier sert
+            #    l'accountability sur des actes administratifs, quand ce canal est une
+            #    détection technique dont la valeur décroît vite et qui journalise l'adresse
+            #    tentée,
+            #    y compris celle de personnes sans compte (minimisation, RGPD art. 5.1.c
+            #    et 5.1.e). Six mois est la durée de référence pour les journaux de
+            #    connexion.
+            security_fichier:
+                type: rotating_file
+                channels: [security]
+                path: "%kernel.logs_dir%/security.log"
+                level: info
+                max_files: 180
                 formatter: monolog.formatter.json
