@@ -33,7 +33,7 @@ flowchart TB
         end
 
         subgraph SUP["Supervision"]
-            KUMA["uptime-kuma<br/>port 3001<br/>joint par le proxy via le reseau web"]
+            KUMA["uptime-kuma<br/>port 3001<br/>joint par le proxy via le reseau web<br/>huit sondes, trois types :<br/>interrogation, attente de signal, declenchement par evenement"]
         end
 
         subgraph BDD["Base de donnees : instance UNIQUE, NON exposee"]
@@ -46,10 +46,13 @@ flowchart TB
     CADDY -->|"preprod.creaslot.re - basic_auth<br/>reseau web, php_fastcgi vers 9000"| APPPRE
     CADDY -->|"domaine de supervision - basic_auth<br/>reseau web, reverse_proxy vers 3001"| KUMA
 
-    APPPROD -->|"PDO 3306"| DB
-    WPROD -->|"PDO 3306"| DB
-    APPPRE -->|"PDO 3306"| DB
-    WPRE -->|"PDO 3306"| DB
+    APPPROD -->|"PDO 3306, TLS 1.3"| DB
+    WPROD -->|"PDO 3306, TLS 1.3"| DB
+    APPPRE -->|"PDO 3306, TLS 1.3"| DB
+    WPRE -->|"PDO 3306, TLS 1.3"| DB
+
+    APPPROD -.->|"alerte de securite, HTTP 3001<br/>reseau interne, sur blocage de connexion"| KUMA
+    APPPRE -.->|"alerte de securite, HTTP 3001<br/>reseau interne, sur blocage de connexion"| KUMA
 
     classDef navigateur fill:#f1f3f5,stroke:#868e96,stroke-width:1px,color:#212529
     classDef expose fill:#ffd8a8,stroke:#e8590c,stroke-width:3px,color:#212529
