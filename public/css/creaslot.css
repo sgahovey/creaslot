@@ -591,14 +591,23 @@
 .cs-fc-calendar .fc-event.cs-fc-creneau .fc-event-main-frame,
 .cs-fc-calendar .fc-event.cs-fc-creneau .fc-event-title,
 .cs-fc-calendar .fc-event.cs-fc-creneau .fc-event-time {
-    color: #1a1a1a !important;
+    /* #090909 et pas une valeur voisine (DT-45). C'est le gris le PLUS CLAIR qui
+       fasse passer les quatre cas du calendrier : evenement et creneau passe, pour
+       les trois types. Le facteur limitant est le bleu telephone attenue, a 4,51
+       pour un seuil de 4,5. Des #0A0A0A il retombe sous le seuil.
+       La marge de 0,01 est assumee, et c'est le test qui la protege :
+       tests/Accessibilite/ContrasteChartTest.php relit cette couleur ET l'opacite
+       d'attenuation depuis ce fichier, puis recalcule les couples. Toute retouche
+       de l'une ou de l'autre fait echouer la suite. Ne pas eclaircir sans y passer. */
+    color: #090909 !important;
 }
 .cs-fc-calendar .fc-event.cs-fc-creneau.fc-event-passe,
 .cs-fc-calendar .fc-event.cs-fc-creneau.fc-event-past {
     /* RGAA : l'attenuation s'applique au texte comme au fond. A 0.62, le couple
-       tombait a 2,44 (presentiel), 2,69 (visio) et 2,08 (telephone). A 0.89, les
-       deux premiers repassent au dessus de 4,5. Le telephone reste en ecart, son
-       couple plafonnant a 4,37 meme sans attenuation (DT-45). */
+       tombait a 2,44 (presentiel), 2,69 (visio) et 2,08 (telephone). A 0.89 et avec
+       le texte porte a #090909 (voir ci-dessus), les trois types passent : 5,63,
+       6,64 et 4,51. Cette valeur et celle du texte se tiennent l'une l'autre, elles
+       ne se retouchent pas separement (DT-45). */
     opacity: 0.89 !important;
     filter: grayscale(0.08);
 }
