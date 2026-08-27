@@ -158,8 +158,59 @@ l'authentification (A07), la cryptographie en transit (A02) et la journalisation
 dernières **vérifiées en production** (§4.5), ainsi qu'un **suivi traçable** des points renvoyés (registre de
 dette `docs/dette-technique.md`, itérations 9 et 14).
 
-**Note de numérotation** : ce document est mappé sur le **OWASP Top 10 (2021)**, où la catégorie
-cryptographique porte le numéro **A02** et « Insecure Design » le numéro **A04**. L'édition **2025** renumérote
-ces catégories : la cryptographie y devient **A04** et la journalisation **A09 — Logging & Alerting Failures**.
-Les deux numérotations coexistent donc dans les livrables du mémoire ; s'y référer par le **libellé** plutôt que
-par le numéro lève toute ambiguïté.
+**Note de numérotation** : ce document est mappé sur le **OWASP Top 10 (2021)**, tandis que le support de
+soutenance suit l'édition **2025**, qui a renuméroté et renommé les catégories. La table de correspondance
+figure au **§6**. En cas de doute, s'y référer par le **libellé** plutôt que par le numéro.
+
+---
+
+## 6. Correspondance avec l'édition 2025 du OWASP Top 10
+
+Le corps de cet audit (§3) est mappé sur l'édition **2021**, celle en vigueur lorsqu'il a été conduit, et il
+**n'est pas renuméroté** : c'est la version rendue en annexe du dossier. L'OWASP a depuis publié une nouvelle
+édition, qui renumérote et renomme plusieurs catégories. Ce changement de référentiel a été relevé par le
+dispositif de **veille** du projet (`docs/realisation/diagrammes/dispositif-veille.puml`), et le support de
+soutenance a été construit sur l'édition **2025**. Les deux éditions coexistent donc volontairement dans les
+livrables, et cette table les relie.
+
+| Catégorie 2021 — corps de cet audit | Catégorie 2025 correspondante | Statut du projet |
+|---|---|:--:|
+| **A01 — Broken Access Control** | **A01 — Contrôle d'accès** | ✅ Couvert |
+| **A02 — Cryptographic Failures** | **A04 — Défaillances cryptographiques** | ✅ Corrigé |
+| **A03 — Injection** | **A05 — Injection** | ✅ Couvert |
+| **A04 — Insecure Design** | **A06 — Conception non sécurisée** | ✅ Couvert |
+| **A05 — Security Misconfiguration** | **A02 — Mauvaise configuration** | ✅ Traité |
+| **A06 — Vulnerable & Outdated Components** | **A03 — Chaîne d'approvisionnement** *(périmètre élargi, cf. ci-dessous)* | ✅ Corrigé |
+| **A07 — Identification & Authentication Failures** | **A07 — Défaillances d'authentification** | ✅ Corrigé |
+| **A08 — Software & Data Integrity Failures** | **A08 — Manque d'intégrité** | ✅ Couvert |
+| **A09 — Security Logging & Monitoring** | **A09 — Journalisation et alerte** *(renommée, cf. ci-dessous)* | ✅ Corrigé |
+| **A10 — Server-Side Request Forgery (SSRF)** | *aucun équivalent direct* | ✅ N/A |
+| *aucun équivalent 2021* | **A10 — Conditions exceptionnelles** | *hors du tableau 2021, cf. ci-dessous* |
+
+### 6.1 Ce qui ne se correspond pas terme à terme
+
+Quatre lignes de la table ci-dessus ne sont pas de simples changements de numéro. Les signaler évite de forcer
+une équivalence qui n'existe pas.
+
+- **A06 (2021) → A03 (2025) : périmètre élargi.** « Vulnerable and Outdated Components » ne visait que les
+  composants tiers vulnérables ou périmés. « Software Supply Chain Failures » couvre l'ensemble de la chaîne
+  d'approvisionnement logicielle, ce qui déborde la seule liste des dépendances. La mesure du projet, une porte
+  CI bloquante sur `composer audit` (§2), traite le cœur de la catégorie 2021 ; elle n'en épuise pas le
+  périmètre 2025.
+- **A09 (2021) → A09 (2025) : même numéro, intitulé différent.** « Security Logging **& Monitoring** » devient
+  « Logging **& Alerting** Failures ». Le déplacement de l'accent est réel : observer ne suffit plus, il faut
+  réagir. C'est précisément ce qu'a apporté **DT-44** (§4.5), et c'est ce qui rend le statut « corrigé »
+  défendable sous les deux éditions plutôt que sous la seule édition 2021.
+- **A10 (2021) : SSRF n'est plus une catégorie de premier niveau en 2025.** Elle ne figure pas dans la liste
+  2025. Le statut « non applicable » du projet reste inchangé sur le fond : aucune requête sortante n'est
+  pilotée par l'utilisateur.
+- **A10 (2025) : « Mishandling of Exceptional Conditions » est une catégorie nouvelle**, sans équivalent dans
+  l'édition 2021. Elle n'a donc **aucune ligne** dans le corps de cet audit, qui ne pouvait pas l'auditer. Elle
+  est en revanche traitée dans le support de soutenance.
+
+### 6.2 Portée de cette table
+
+Cette table est un **outil de lecture**, pas une réévaluation. La colonne « Statut du projet » reprend, sans les
+modifier, les statuts établis au §3 sous l'édition 2021. Aucune conclusion de l'audit n'est révisée à l'aune du
+référentiel 2025 : le faire supposerait de réauditer chaque catégorie contre ses critères actuels, ce qui n'a
+pas été fait.
