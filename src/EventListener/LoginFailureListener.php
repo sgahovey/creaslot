@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\EventListener;
 
+use App\Service\AlerteSecuriteService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\Security\Core\Exception\DisabledException;
@@ -15,6 +16,7 @@ final class LoginFailureListener
 {
     public function __construct(
         private readonly LoggerInterface $securityLogger,
+        private readonly AlerteSecuriteService $alerteSecurite,
     ) {
     }
 
@@ -43,6 +45,12 @@ final class LoginFailureListener
                 'Connexion bloquée après plafonnement des tentatives',
                 ['email' => $email],
             );
+
+            // Alerte poussée APRÈS l'écriture du journal, jamais avant : la trace
+            // est la source de vérité, la notification n'en est que l'écho. Le
+            // service avale ses propres échecs, l'authentification ne peut donc
+            // pas être interrompue par une supervision indisponible.
+            $this->alerteSecurite->signaleBlocageApresPlafonnement();
 
             return;
         }
