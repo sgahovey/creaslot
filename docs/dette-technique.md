@@ -1224,3 +1224,69 @@ chaque déploiement et porteur d'un risque silencieux de duplication de fichiers
 **Hors périmètre** : le passage à un collecteur externe (indexation, corrélation, recherche sur plusieurs services), qui n'engage ni le même coût d'exploitation ni la même surface à sauvegarder. L'arbitrage mérite d'être fait à froid, hors de la fenêtre de soutenance.
 
 **Priorité** : 🟡 moyenne (aucun impact sur le service rendu ; mais la capacité d'investigation après incident était limitée à la durée de vie du conteneur, et elle conditionnait l'alerte automatique).
+
+---
+
+## DT-45 — Contrastes insuffisants dans la charte graphique (🟡 MOYEN) — ⏳ OUVERTE (27/08/2026)
+
+> **⏳ OUVERTE le 27/08/2026** — constatée en mesurant l'ensemble des couples texte sur fond de l'interface au regard du RGAA, à la demande de la revue d'accessibilité.
+>
+> **Origine** : la charte n'avait jamais été mesurée. Les couleurs ont été choisies pour leur cohérence visuelle, pas contre un seuil de contraste. Sur 44 couples réellement appliqués, **10 échouaient**.
+
+**Détecté** : 27/08/2026, lors d'un diagnostic de contraste mené couple par couple sur `public/css/creaslot.css`, les templates et les couleurs de type de rendez-vous lues en base.
+
+**Constat** : mesures selon la formule WCAG 2.1 (linéarisation sRGB au seuil 0,04045, exposant 2,4, luminance pondérée 0,2126 / 0,7152 / 0,0722). Calculateur vérifié au préalable sur deux paires de référence, noir sur blanc à 21,00 et `#767676` sur blanc à 4,54.
+
+| Élément | Couple mesuré | Mesure | Seuil |
+|---|---|---:|---:|
+| Texte secondaire sur fond de page | `#6C757D` / `#F8F9FA` | 4,45 | 4,5 |
+| Lien Bootstrap sur fond de page | `#0D6EFD` / `#F8F9FA` | 4,27 | 4,5 |
+| Mention de copyright | `rgba(255,255,255,.45)` / `#1F4E79` | 3,10 | 4,5 |
+| Bandeau de préproduction | `#FFFFFF` / `#FD7E14` | 2,57 | 4,5 |
+| Bandeau de développement | `#FFFFFF` / `#17A2B8` | 3,04 | 4,5 |
+| Bordure de champ de saisie | `#CED4DA` / `#FFFFFF` | 1,49 | 3,0 |
+| Créneau passé, présentiel | voile 0,62 sur blanc | 2,44 | 4,5 |
+| Créneau passé, visio | voile 0,62 sur blanc | 2,69 | 4,5 |
+| Créneau passé, téléphone | voile 0,62 sur blanc | 2,08 | 4,5 |
+| **Événement téléphone** | `#1A1A1A` / `#007BFF` | **4,37** | 4,5 |
+
+**Cause racine** : deux mécanismes distincts, et c'est ce qui explique que le défaut ait échappé à la relecture.
+
+1. **Aucune mesure n'était faite.** Les teintes ont été retenues à l'œil. Quatre des dix échecs se jouent à moins de 0,25 point du seuil, écart qu'aucune relecture visuelle ne peut détecter.
+2. **L'atténuation des créneaux passés porte sur le texte autant que sur le fond.** `opacity: 0.62` éclaircit les deux, si bien que le rapport s'effondre alors que la règle visait seulement à faire reculer le passé. Le défaut est né d'une intention de lisibilité.
+
+S'y ajoute un facteur aggravant : **CLAUDE.md désigne `docs/design-tokens.md` comme source de vérité unique de la charte, or ce fichier n'existe pas dans le dépôt.** La charte réelle est `public/css/creaslot.css`. Toute revue qui suivrait la consigne chercherait au mauvais endroit.
+
+**Fichiers concernés** : `public/css/creaslot.css` (jetons et deux règles), `tests/Accessibilite/ContrasteChartTest.php` (nouveau).
+
+**Action réalisée** : sept corrections, chacune calculée en conservant teinte et saturation en HSL et en ne faisant varier que la luminosité, jusqu'au franchissement du seuil **vérifié sur la valeur arrondie en hexadécimal**.
+
+| Jeton ou règle | Avant | Après | Mesure obtenue |
+|---|---|---|---:|
+| `--cs-text-secondary` | `#6C757D` | `#6B747C` | 4,51 |
+| `--bs-link-color` et `--bs-link-color-rgb` | `#0D6EFD` | `#0368FD` | 4,53 |
+| `--bs-secondary-rgb` | `108, 117, 125` | `107, 116, 124` | 4,51 |
+| Opacité de `.cs-footer-copyright` | `0.45` | `0.63` | 4,52 |
+| `--cs-warning` | `#FD7E14` | `#C05802` | 4,53 |
+| `--cs-info` | `#17A2B8` | `#128294` | 4,52 |
+| `--cs-border-input` | `#CED4DA` | `#8896A5` | 3,02 |
+| Opacité des créneaux passés | `0.62` | `0.89` | 4,57 et 5,39 |
+
+**Point de vigilance** : `--cs-warning` et `--cs-orange-visio` portaient la même valeur `#FD7E14` sans être le même concept. Seul le premier est assombri ; la couleur de type visio, lue en base, n'est pas touchée. De même, la couleur de lien se surcharge par `--bs-link-color-rgb` et non par `--bs-primary`, déjà surchargée dans la charte **sans effet sur les liens** : la règle `a { color: rgba(var(--bs-link-color-rgb), …) }` de Bootstrap ignore `--bs-primary`.
+
+**Résultat mesuré** : 44 couples recalculés après correction, **39 conformes**. Les cinq restants se répartissent ainsi : deux relèvent du bleu téléphone (cf. condition de levée), et trois sont exemptés sur vérification, à savoir les pastilles de couleur (porteuses de `aria-hidden` et systématiquement doublées du libellé en clair, vérifié aux six emplacements), la bordure de carte (décorative, la carte étant déjà distinguée par son fond) et le jeton `--cs-text-disabled` (déclaré mais appliqué nulle part, jeton mort).
+
+**Point de contrôle** : `tests/Accessibilite/ContrasteChartTest.php` **extrait les jetons de la charte** et recalcule chaque couple à l'exécution, plutôt que de comparer à une liste figée. Modifier une couleur sans vérifier son contraste fait désormais échouer la suite. Le test fige aussi l'écart du bleu téléphone par une assertion inversée, qui échouera le jour où la teinte sera corrigée : la dette ne peut donc pas se refermer en silence.
+
+**Condition de levée** : le couple `#1A1A1A` sur `#007BFF` (couleur de type téléphone, lue en base) plafonne à **4,37** et **aucune opacité ne le sauve** : même sans atténuation, il reste sous le seuil. Trois issues existent, aucune indolore, et l'arbitrage est une décision de charte.
+
+1. Assombrir le texte de l'événement à `#171717`, qui atteint 4,51. Marge de 0,01, donc fragile au moindre ajustement ultérieur.
+2. Changer `type_rdv.couleur_hex` pour un bleu plus clair. Touche une donnée de production, et rapproche la couleur du bleu principal de la charte, au risque de brouiller la distinction.
+3. Passer les événements du calendrier en texte clair sur fond de couleur. Correction robuste, mais elle réécrit la règle pour les trois types à la fois.
+
+La dette sera close lorsque cet arbitrage aura été rendu et que le couple atteindra 4,5.
+
+**Hors périmètre** : la reprise des captures d'écran du dossier, que le changement de teintes rend nécessaire sur les écrans listés dans la demande d'intégration. Hors périmètre également, la création du `docs/design-tokens.md` annoncé par CLAUDE.md, qui relève d'une décision documentaire distincte.
+
+**Priorité** : 🟡 moyenne (aucun impact fonctionnel ; mais le RGAA est une exigence réglementaire du référentiel CDA, et l'écart restant porte sur un écran de consultation courante).
+
