@@ -114,7 +114,6 @@ final class ContrasteChartTest extends TestCase
             'evenement visio'            => ['Événement visio',              '#1A1A1A',           'cs-orange-visio',     self::TEXTE_NORMAL],
             'bordure de champ'           => ['Bordure de champ de saisie',   'cs-border-input',   'cs-bg-card',   self::COMPOSANT],
             'code d erreur'              => ["Code d'erreur, 96px gras",     'cs-blue-primary',   'cs-bg-page',   self::COMPOSANT],
-
         ];
     }
 
@@ -150,7 +149,6 @@ final class ContrasteChartTest extends TestCase
             'texte pied de page' => ['Texte du pied de page',  'cs-text-light', 0.75, 'cs-blue-primary', self::TEXTE_NORMAL],
             'lien pied de page'  => ['Lien du pied de page',   'cs-text-light', 0.65, 'cs-blue-primary', self::TEXTE_NORMAL],
             'copyright'          => ['Mention de copyright',   'cs-text-light', 0.63, 'cs-blue-primary', self::TEXTE_NORMAL],
-
         ];
     }
 
@@ -166,7 +164,7 @@ final class ContrasteChartTest extends TestCase
         string $texte,
         string $couleurType,
     ): void {
-        $fond   = $this->aplatit($this->resout($couleurType), 0.12, $this->resout('cs-bg-card'));
+        $fond = $this->aplatit($this->resout($couleurType), 0.12, $this->resout('cs-bg-card'));
         $mesure = $this->contrasteRvb($this->versRvb($texte), $fond);
 
         $this->assertGreaterThanOrEqual(
@@ -185,7 +183,6 @@ final class ContrasteChartTest extends TestCase
             'presentiel' => ['Badge présentiel', '#1A6E2E', 'cs-green-presentiel'],
             'visio'      => ['Badge visio',      '#A85200', 'cs-orange-visio'],
             'telephone'  => ['Badge téléphone',  '#004A99', 'cs-blue-telephone'],
-
         ];
     }
 
@@ -199,7 +196,7 @@ final class ContrasteChartTest extends TestCase
         $opacite = $this->opaciteDesCreneauxPasses();
 
         $texte = $this->aplatit('#1A1A1A', $opacite, '#FFFFFF');
-        $fond  = $this->aplatit($this->resout($couleurType), $opacite, '#FFFFFF');
+        $fond = $this->aplatit($this->resout($couleurType), $opacite, '#FFFFFF');
 
         $mesure = $this->contrasteRvb($texte, $fond);
 
@@ -218,7 +215,6 @@ final class ContrasteChartTest extends TestCase
         return [
             'presentiel' => ['Créneau passé présentiel', 'cs-green-presentiel'],
             'visio'      => ['Créneau passé visio',      'cs-orange-visio'],
-
         ];
     }
 
@@ -255,7 +251,7 @@ final class ContrasteChartTest extends TestCase
      */
     private function contrasteRvb(array $premierPlan, array $fond): float
     {
-        $clair  = $this->luminance($premierPlan);
+        $clair = $this->luminance($premierPlan);
         $sombre = $this->luminance($fond);
 
         if ($clair < $sombre) {
