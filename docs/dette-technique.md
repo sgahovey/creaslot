@@ -1186,3 +1186,27 @@ contrainte d'un déploiement.
 
 **Priorité** : 🟡 moyenne. Sans impact sur le code livré ni sur la production, mais bloquant à
 chaque déploiement et porteur d'un risque silencieux de duplication de fichiers.
+
+---
+
+## DT-44 — Aucune rétention des journaux applicatifs : le canal de sécurité disparaît avec le conteneur (🟡 MOYEN) — ⏳ OUVERTE (27/08/2026)
+
+> **⏳ OUVERTE le 27/08/2026** — constatée en instruisant la faisabilité d'une alerte automatique sur les évènements de sécurité.
+>
+> **Origine** : le canal `security` est correctement isolé et toujours écrit, hors `fingers_crossed` (US-9.5, cf. DT-42 pour le contexte OWASP A09). Mais son handler écrit sur `php://stderr`, [config/packages/monolog.yaml](../config/packages/monolog.yaml) lignes 57 à 63, et **rien ne recueille cette sortie au delà de Docker**. Il n'existe aucun fichier de journal applicatif sur le disque du VPS : ni dans `var/log`, ni dans `~/cron-logs`, qui ne contient que les sorties des tâches planifiées.
+
+**Détecté** : 27/08/2026, lors du diagnostic de faisabilité d'une alerte sur les évènements de sécurité.
+
+**Constat** : la sortie standard d'erreur est captée par le driver `json-file` de Docker, configuré dans `compose.prod.yml` avec `max-size: 10m` et `max-file: 3`, soit **30 Mo au maximum et aucune conservation au delà**. Le fichier physique vit sous `/var/lib/docker/containers/<id>/<id>-json.log` et **est détruit avec le conteneur**. Preuve mesurée : après la recréation du conteneur de production du 27/08/2026 à 01h45, lors du déploiement du TLS, une recherche sur **trente jours** de journaux ne remonte **aucune ligne** portant `"channel":"security"`. L'historique d'avant la recréation n'existe plus.
+
+**Cause racine** : la journalisation applicative s'arrête au conteneur. Écrire sur la sortie standard d'erreur est le bon choix pour une application conteneurisée, mais il suppose un collecteur en aval qui persiste et indexe. Ce collecteur n'existe pas : le cycle de vie des journaux est donc celui du conteneur, alors qu'une trace de sécurité doit survivre au redéploiement qui suit l'incident.
+
+**Ce qui en fait un chantier unique avec l'alerte** : une alerte temps réel sans rétention n'aurait pas de sens. Le signal partirait, mais l'enquête qui suit n'aurait **rien à lire** : ni l'historique des tentatives, ni le contexte, ni même la trace de l'alerte une fois le conteneur recréé. Traiter l'alerte avant la rétention reviendrait à installer une sirène dans un bâtiment sans caméra. C'est la raison pour laquelle cette dette est ouverte séparément et non fondue dans le renvoi que l'audit fait déjà sur l'alerte temps réel (`docs/audit-securite-owasp.md`, ligne 79).
+
+**Fichiers concernés** : `config/packages/monolog.yaml` (handler `security`, lignes 57 à 63) ; `compose.prod.yml` (politique de journalisation Docker, ancre `x-logging`). Aucun code applicatif n'est en cause.
+
+**Condition de levée** : la dette sera close lorsqu'une ligne du canal `security` écrite avant une recréation de conteneur restera consultable après cette recréation, et qu'une fenêtre de rétention aura été fixée et documentée.
+
+**Hors périmètre** : le choix du mécanisme. Plusieurs voies existent, du simple montage d'un volume persistant jusqu'à un collecteur externe, et elles n'engagent pas le même coût d'exploitation ni la même surface à sauvegarder. L'arbitrage mérite d'être fait à froid. Hors périmètre également, l'alerte elle-même, qui dépend de cette dette et non l'inverse.
+
+**Priorité** : 🟡 moyenne (aucun impact sur le service rendu ; mais toute capacité d'investigation après incident est aujourd'hui limitée à la durée de vie du conteneur, et elle conditionne l'alerte automatique).

@@ -7,6 +7,7 @@ namespace App\EventListener;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\Security\Core\Exception\DisabledException;
+use Symfony\Component\Security\Core\Exception\TooManyLoginAttemptsAuthenticationException;
 use Symfony\Component\Security\Http\Event\LoginFailureEvent;
 
 #[AsEventListener(event: LoginFailureEvent::class)]
@@ -26,6 +27,20 @@ final class LoginFailureListener
             // Compte existant mais désactivé — niveau NOTICE (non problématique)
             $this->securityLogger->notice(
                 'Tentative de connexion sur compte désactivé',
+                ['email' => $email],
+            );
+
+            return;
+        }
+
+        if ($exception instanceof TooManyLoginAttemptsAuthenticationException) {
+            // Plafonnement atteint : le firewall a compté cinq tentatives sur la
+            // fenêtre (login_throttling, security.yaml) et refuse désormais la
+            // connexion, mot de passe correct compris. Ce n'est pas un échec
+            // ordinaire mais un blocage, d'où le niveau ERROR : il doit ressortir
+            // du bruit des fautes de frappe (OWASP A09).
+            $this->securityLogger->error(
+                'Connexion bloquée après plafonnement des tentatives',
                 ['email' => $email],
             );
 
