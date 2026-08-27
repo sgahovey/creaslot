@@ -3,6 +3,8 @@
 > Livrable de mémoire — Concepteur Développeur d'Applications (CDA).
 > État **après remédiation** (US-8.3). Date d'exécution de référence : **07/06/2026 16:51**.
 > Statuts mis à jour au **04/08/2026** : certificat Let's Encrypt de production **livré** (US-9.3) et **DT-19 résolue**.
+> Statuts mis à jour au **27/08/2026** : **A02 corrigée** (TLS applicatif vers MySQL, DT-42) et **A09 corrigée**
+> (rétention des journaux et alerte poussée sur blocage de connexion, DT-44), les deux vérifiées en production.
 
 ---
 
@@ -69,20 +71,29 @@ Les 33 avis restants (sévérités moyenne à basse : `cache`, `routing`, `http-
 | Catégorie | Mesure en place (fichier / mécanisme) | État | Trou éventuel / renvoi |
 |---|---|:--:|---|
 | **A01 — Broken Access Control** | 3 Voters (`CreneauVoter`, `ReservationVoter`, `UtilisateurVoter`) ; `#[IsGranted]` au niveau classe ; `access_control` avec catch-all `^/ → IS_AUTHENTICATED_FULLY` ; `role_hierarchy` ; anti-escalade `allow_extra_fields: false` (rejet 422) prouvé par test | ✅ Couvert | — |
-| **A02 — Cryptographic Failures** | Hachage des mots de passe en **argon2id** (`security.yaml`) ; secrets en `.env.local` **non versionné** (gitignoré) ; CSRF actif ; **HSTS + architecture TLS Caddy** (`Caddyfile`, dépôt `infra-proxy`), validée en local en `tls internal` (US-9.2), **certificat Let's Encrypt de production en place** (US-9.3) | ✅ Couvert | — |
+| **A02 — Cryptographic Failures** | Hachage des mots de passe en **argon2id** (`security.yaml`) ; secrets en `.env.local` **non versionné** (gitignoré) ; CSRF actif ; **HSTS + architecture TLS Caddy** (`Caddyfile`, dépôt `infra-proxy`), validée en local en `tls internal` (US-9.2), **certificat Let's Encrypt de production en place** (US-9.3) ; **TLS applicatif vers MySQL** sur les quatre services (`doctrine.yaml`, bloc `when@prod`, `driverOptions` + constantes PDO ; `ca.pem` monté en lecture seule) — **DT-42** | ✅ Corrigé | **Chiffrement au repos : limite assumée**, cf. ci-dessous |
 | **A03 — Injection** | Accès données via **Doctrine ORM paramétré** (aucun SQL natif concaténé) ; **auto-échappement Twig** (aucun `\|raw` sur donnée utilisateur) ; composant **Validator** sur les entrées | ✅ Couvert | — |
 | **A04 — Insecure Design** | Verrou **`PESSIMISTIC_WRITE`** + re-vérification après `refresh` ; invariant **« ≤ 1 réservation ACTIVE par créneau »** ; **suppression logique** (statut ANNULEE) ; jeton de réinitialisation à **usage unique** + `session->migrate(true)` | ✅ Couvert | `ReservationService` extrait — **DT-19 résolue (18/06/2026)** |
 | **A05 — Security Misconfiguration** | **CSP à nonce** posée par l'application (`CspResponseListener` + `csp_nonce()`) : `script-src 'self' 'nonce-…'` strict, sans `unsafe-inline`/`unsafe-eval` (US-9.2) ; en-têtes via Caddy : **HSTS**, **Permissions-Policy**, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, en-tête **`Server` masqué** (`Caddyfile`, dépôt `infra-proxy`) ; **`APP_ENV=prod` / `APP_DEBUG=0`** câblés (`.env.preprod`/`.env.prod`) ; web-profiler en `dev` uniquement ; bandeau d'environnement | ✅ Traité | — |
 | **A06 — Vulnerable & Outdated Components** | Versions **pinnées** (`8.0.*`, `^3.0`) ; `composer.lock` versionné ; **`composer audit` en porte CI bloquante** (`--no-dev`, job `audit`) ; **remédiation `composer update`** (§2) | ✅ Corrigé | **0 avis** (était 38) |
 | **A07 — Identification & Authentication Failures** | Politique de mot de passe centralisée `ContraintesMotDePasse` (≥ 12 + jeu de caractères) ; reset à usage unique ; **CSRF** sur les formulaires ; **messages d'authentification neutres** ; **`login_throttling: max_attempts: 5`** (anti-brute-force, ajouté en US-8.3) | ✅ Corrigé | Throttling **testé** (`LoginThrottlingTest`, suite à 247 tests). Journalisation des échecs de login **traitée en US-9.5** (channel Monolog `security`, cf. A09) |
 | **A08 — Software & Data Integrity Failures** | **CI** GitHub Actions (4 jobs, dont la porte bloquante `composer audit`) sur `push`/`pull_request` ; `composer.lock` (intégrité des dépendances) ; aucune désérialisation de données non fiables dans le code applicatif | ✅ Couvert | — |
-| **A09 — Security Logging & Monitoring** | **`JournalAdmin`** (trace immuable des actions d'administration sur les comptes, RGPD) ; Monolog sur réservation, annulation, profil, réinitialisation ; **évènements d'authentification** (connexion réussie, **échec**, compte désactivé, déconnexion) journalisés via un **channel Monolog `security` dédié**, écrit systématiquement (handler `stream` **hors `fingers_crossed`** → non bufferisé), en complément du `login_throttling` A07 — **US-9.5** | ✅ Couvert | Alerting/supervision temps réel (SIEM) : évolution **hors périmètre projet** |
+| **A09 — Security Logging & Monitoring** | **`JournalAdmin`** (trace immuable des actions d'administration sur les comptes, RGPD) ; Monolog sur réservation, annulation, profil, réinitialisation ; **évènements d'authentification** (connexion réussie, **échec**, compte désactivé, **blocage après plafonnement**) journalisés via un **channel Monolog `security` dédié**, écrit systématiquement (**hors `fingers_crossed`**) sur **deux destinations** : `php://stderr` et un **fichier rotatif** sur volume persistant, six mois glissants (US-9.5, **DT-44**) ; **alerte poussée** vers un moniteur Uptime Kuma dédié à chaque blocage, notifiée sur Discord (**DT-44**) | ✅ Corrigé | Corrélation multi-services (SIEM) : hors périmètre, cf. §4.5 |
 | **A10 — Server-Side Request Forgery (SSRF)** | **Non applicable** : aucune requête sortante pilotée par l'utilisateur (l'unique sortie réseau est l'envoi d'email vers l'endpoint Brevo, fixe et configuré) | ✅ N/A | — |
 
-**Synthèse** : 8 catégories couvertes/traitées, 2 corrigées dans US-8.3 (**A06**, **A07**), **A05 traité
-en US-9.2** (CSP à nonce + en-têtes Caddy), **A02 couvert** (HSTS/TLS et **certificat Let's Encrypt de production en place**, US-9.3),
-**A09 complété en US-9.5** (journalisation des échecs d'authentification via le channel `security`),
-1 non applicable (A10). Aucun résiduel de sécurité ouvert (certificat Let's Encrypt de production en place, US-9.3).
+**Synthèse** : **4 catégories corrigées** (**A06** et **A07** en US-8.3 ; **A02** et **A09** au 27/08/2026),
+**A05 traité en US-9.2** (CSP à nonce + en-têtes Caddy), 4 catégories couvertes (**A01**, **A03**, **A04**, **A08**),
+1 non applicable (**A10**).
+
+Les deux corrections du 27/08/2026 sont **vérifiées en production**, pas seulement configurées : TLS applicatif
+vers MySQL en `TLSv1.3` / `TLS_AES_256_GCM_SHA384` sur les quatre services (A02, DT-42), et pour A09 une trace
+qui survit à la recréation d'un conteneur, doublée d'une alerte reçue lors d'un blocage réel provoqué en
+production (DT-44). Le détail des preuves figure au §4.5.
+
+**Un seul résiduel assumé** : le chiffrement des données au repos. Il est écarté en connaissance de cause, la
+base et l'application vivant sur le même VPS : la clé maîtresse résiderait sur la machine même qu'elle est
+censée protéger, et le chiffrement n'ajouterait de garantie que contre le vol du disque physique, scénario qui
+relève de l'hébergeur. Ce point est tracé dans la rubrique « Hors périmètre » de **DT-42**.
 
 ---
 
@@ -118,7 +129,18 @@ l'environnement applicatif audité.
 
 | Constat | Action | Vérification |
 |---|---|---|
-| **A09** — journalisation explicite des **échecs** d'authentification | Channel Monolog **`security`** déclaré au niveau racine ; les listeners `LoginSuccessListener` / `LoginFailureListener` / `LogoutListener` y journalisent connexion réussie, échec, compte désactivé et déconnexion. Handler `security` (`stream` → `php://stderr`, JSON) **hors `fingers_crossed`** → écrit systématiquement, jamais bufferisé | Suite verte (274 tests) ; `debug:container monolog.logger.security` présent ; en complément du `login_throttling` A07 |
+| **A09** — journalisation explicite des **échecs** d'authentification | Channel Monolog **`security`** déclaré au niveau racine ; les listeners `LoginSuccessListener` / `LoginFailureListener` / `LogoutListener` y journalisent connexion réussie, échec, compte désactivé et déconnexion. **Deux** handlers sur le canal, tous deux **hors `fingers_crossed`** → écriture systématique, jamais bufferisée : `security` (`stream` → `php://stderr`, JSON) et, depuis DT-44, `security_fichier` (`rotating_file` → `%kernel.logs_dir%/security.log` sur volume persistant, `max_files: 180`, JSON) | Suite verte (274 tests à l'époque, **359** au 27/08/2026) ; `debug:container monolog.logger.security` présent ; en complément du `login_throttling` A07 |
+
+### 4.5 Corrigé au 27/08/2026 (DT-42 et DT-44)
+
+Contrairement aux sections précédentes, les vérifications ci-dessous ont été menées **sur l'environnement de
+production**, et non seulement en local ou en intégration continue.
+
+| Constat | Action | Vérification en production |
+|---|---|---|
+| **A02** — les quatre connexions applicatives vers MySQL circulaient **en clair** (`Ssl_cipher` et `Ssl_version` vides sur `app-prod`, `app-preprod`, `worker-prod`, `worker-preprod`) | Autorité `ca.pem` extraite du conteneur `db` et montée en lecture seule sur les quatre services ; options TLS via `driverOptions` et constantes PDO (`PDO::MYSQL_ATTR_SSL_CA`), dans le bloc **`when@prod` uniquement** pour ne pas casser la CI, qui monte son propre MySQL sans ce certificat — **DT-42** | `Ssl_version = TLSv1.3` et `Ssl_cipher = TLS_AES_256_GCM_SHA384` sur les quatre services. Aucune contrainte `REQUIRE SSL` posée sur les comptes : le retour arrière reste possible sans intervention en base |
+| **A09** — les traces du canal `security` ne survivaient pas au conteneur : le driver `json-file` de Docker les détruit à chaque recréation, donc à chaque déploiement | Second handler `rotating_file` sur volume Docker nommé, **six mois glissants** (`max_files: 180`), en plus de `stderr` qui reste en place. Durée volontairement plus courte que les douze mois du journal d'administration : détection technique à valeur décroissante, journalisant l'adresse **tentée** y compris de personnes sans compte (minimisation, RGPD art. 5.1.c et 5.1.e) — **DT-44** | Ligne écrite, empreinte `9b75cccf…8af1486` relevée, `up -d --force-recreate app-prod`, conteneur remplacé, **fichier et empreinte identiques** après recréation, alors que `docker logs` ne conservait plus aucune ligne du canal |
+| **A09** — aucune alerte : la trace existait, mais personne ne lit un fichier de journal en continu | `AlerteSecuriteService` sollicite un moniteur Uptime Kuma **push en mode inversé** à chaque `TooManyLoginAttemptsAuthenticationException`. Appel **isolé** (`try`/`catch` avalant, sur le modèle de `NotificationService`), **borné à 2 s**, sur le réseau Docker interne. Message limité au fait et à l'environnement : **aucune donnée personnelle** ne sort. Jeton en variable d'environnement hors dépôt, jamais journalisé — **DT-44** | Blocage réel provoqué en production le 27/08 à 12:43:25 (adresse fictive, IP de documentation RFC 5737) : ligne `ERROR` écrite, battement important reçu **15 ms** plus tard, notification Discord confirmée, **six réponses HTTP 302** dont la dernière à 26 ms contre 3 ms. 11 tests unitaires, dont l'isolation de l'échec d'appel |
 
 ---
 
@@ -131,6 +153,13 @@ Cet audit est **statique et applicatif** ; il ne se substitue pas à :
   rotation des secrets) — relevant de l'itération de déploiement.
 
 Ces activités sont **hors du périmètre académique** du mémoire MSP3. L'audit fournit néanmoins une couverture
-méthodique du **OWASP Top 10**, une **remédiation effective** des vulnérabilités de dépendances (A06) et de
-l'authentification (A07), et un **suivi traçable** des points renvoyés (registre de dette `docs/dette-technique.md`,
-itération 9 de déploiement).
+méthodique du **OWASP Top 10**, une **remédiation effective** portant sur les dépendances (A06),
+l'authentification (A07), la cryptographie en transit (A02) et la journalisation avec alerte (A09), ces deux
+dernières **vérifiées en production** (§4.5), ainsi qu'un **suivi traçable** des points renvoyés (registre de
+dette `docs/dette-technique.md`, itérations 9 et 14).
+
+**Note de numérotation** : ce document est mappé sur le **OWASP Top 10 (2021)**, où la catégorie
+cryptographique porte le numéro **A02** et « Insecure Design » le numéro **A04**. L'édition **2025** renumérote
+ces catégories : la cryptographie y devient **A04** et la journalisation **A09 — Logging & Alerting Failures**.
+Les deux numérotations coexistent donc dans les livrables du mémoire ; s'y référer par le **libellé** plutôt que
+par le numéro lève toute ambiguïté.
