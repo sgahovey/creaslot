@@ -32,6 +32,13 @@ final class SuppressionCompteController extends AbstractController
     ) {
     }
 
+    /**
+     * Affiche l'écran de confirmation de suppression, en signalant d'éventuels
+     * engagements futurs qui empêcheraient l'anonymisation.
+     *
+     * Le Voter ANONYMISER réserve l'action au titulaire du compte et l'interdit au
+     * SUPER_ADMIN (compte de fonction).
+     */
     #[Route('/mon-profil/supprimer', name: 'app_mon_profil_suppression', methods: ['GET'])]
     public function confirmer(): Response
     {
@@ -45,6 +52,14 @@ final class SuppressionCompteController extends AbstractController
         ]);
     }
 
+    /**
+     * Anonymise le compte du titulaire au titre du droit à l'effacement (RGPD art. 17).
+     *
+     * Même autorisation que l'écran de confirmation (Voter ANONYMISER). L'anonymisation
+     * est refusée s'il reste des rendez-vous ou créneaux à venir
+     * (EngagementsFutursException) : l'utilisateur doit d'abord les annuler. Le succès
+     * journalise l'effacement, puis déconnecte (la session est vidée, le flash survit).
+     */
     #[Route('/mon-profil/supprimer', name: 'app_mon_profil_suppression_confirmer', methods: ['POST'])]
     public function supprimer(Request $request): Response
     {

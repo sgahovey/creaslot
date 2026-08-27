@@ -1,0 +1,47 @@
+@startuml conception-tests
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam rectangle {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam note {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+
+rectangle "Tests de parcours\nvérifient un cas d'utilisation complet,\ndu point d'entrée jusqu'à la réponse" as FONC
+rectangle "Tests d'intégration\nvérifient la collaboration entre composants,\nnotamment avec le réservoir de données" as INTEG
+rectangle "Tests unitaires\nvérifient un comportement isolé,\nsans dépendance externe" as UNIT
+
+FONC -down-> INTEG
+INTEG -down-> UNIT
+
+note right of FONC
+  Coûteux et lents, mais seuls capables d'attester
+  qu'un parcours réel fonctionne : contrôle d'accès
+  mal placé, enchaînement rompu, donnée non transmise.
+end note
+
+note right of INTEG
+  Détectent ce qu'aucun test unitaire ne peut voir :
+  une interrogation mal formée, une contrainte
+  d'intégrité déclenchée, un comportement
+  sous accès concurrent.
+end note
+
+note right of UNIT
+  Peu coûteux, portée étroite. Détectent les erreurs
+  de logique locale : un calcul de chevauchement,
+  une règle d'autorisation, un état terminal.
+end note
+
+legend bottom
+|= Élément |= Signification |
+| Trois niveaux | Chacun détecte des défauts que les autres ne voient pas |
+| <b>Point clé</b> | Les parcours critiques sont couverts à plusieurs niveaux. Cette\nredondance est délibérée : l'invariant de non-chevauchement se\nvérifie en intégration, le parcours de réservation en test de parcours. |
+endlegend
+@enduml

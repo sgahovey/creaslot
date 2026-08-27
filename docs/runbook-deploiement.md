@@ -5,9 +5,12 @@ Pour les **choix de conception** (pourquoi Caddy en façade, image *build-once*,
 CSP à nonce, `trusted_proxies`…), voir `docs/architecture-deploiement.md` — ce runbook
 ne contient que des procédures et des commandes copiables.
 
-**Périmètre** : déploiement, mise à jour, certificats, e-mail, crons, rollback simple.
-Hors périmètre (→ **US-9.4**) : sauvegardes BDD, supervision/monitoring, journalisation
-des échecs de connexion (OWASP A09).
+**Périmètre** : déploiement, mise à jour, certificats, e-mail, crons, sauvegarde et
+restauration de la base (§8), rollback simple.
+La supervision/monitoring applicatif est en place (six sondes Uptime Kuma + route `/health`,
+cf. §3.1 et §10) ; seule l'extension des healthchecks Docker à l'ensemble des services
+(aujourd'hui `db`) reste ouverte. La journalisation des échecs de connexion (OWASP A09) est
+livrée (US-9.5, cf. §10).
 
 ## 1. Accès et environnement
 - VPS OVH Ubuntu, IP **51.178.25.175**, fuseau **`Etc/UTC`**.
@@ -16,7 +19,7 @@ des échecs de connexion (OWASP A09).
 - Pare-feu `ufw` : ports **22, 80, 443** ouverts.
 
 ## 2. Fichiers de configuration
-- `compose.prod.yml` — services : `caddy`, `db`, `app-preprod`, `app-prod`, `worker-preprod`, `worker-prod`.
+- `compose.prod.yml` — services : `db`, `app-preprod`, `app-prod`, `worker-preprod`, `worker-prod`. Le reverse-proxy Caddy **ne fait plus partie de cette stack** : depuis le découplage (PR #117), il vit dans un dépôt d'infrastructure dédié `infra-proxy` (cf. §4 et `docs/architecture-deploiement.md`).
 - `.env.deploy.local` (**secret**, infra ; passé via `--env-file`) : hosts, `CADDY_TLS` (e-mail ACME), `CADDY_ACME_CA` (vide = prod), ports, `MYSQL_*`, `PREPROD_BASICAUTH_*` (hash bcrypt **échappé `$$`**).
 - `.env.prod.local` / `.env.preprod.local` (**secrets**, app) : `APP_SECRET`, `DATABASE_URL`, `MAILER_DSN`.
 - Gabarits `*.example` versionnés ; les `*.local` sont **gitignorés** (jamais commités).
@@ -24,6 +27,55 @@ des échecs de connexion (OWASP A09).
   ```bash
   docker compose -f compose.prod.yml --env-file .env.deploy.local <...>
   ```
+
+### 2.1 TLS applicatif vers MySQL
+
+Le serveur MySQL sait faire du TLS depuis son premier démarrage : `have_ssl = YES`, et les
+certificats auto-signés ont été générés dans le datadir le **16/06/2026**. Ce qui manquait était
+côté client : PDO n'ouvre pas de session chiffrée sans qu'on le lui demande.
+
+**Ce qui a été mis en place**
+
+1. L'autorité `ca.pem` a été extraite du conteneur `db` et **versionnée** dans
+   `docker/mysql/ca.pem`. C'est une clé publique, pas un secret.
+2. Elle est montée en lecture seule sur `/etc/mysql/ca.pem` dans les **quatre** services
+   applicatifs, `app-preprod`, `app-prod`, `worker-preprod` et `worker-prod`. Les workers
+   sont concernés au même titre : leur transport Messenger est `doctrine://default`, donc
+   la même connexion.
+3. `config/packages/doctrine.yaml` pose `MYSQL_ATTR_SSL_CA` et
+   `MYSQL_ATTR_SSL_VERIFY_SERVER_CERT = false` dans le bloc **`when@prod` uniquement**.
+   La vérification du nom est désactivée parce que le certificat auto-signé porte le CN
+   `MySQL_Server_8.0.46_Auto_Generated_CA_Certificate`, qui ne correspond pas à l'hôte `db` ;
+   le chiffrement du transport, lui, reste effectif.
+
+> ⚠️ **Ne jamais écrire ces options dans le bloc `dbal` commun** : l'intégration continue
+> monte son propre service MySQL sans ce certificat, et les trois jobs qui touchent la base
+> échoueraient.
+
+**Vérification** (la session doit être chiffrée, pas seulement autorisée) :
+
+```bash
+$PFX exec -T app-prod php bin/console dbal:run-sql \
+  "SELECT variable_name, variable_value FROM performance_schema.session_status \
+   WHERE variable_name IN ('Ssl_cipher','Ssl_version')"
+```
+
+Deux valeurs vides signifient session en clair. Une suite du type `TLS_AES_256_GCM_SHA384`
+signifie que le chiffrement est actif.
+
+**Retour arrière**, en une ligne : retirer le bloc `options` de `when@prod` dans
+`doctrine.yaml`, redéployer, et les connexions repassent en clair. Aucune action serveur n'est
+nécessaire : `require_secure_transport` reste à `OFF` et aucun compte ne porte de `REQUIRE SSL`.
+C'est délibéré, et cela doit le rester : poser `REQUIRE SSL` sur un compte est le seul geste
+de ce chantier qui ne se défait pas sans intervention en base.
+
+> ⚠️ **Réserve importante, l'autorité est liée au volume de données.** Un `down -v` sur la
+> stack de production détruirait `mysql_data_prod`, et MySQL régénérerait au démarrage suivant
+> une **nouvelle** autorité. Le `ca.pem` versionné deviendrait alors obsolète et **plus aucune
+> connexion applicative ne s'établirait**, puisque la vérification de la chaîne échouerait.
+> Dans ce cas, réextraire l'autorité et la recommiter :
+> `$PFX cp db:/var/lib/mysql/ca.pem docker/mysql/ca.pem`. Ce scénario transforme une remise à
+> zéro anodine en panne bloquante : à garder en tête avant tout `down -v` sur ce serveur.
 
 ## 3. Mise à jour de code (procédure courante)
 
@@ -37,7 +89,7 @@ et le pipeline GitHub Actions déploie (détail : `docs/architecture-deploiement
 
 **Pourquoi une PR et pas un push direct** : les branches `preprod` et `main` sont protégées par un
 ruleset qui **refuse le push direct** et impose une **Pull Request mergée en squash**
-(`allowed_merge_methods: ["squash"]`, 3 contrôles requis au vert). La promotion se fait donc par PR.
+(`allowed_merge_methods: ["squash"]`, 4 contrôles requis au vert). La promotion se fait donc par PR.
 L'ancienne méthode `git merge --ff-only` + `git push origin <branche>` est désormais **bloquée** par le ruleset.
 
 > **Le squash ne casse PAS la cohérence du SHA** : chaque workflow de déploiement **reconstruit
@@ -52,7 +104,7 @@ L'ancienne méthode `git merge --ff-only` + `git push origin <branche>` est dés
    ```bash
    gh pr create --base preprod --head develop --title "deploy: promotion develop vers preprod"
    ```
-2. Attendre les **3 contrôles verts** (PHP-CS-Fixer, PHPStan, PHPUnit) **et SonarCloud**.
+2. Attendre les **4 contrôles verts** (PHP-CS-Fixer, PHPStan, PHPUnit, `composer audit`) **et SonarCloud**.
 3. Merger en squash :
    ```bash
    gh pr merge <NUM> --squash
@@ -68,7 +120,7 @@ qui répond 401 avant l'application). Aucune action manuelle sur le VPS.
    ```bash
    gh pr create --base main --head preprod --title "deploy: mise en production"
    ```
-2. Attendre les **3 contrôles verts**.
+2. Attendre les **4 contrôles verts**.
 3. Merger en squash :
    ```bash
    gh pr merge <NUM> --squash
@@ -129,18 +181,16 @@ curl -s -o /dev/null -w "%{http_code}\n" https://preprod.creaslot.re/connexion  
 > d'un trigger sans privilège `SUPER` alors que le binary logging est actif). Cela vaut
 > pour le déploiement nominal (§3.1, migration jouée par le pipeline) comme manuel (§3.2).
 
-## 4. HTTPS / certificats (Caddy + Let's Encrypt)
+## 4. HTTPS / certificats (Caddy dans le dépôt `infra-proxy`)
+- Le reverse-proxy Caddy vit dans le dépôt d'infrastructure dédié **`infra-proxy`** (découplé de la stack CreaSlot en PR #117 ; cf. `docs/architecture-deploiement.md`). **Toutes les opérations sur le proxy — certificats, hosts, CA ACME, `basic_auth` — s'effectuent dans ce dépôt**, pas via `compose.prod.yml`.
 - Caddy **obtient et renouvelle** les certificats automatiquement (ACME). Domaines : `creaslot.re` (prod, apex) et `preprod.creaslot.re` ; enregistrements DNS **A** pointant vers `51.178.25.175`.
 - `CADDY_ACME_CA` **vide = CA PRODUCTION**. Pour tester sans griller le rate-limit Let's Encrypt :
   ```
   CADDY_ACME_CA=https://acme-staging-v02.api.letsencrypt.org/directory
   ```
   (certificats **non reconnus** par les navigateurs, c'est normal en staging).
-- Après modification d'un host ou de la CA : recréer Caddy :
-  ```bash
-  docker compose -f compose.prod.yml --env-file .env.deploy.local up -d caddy
-  ```
-- La **préprod** est protégée par `basic_auth` (`PREPROD_BASICAUTH_USER` / `PREPROD_BASICAUTH_HASH`).
+- Après modification d'un host ou de la CA : recréer le proxy **depuis le dépôt `infra-proxy`** (selon sa procédure propre), et non via `compose.prod.yml`.
+- La **préprod** est protégée par `basic_auth` (`PREPROD_BASICAUTH_USER` / `PREPROD_BASICAUTH_HASH`), configuré dans `infra-proxy`.
 
 ## 5. E-mail transactionnel (Brevo)
 - Domaine `creaslot.re` **authentifié chez Brevo** via 4 entrées DNS dans la zone OVH : code Brevo (`TXT @`), DKIM `brevo1._domainkey` + `brevo2._domainkey` (`CNAME`), DMARC (`_dmarc`, `TXT`).
@@ -152,11 +202,12 @@ curl -s -o /dev/null -w "%{http_code}\n" https://preprod.creaslot.re/connexion  
   ```
 
 ## 6. Tâches planifiées (crons)
-- Crontab de l'utilisateur `ubuntu`, **2 entrées** (VPS en UTC) :
+- Crontab de l'utilisateur `ubuntu`, **3 entrées** (VPS en UTC) :
+  - Sauvegarde de la base : `30 2 * * *` (quotidienne, 02h30 UTC).
   - Rappels J-1 : `0 14 * * *` (= 18h00 heure Réunion).
   - Purge du journal RGPD : `0 3 1 * *` (1er du mois, 03h00 UTC).
-- Logs : `~/cron-logs/rappels-j1.log` et `~/cron-logs/purger-journal.log`.
-- Lignes exactes et procédures détaillées : `docs/cron-rappels-j1.md` et `docs/cron-purger-journal.md`.
+- Logs : `~/cron-logs/backup-db.log`, `~/cron-logs/rappels-j1.log` et `~/cron-logs/purger-journal.log`.
+- Lignes exactes et procédures détaillées : `docs/cron-backup.md`, `docs/cron-rappels-j1.md` et `docs/cron-purger-journal.md`.
 
 ## 7. Administration courante
 ```bash
@@ -166,7 +217,7 @@ docker compose -f compose.prod.yml --env-file .env.deploy.local exec app-prod ph
 # État des services
 docker compose -f compose.prod.yml --env-file .env.deploy.local ps
 
-# Logs d'un service (caddy, app-prod, worker-prod, db…)
+# Logs d'un service (app-prod, worker-prod, db…) — le proxy Caddy se journalise dans le dépôt infra-proxy
 docker compose -f compose.prod.yml --env-file .env.deploy.local logs <service> --tail 50
 ```
 
@@ -226,7 +277,7 @@ git checkout <commit-stable>
 docker compose -f compose.prod.yml --env-file .env.deploy.local build app-prod
 docker compose -f compose.prod.yml --env-file .env.deploy.local up -d
 ```
-Le pipeline CI/CD *build-once / promote-on-green* fera l'objet d'une US dédiée ; ici le build se fait **sur le VPS**.
+Le pipeline CI/CD *build-once / promote-on-green* est en place (US-10.1, cf. §3.1) ; ce rollback manuel reste une procédure de secours où le build se fait **sur le VPS**.
 
 ## 10. Pistes d'évolution
 
@@ -234,8 +285,9 @@ Les chantiers initialement listés ici ont été livrés :
 
 - **US-9.5** — logs Docker bornés (`max-size`/`max-file`) et journalisation dédiée des échecs de connexion (channel Monolog `security`, OWASP A09).
 - **US-10.1** — pipeline CI/CD de déploiement continu (cf. §3.1 et `docs/architecture-deploiement.md` §5).
+- **Supervision applicative** — dispositif Uptime Kuma à **six sondes** : trois interrogations directes (santé applicative via `/health`, préproduction, production publique) et trois sondes en attente de signal (sauvegarde de la base, rappels J-1, purge du journal). La route `/health` (état app + base + file Messenger) est aussi interrogée par le contrôle de disponibilité du §3.1.
 
 Restent ouvertes, par ordre de priorité :
 
 - **Copie hors-VPS des sauvegardes** : la sauvegarde quotidienne par cron est en place (cf. `docs/cron-backup.md`) ; reste à externaliser une copie chiffrée (`scp` ou stockage objet) pour lever le point unique de défaillance.
-- **Supervision applicative** : route `/health` (état app + base + file Messenger) et extension des healthchecks à l'ensemble des services (aujourd'hui sur `db`).
+- **Extension des healthchecks Docker** à l'ensemble des services (aujourd'hui limités à `db`).

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wireframe lo-fi — Connexion</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,Arial,sans-serif; background:#fff; color:#444; font-size:14px; line-height:1.5; }
+  .wf-auth { min-height:92vh; display:flex; align-items:center; justify-content:center; padding:30px 16px; }
+  .wf-auth-card { width:100%; max-width:420px; border:1px solid #ccc; border-radius:10px; padding:30px; }
+  .wf-brand { display:flex; align-items:center; gap:8px; margin-bottom:22px; }
+  .wf-icon { width:20px; height:20px; border:1px solid #999; border-radius:5px; display:inline-block; flex:0 0 auto; }
+  .wf-brand .word { font-weight:700; color:#444; }
+  .bar { background:#ccc; border-radius:4px; }
+  .bar--title { height:18px; width:150px; background:#999; margin-bottom:8px; }
+  .bar--sub { height:9px; width:85%; margin-bottom:22px; }
+  .wf-label { display:block; font-size:12px; color:#999; margin:14px 0 5px; }
+  .wf-field { border:1px solid #ccc; border-radius:6px; height:38px; background:#fff; }
+  .wf-input-group { display:flex; gap:0; }
+  .wf-input-group .wf-field { flex:1; border-top-right-radius:0; border-bottom-right-radius:0; }
+  .wf-eye { width:44px; border:1px solid #ccc; border-left:0; border-top-right-radius:6px; border-bottom-right-radius:6px; display:flex; align-items:center; justify-content:center; background:#eee; }
+  .wf-eye .wf-icon { width:16px; height:16px; }
+  .wf-link-right { display:flex; justify-content:flex-end; margin-top:8px; }
+  .bar--link { height:9px; width:120px; }
+  .wf-btn { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; border:1px solid #999; border-radius:6px; background:#999; color:#fff; padding:12px; font-size:14px; margin-top:24px; }
+  .wf-foot { text-align:center; margin-top:22px; display:flex; gap:8px; justify-content:center; align-items:center; }
+  .wf-cap { text-align:center; color:#999; font-size:12px; font-style:italic; padding:14px; border-top:1px dashed #ccc; }
+</style>
+</head>
+<body>
+<main class="wf-auth">
+  <section class="wf-auth-card" aria-label="Carte de connexion">
+    <div class="wf-brand"><span class="wf-icon"></span><span class="word">CreaSlot</span></div>
+
+    <div class="bar bar--title"></div>
+    <div class="bar bar--sub"></div>
+
+    <form>
+      <label class="wf-label">Adresse email</label>
+      <div class="wf-field"></div>
+
+      <label class="wf-label">Mot de passe</label>
+      <div class="wf-input-group">
+        <div class="wf-field"></div>
+        <div class="wf-eye" aria-hidden="true"><span class="wf-icon"></span></div>
+      </div>
+      <div class="wf-link-right"><div class="bar bar--link"></div></div>
+
+      <button type="button" class="wf-btn">Se connecter</button>
+    </form>
+
+    <div class="wf-foot"><div class="bar" style="height:9px;width:120px"></div><div class="bar bar--link" style="width:70px"></div></div>
+  </section>
+</main>
+<footer class="wf-cap">Wireframe lo-fi — Connexion</footer>
+</body>
+</html>

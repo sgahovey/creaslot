@@ -1,0 +1,161 @@
+@startuml diagramme-classes
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam class {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam enum {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+
+class Utilisateur {
+  email : texte
+  motDePasseHash : texte
+  nom : texte
+  prenom : texte
+  role : énuméré
+  estActif : booléen
+  emailVerifie : booléen
+  emailModificationCommentaire : booléen
+  emailRappelJ1 : booléen
+  getNomComplet() : texte
+}
+
+class Service {
+  nom : texte
+  description : texte
+  estActif : booléen
+}
+
+class TypeRdv {
+  code : texte
+  libelle : texte
+  couleurHex : texte
+  estActif : booléen
+}
+
+class Creneau {
+  dateDebut : date
+  dateFin : date
+  commentaireAuditeur : texte
+  estActif : booléen
+  isPasse() : booléen
+  isReserve() : booléen
+  isDisponible() : booléen
+  getReservationActive() : Reservation
+  getAuditeurReservation() : Utilisateur
+  validerHoraires() : void
+}
+
+class Reservation {
+  dateReservation : date
+  statut : énuméré
+  commentaireAuditeur : texte
+  dateAnnulation : date
+  motifAnnulation : texte
+  rappelEnvoyeAt : date
+  isAnnulable() : booléen
+  annuler(motif) : void
+}
+
+class Notification {
+  type : énuméré
+  titre : texte
+  message : texte
+  lu : booléen
+}
+
+class ResetPasswordRequest {
+  jetonHache : texte
+  demandeLe : date
+  expireLe : date
+}
+
+class JournalAdmin {
+  dateAction : date
+  typeAction : énuméré
+  acteurLibelle : texte
+  cibleLibelle : texte
+}
+
+class HistoriqueUtilisateur {
+  utilisateurId : entier
+  champModifie : texte
+  ancienneValeur : texte
+  nouvelleValeur : texte
+  dateModification : date
+}
+
+enum RoleUtilisateur {
+  AUDITEUR
+  PERSONNEL
+  SUPER_ADMIN
+  libelle() : texte
+  couleurBadge() : texte
+}
+
+enum StatutReservation {
+  ACTIVE
+  ANNULEE
+}
+
+enum TypeNotification {
+  CONFIRMATION_RESERVATION
+  ANNULATION_RESERVATION
+  MODIFICATION_COMMENTAIRE
+  SUPPRESSION_CRENEAU
+  RAPPEL_J1
+  libelle() : texte
+  icone() : texte
+}
+
+enum TypeActionJournal {
+  COMPTE_CREATION
+  COMPTE_MODIFICATION
+  COMPTE_CHANGEMENT_ROLE
+  COMPTE_ACTIVATION
+  COMPTE_DESACTIVATION
+  COMPTE_EXPORT
+  COMPTE_ANONYMISATION
+  libelle() : texte
+}
+
+Service "0..1" --> "*" Utilisateur : rattacher
+Utilisateur "1" --> "*" Creneau : publier
+TypeRdv "1" --> "*" Creneau : catégoriser
+Creneau "1" --> "*" Reservation : concerner
+Utilisateur "1" --> "*" Reservation : effectuer
+Utilisateur "1" --> "*" Notification : recevoir
+Reservation "0..1" --> "*" Notification : référencer
+Utilisateur "1" --> "*" ResetPasswordRequest : demander
+
+Utilisateur ..> RoleUtilisateur : a pour rôle
+Reservation ..> StatutReservation : a pour statut
+Notification ..> TypeNotification : a pour type
+JournalAdmin ..> TypeActionJournal : a pour type
+
+note bottom of JournalAdmin
+  Classe isolée, sans association (choix délibéré).
+  Acteur et cible figés en libellés, écriture seule :
+  la trace survit à la suppression des comptes.
+end note
+
+note bottom of HistoriqueUtilisateur
+  Classe isolée, sans association (choix délibéré).
+  Trace alimentée par un déclencheur au niveau du stockage,
+  utilisateurId est un identifiant scalaire sans clé étrangère.
+  Purgée lors de l'anonymisation d'un compte.
+end note
+
+legend bottom
+|= Trait |= Signification |
+| Association orientée (flèche pleine) | Lien navigable, avec cardinalités et rôle |
+| Dépendance (flèche pointillée) | La classe utilise un ensemble de valeurs fermé |
+| <b>Point clé</b> | Neuf classes pour huit entités persistées : HistoriqueUtilisateur\nest écrite par le stockage, elle n'a pas de correspondance objet. |
+endlegend
+@enduml

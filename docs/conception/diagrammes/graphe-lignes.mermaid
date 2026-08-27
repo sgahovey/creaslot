@@ -1,0 +1,42 @@
+---
+config:
+  gitGraph:
+    mainBranchName: 'intégration'
+    showCommitLabel: false
+  themeVariables:
+    git0: '#1F4E79'
+    git1: '#2E75B6'
+    git2: '#5B9BD5'
+    git3: '#A5C8FF'
+    git4: '#7BA7D4'
+    gitBranchLabel0: '#FFFFFF'
+    gitBranchLabel1: '#FFFFFF'
+    gitBranchLabel2: '#1E1E1E'
+    gitBranchLabel3: '#1E1E1E'
+    gitBranchLabel4: '#1E1E1E'
+---
+gitGraph
+   commit
+   branch validation
+   checkout validation
+   commit
+   branch service
+   checkout service
+   commit
+   checkout "intégration"
+   branch "travail A"
+   commit
+   commit
+   checkout "intégration"
+   branch "travail B"
+   commit
+   checkout "intégration"
+   merge "travail A"
+   checkout "travail B"
+   commit
+   checkout "intégration"
+   merge "travail B"
+   checkout validation
+   merge "intégration"
+   checkout service
+   merge validation

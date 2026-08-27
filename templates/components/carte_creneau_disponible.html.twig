@@ -7,6 +7,8 @@
 {% set joursFR = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'] %}
 {% set nomJour = joursFR[creneau.dateDebut|date('N') - 1] %}
 
+{# Bord gauche et pastille prennent la couleur portée par TypeRdv.couleurHex (donnée métier) : 
+ajouter un type de rendez-vous ne demande aucune modification du gabarit. #}
 <article class="card border-0 shadow-sm h-100"
          style="border-radius: var(--cs-radius-lg); border-left: 4px solid {{ creneau.typeRdv.couleurHex }} !important;"
          aria-label="Créneau {{ nomJour }} {{ creneau.dateDebut|date('d/m/Y') }} avec {{ creneau.utilisateur.prenom }} {{ creneau.utilisateur.nom }}">
@@ -14,6 +16,8 @@
     <div class="card-body p-3 d-flex flex-column gap-2">
 
         {# ── Type de RDV ───────────────────────────────────────────────── #}
+        {# L'information n'est jamais portée par la seule couleur : 
+        la pastille est systématiquement doublée du libellé. La pastille est aria-hidden car purement décorative. #}
         <div class="d-flex align-items-center gap-2">
             <span class="rounded-circle flex-shrink-0"
                   aria-hidden="true"

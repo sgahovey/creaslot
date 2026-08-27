@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wireframe lo-fi — Page légale (gabarit)</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,Arial,sans-serif; background:#fff; color:#444; font-size:14px; line-height:1.5; }
+  .wf-shell { max-width:1000px; margin:0 auto; padding:16px; }
+  header.wf-header, footer.wf-footer { background:#eee; border:1px solid #ccc; border-radius:8px; }
+  .wf-header-inner { display:flex; align-items:center; gap:18px; padding:14px 18px; }
+  .wf-logo { display:flex; align-items:center; gap:8px; font-weight:700; color:#444; }
+  .wf-icon { width:18px; height:18px; border:1px solid #999; border-radius:4px; display:inline-block; flex:0 0 auto; }
+  nav.wf-nav ul { list-style:none; display:flex; gap:14px; flex-wrap:wrap; }
+  nav.wf-nav li { width:78px; height:10px; background:#ccc; border-radius:4px; }
+  .wf-tools { margin-left:auto; display:flex; align-items:center; gap:16px; }
+  .wf-avatar { width:28px; height:28px; border:1px solid #999; border-radius:50%; background:#ccc; }
+  .wf-user { width:90px; height:10px; background:#ccc; border-radius:4px; }
+  main.wf-main { padding:24px 2px; max-width:860px; }
+  .wf-h1 { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .wf-h1 .bar { height:20px; width:230px; background:#999; border-radius:4px; }
+  .wf-h1 .wf-icon { width:24px; height:24px; }
+  .bar { background:#ccc; border-radius:4px; }
+  .wf-updated { height:8px; width:170px; background:#ccc; border-radius:4px; margin-bottom:20px; }
+  /* encadré d'information (alert) */
+  .wf-callout { border:1px solid #ccc; border-left:5px solid #999; border-radius:6px; background:#eee; padding:14px 16px; margin-bottom:26px; }
+  .wf-callout .bar { height:9px; margin:6px 0; }
+  /* sous-titre schématique + paragraphe de lignes */
+  .wf-subtitle { height:13px; width:220px; background:#999; border-radius:4px; margin:22px 0 12px; }
+  .wf-para .bar { height:9px; margin:8px 0; }
+  .wf-footer-inner { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; padding:22px 18px; }
+  .wf-cap { text-align:center; color:#999; font-size:12px; font-style:italic; margin-top:14px; padding-top:12px; border-top:1px dashed #ccc; }
+</style>
+</head>
+<body>
+<div class="wf-shell">
+
+  <header class="wf-header">
+    <div class="wf-header-inner">
+      <div class="wf-logo"><span class="wf-icon"></span><span>CreaSlot</span></div>
+      <nav class="wf-nav" aria-label="Navigation"><ul><li></li><li></li><li></li></ul></nav>
+      <div class="wf-tools">
+        <span class="wf-avatar"></span><span class="wf-user"></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="wf-main">
+    <!-- Titre de la page légale (gabarit : mentions / CGU / confidentialité / accessibilité RGAA) -->
+    <div class="wf-h1"><span class="wf-icon"></span><span class="bar"></span></div>
+    <div class="wf-updated"></div>
+
+    <!-- Encadré d'information -->
+    <div class="wf-callout" role="note">
+      <div class="bar" style="width:95%"></div>
+      <div class="bar" style="width:88%"></div>
+      <div class="bar" style="width:60%"></div>
+    </div>
+
+    <!-- Bloc 1 : sous-titre + paragraphe -->
+    <div class="wf-subtitle"></div>
+    <div class="wf-para">
+      <div class="bar" style="width:97%"></div>
+      <div class="bar" style="width:93%"></div>
+      <div class="bar" style="width:96%"></div>
+      <div class="bar" style="width:70%"></div>
+    </div>
+
+    <!-- Bloc 2 -->
+    <div class="wf-subtitle" style="width:180px"></div>
+    <div class="wf-para">
+      <div class="bar" style="width:92%"></div>
+      <div class="bar" style="width:98%"></div>
+      <div class="bar" style="width:55%"></div>
+    </div>
+
+    <!-- Bloc 3 -->
+    <div class="wf-subtitle" style="width:260px"></div>
+    <div class="wf-para">
+      <div class="bar" style="width:95%"></div>
+      <div class="bar" style="width:90%"></div>
+      <div class="bar" style="width:94%"></div>
+      <div class="bar" style="width:80%"></div>
+    </div>
+
+    <!-- Bloc 4 -->
+    <div class="wf-subtitle" style="width:150px"></div>
+    <div class="wf-para">
+      <div class="bar" style="width:88%"></div>
+      <div class="bar" style="width:65%"></div>
+    </div>
+  </main>
+
+  <footer class="wf-footer">
+    <div class="wf-footer-inner">
+      <div>
+        <div class="wf-logo" style="margin-bottom:8px"><span class="wf-icon"></span><span>CreaSlot</span></div>
+        <div class="bar" style="height:8px;width:90%;margin:6px 0"></div>
+        <div class="bar" style="height:8px;width:75%;margin:6px 0"></div>
+      </div>
+      <div>
+        <div class="bar" style="height:11px;width:120px;background:#999;margin-bottom:10px"></div>
+        <div class="bar" style="height:8px;width:70%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:80%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:65%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:72%;margin:7px 0"></div>
+      </div>
+      <div>
+        <div class="bar" style="height:11px;width:80px;background:#999;margin-bottom:10px"></div>
+        <div class="bar" style="height:8px;width:85%;margin:7px 0"></div>
+        <div class="bar" style="height:8px;width:60%;margin:7px 0"></div>
+      </div>
+    </div>
+  </footer>
+
+  <footer class="wf-cap">Wireframe lo-fi — Page légale (gabarit : mentions légales · CGU · confidentialité · accessibilité RGAA)</footer>
+</div>
+</body>
+</html>

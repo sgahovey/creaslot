@@ -26,6 +26,8 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  */
 class MonProfilType extends AbstractType
 {
+    use ProtectionCsrfTrait;
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -42,9 +44,9 @@ class MonProfilType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-            'data_class'      => Utilisateur::class,
-            'csrf_protection' => true,
-            'csrf_token_id'   => 'mon_profil_informations',
+            'data_class' => Utilisateur::class,
         ]);
+
+        $this->configurerProtectionCsrf($resolver, 'mon_profil_informations');
     }
 }

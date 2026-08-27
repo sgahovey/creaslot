@@ -39,7 +39,7 @@ APP="app-$ENV"; WORKER="worker-$ENV"
 echo ">>> Deploiement $ENV @ $TAG"
 
 # 4. Synchroniser le working tree du depot sur le commit deploye ($TAG).
-# Les fichiers d'orchestration versionnes (compose.prod.yml, Caddyfile, init-prod.sh)
+# Les fichiers d'orchestration versionnes (compose.prod.yml, init-prod.sh)
 # resteraient sinon sur un ancien commit : une modif de compose.prod.yml ne serait
 # jamais appliquee au deploiement. $TAG est deja valide par la regex ^[0-9a-f]{7,40}$
 # ci-dessus, son usage est donc sur (pas d'injection). On vise le SHA directement

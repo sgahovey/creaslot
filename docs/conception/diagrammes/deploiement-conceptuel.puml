@@ -1,0 +1,83 @@
+@startuml deploiement-conceptuel
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam node {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam database {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+skinparam artifact {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+skinparam note {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+
+node "Poste de l'utilisateur" as POSTE {
+  artifact "Navigateur" as NAV
+}
+
+cloud "Réseau public" as NET
+
+node "Machine d'exécution" as VPS {
+  node "Point d'entrée\nchiffre les échanges,\nrépartit les demandes" as ENTREE
+
+  node "Environnement de vérification" as PREPROD {
+    artifact "Application" as APPPRE
+    artifact "Consommateur\nde messages différés" as WPRE
+  }
+
+  node "Environnement de service" as PROD {
+    artifact "Application" as APPPROD
+    artifact "Consommateur\nde messages différés" as WPROD
+  }
+
+  node "Service de données" as SGBD {
+    database "Espace de vérification" as BDPRE
+    database "Espace de service" as BDPROD
+  }
+
+  artifact "Dispositif de surveillance" as SURV
+}
+
+NAV --> NET
+NET --> ENTREE
+ENTREE --> APPPRE
+ENTREE --> APPPROD
+
+APPPRE --> BDPRE
+WPRE --> BDPRE
+APPPROD --> BDPROD
+WPROD --> BDPROD
+
+SURV --> APPPROD
+
+note right of ENTREE
+  Seul élément joignable depuis le réseau public.
+  Tout le reste demeure confiné.
+end note
+
+note bottom of SGBD
+  Un service de données unique, deux espaces
+  cloisonnés. Chaque environnement dispose
+  d'une identité d'accès bornée à son espace.
+end note
+
+legend bottom
+|= Élément |= Signification |
+| Nœud | Unité d'exécution |
+| Artefact | Composant déployé sur un nœud |
+| Cylindre | Espace de conservation de données |
+| <b>Point clé</b> | Une seule porte donne sur l'extérieur. Les deux environnements\ncohabitent sur la même machine, avec des cycles de livraison distincts. |
+endlegend
+@enduml

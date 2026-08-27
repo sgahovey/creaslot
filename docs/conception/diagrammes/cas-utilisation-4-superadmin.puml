@@ -1,0 +1,139 @@
+@startuml cas-utilisation-4-superadmin
+' =====================================================================
+' CreaSlot — Cas d'utilisation 4/4 : espace Super-administrateur
+'
+' Fidele au code : routes protegees par #[IsGranted('ROLE_SUPER_ADMIN')]
+' (src/Controller/Admin/ et ExportController) et par l'access_control
+' ^/admin, completees par des autorisations contextuelles via
+' UtilisateurVoter.
+'
+' Heritage conforme a la role_hierarchy reelle
+' (config/packages/security.yaml) :
+'     ROLE_SUPER_ADMIN: [ROLE_PERSONNEL, ROLE_AUDITEUR]
+' Le Super-administrateur herite du Personnel (et donc, par transitivite,
+' de l'Auditeur) : il dispose de l'ensemble des cas d'usage metier.
+'
+' Sources : DashboardController, CompteController, JournalController,
+'           StatistiquesController, OccupationController, ExportController.
+' Endpoint JSON technique exclu (app_admin_occupation_evenements :
+' alimentation du calendrier d'occupation).
+' =====================================================================
+
+left to right direction
+skinparam shadowing false
+skinparam actorStyle awesome
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam usecase {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam actor {
+  BorderColor #1F4E79
+  FontColor #1E1E1E
+}
+skinparam participant {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam sequence {
+  ArrowColor #1F4E79
+  LifeLineBorderColor #1F4E79
+  GroupBorderColor #1F4E79
+}
+skinparam package {
+  BorderColor #1F4E79
+  FontColor #1E1E1E
+}
+skinparam note {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+
+title Cas d'utilisation — Espace Super-administrateur
+
+actor "Personnel" as PERSONNEL
+actor "Super-administrateur" as SUPERADMIN
+
+SUPERADMIN --|> PERSONNEL
+
+rectangle CreaSlot {
+
+    package "Super-administrateur" {
+        usecase "Consulter le tableau de bord"           as UC_DASHBOARD
+        usecase "Consulter la liste des comptes"         as UC_COMPTES_LISTE
+        usecase "Créer un compte"                        as UC_COMPTE_CREER
+        usecase "Modifier un compte"                     as UC_COMPTE_MODIFIER
+        usecase "Activer ou désactiver\nun compte"       as UC_COMPTE_ACTIVATION
+        usecase "Consulter les données\nd'un compte"     as UC_COMPTE_DONNEES
+        usecase "Exporter les données\nd'un compte"      as UC_COMPTE_EXPORT
+        usecase "Consulter le journal\nd'administration" as UC_JOURNAL_CONSULTER
+        usecase "Consulter les statistiques"             as UC_STATISTIQUES
+        usecase "Consulter l'occupation"                 as UC_OCCUPATION
+    }
+
+    usecase "Journaliser l'action\nd'administration" as UC_JOURNALISER
+}
+
+' Associations — Super-administrateur (ROLE_SUPER_ADMIN)
+SUPERADMIN -- UC_DASHBOARD
+SUPERADMIN -- UC_COMPTES_LISTE
+SUPERADMIN -- UC_COMPTE_CREER
+SUPERADMIN -- UC_COMPTE_MODIFIER
+SUPERADMIN -- UC_COMPTE_ACTIVATION
+SUPERADMIN -- UC_COMPTE_DONNEES
+SUPERADMIN -- UC_COMPTE_EXPORT
+SUPERADMIN -- UC_JOURNAL_CONSULTER
+SUPERADMIN -- UC_STATISTIQUES
+SUPERADMIN -- UC_OCCUPATION
+
+' Includes — CompteController appelle JournalAdminService::enregistrer()
+' sur la creation, la modification et la (des)activation d'un compte.
+UC_COMPTE_CREER      ..> UC_JOURNALISER : <<include>>
+UC_COMPTE_MODIFIER   ..> UC_JOURNALISER : <<include>>
+UC_COMPTE_ACTIVATION ..> UC_JOURNALISER : <<include>>
+
+' Include — ExportController journalise l'export d'un compte
+' (TypeActionJournal::COMPTE_EXPORT).
+UC_COMPTE_EXPORT     ..> UC_JOURNALISER : <<include>>
+
+note right of UC_COMPTE_MODIFIER
+  Règles d'autorisation, modification
+  et changement de rôle
+  si le rôle du compte est modifié.
+end note
+
+note right of UC_COMPTE_ACTIVATION
+  Règles d'autorisation, activation
+  et désactivation
+  Un administrateur ne peut pas
+  se désactiver lui-même.
+end note
+
+note bottom of UC_JOURNALISER
+  Trace immuable (écriture seule).
+  Acteur et cible figés en scalaires :
+  la trace survit à la suppression
+  des comptes concernés (données personnelles).
+end note
+
+note bottom of PERSONNEL
+  Le Super-administrateur hérite du Personnel
+  (la hiérarchie des rôles est cumulative) : il accède
+  donc aussi à l'ensemble des parcours
+  Personnel et Auditeur.
+end note
+
+legend right
+  | **Élément** | **Signification** |
+  | Acteur | Rôle qui interagit avec le système |
+  | Cas d'utilisation | Fonctionnalité offerte par le système |
+  | Association (--) | L'acteur déclenche le cas d'utilisation |
+  | Héritage (flèche creuse) | L'acteur fils hérite des cas du parent |
+  | <<include>> | Le cas source déclenche toujours le cas cible |
+endlegend
+
+@enduml

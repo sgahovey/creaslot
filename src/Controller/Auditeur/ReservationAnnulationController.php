@@ -16,6 +16,11 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+/**
+ * Annulation d'une réservation par l'Auditeur propriétaire (US-3.3).
+ *
+ * Accès réservé à ROLE_AUDITEUR (IsGranted de classe).
+ */
 #[IsGranted('ROLE_AUDITEUR')]
 final class ReservationAnnulationController extends AbstractController
 {
@@ -24,6 +29,15 @@ final class ReservationAnnulationController extends AbstractController
     ) {
     }
 
+    /**
+     * Annule une réservation à la demande de son Auditeur propriétaire.
+     *
+     * Le Voter CANCEL réserve l'action au propriétaire : le Personnel n'annule jamais
+     * la réservation d'un Auditeur (il désactive son créneau, action distincte). Une
+     * réservation déjà annulée, ou dont le créneau est passé, n'est plus annulable
+     * (ReservationNonAnnulableException) et le motif exact est restitué. Le succès
+     * déclenche un e-mail de confirmation.
+     */
     #[Route('/reservation/{id}/annuler', name: 'app_reservation_annulation', methods: ['POST'])]
     public function annuler(Reservation $reservation, Request $request): Response
     {
@@ -60,18 +74,26 @@ final class ReservationAnnulationController extends AbstractController
 
     /**
      * Preserve le filtre actif si le Referer pointe vers la liste des reservations,
-     * sinon redirige vers la route nue. Validation contre l'open-redirect :
-     * on n'utilise que le path extrait (jamais le host) et on verifie qu'il
-     * commence par la base de la route /mes-reservations.
+     * sinon redirige vers la route nue. Protection contre l'open-redirect : la
+     * redirection ne reutilise QUE le chemin (et sa chaine de requete) extrait du
+     * Referer, jamais son hote, et seulement si ce chemin commence par la base de
+     * la route /mes-reservations. Un Referer pointant vers un domaine tiers est
+     * ainsi ramene sur le chemin local, sans jamais renvoyer vers l'exterieur.
      */
     private function redirigerVersListe(Request $request): Response
     {
         $referer = $request->headers->get('referer', '');
-        if ($referer !== '') {
-            $path = parse_url($referer, PHP_URL_PATH);
+        $composants = $referer !== '' ? parse_url($referer) : false;
+
+        if (is_array($composants)) {
+            $chemin = $composants['path'] ?? '';
             $baseListe = $this->generateUrl('app_mes_reservations');
-            if (is_string($path) && str_starts_with($path, $baseListe)) {
-                return $this->redirect($referer);
+            if (str_starts_with($chemin, $baseListe)) {
+                if (isset($composants['query'])) {
+                    $chemin .= '?' . $composants['query'];
+                }
+
+                return $this->redirect($chemin);
             }
         }
 

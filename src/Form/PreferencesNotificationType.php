@@ -31,6 +31,8 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  */
 final class PreferencesNotificationType extends AbstractType
 {
+    use ProtectionCsrfTrait;
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $aideInApp = 'Vous recevrez toujours cette notification dans CreaSlot, même si l\'email est désactivé.';
@@ -51,9 +53,9 @@ final class PreferencesNotificationType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-            'data_class'      => Utilisateur::class,
-            'csrf_protection' => true,
-            'csrf_token_id'   => 'preferences_notification',
+            'data_class' => Utilisateur::class,
         ]);
+
+        $this->configurerProtectionCsrf($resolver, 'preferences_notification');
     }
 }

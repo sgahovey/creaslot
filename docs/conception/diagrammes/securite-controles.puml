@@ -1,0 +1,52 @@
+@startuml securite-controles
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam rectangle {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam note {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+
+rectangle "Barrière par préfixe d'adresse\nconnaît le rôle et l'adresse demandée" as BARRIERE
+rectangle "Contrôle au point d'entrée\nconnaît le rôle requis pour l'opération" as ENTREE
+rectangle "Règle portant sur l'objet\nconnaît le rôle et la ressource visée" as OBJET
+rectangle "Contrôle d'affichage\nmasque une commande vouée à l'échec" as AFFICHAGE #F1F3F5
+rectangle "Opération autorisée" as OK
+
+BARRIERE --> ENTREE
+ENTREE --> OBJET
+OBJET --> OK
+AFFICHAGE ..> BARRIERE
+
+note right of BARRIERE
+  Structurellement incapable d'exprimer
+  « sa propre réservation, pas celle d'un autre » :
+  elle ne connaît que le rôle, jamais l'objet visé.
+end note
+
+note right of OBJET
+  Seul niveau où s'expriment les protections
+  réflexives : un administrateur ne peut ni se retirer
+  son propre rôle ni désactiver son propre compte.
+end note
+
+note bottom of AFFICHAGE
+  Ne sécurise rien. Un lien absent reste une adresse
+  atteignable. Systématiquement doublé d'un contrôle
+  réel, jamais employé seul.
+end note
+
+legend bottom
+|= Élément |= Signification |
+| Trait plein | Contrôle traversé dans l'ordre, chacun bloquant |
+| Trait pointillé | Confort de navigation, sans valeur de sécurité |
+| Fond gris | Ne relève pas de l'autorisation |
+| <b>Redondance délibérée</b> | Un même accès est protégé par la barrière et par le contrôle\nau point d'entrée. Une erreur dans la table des adresses ne suffit\nalors pas à ouvrir un accès, le contrôle placé au plus près\nde l'opération subsistant. |
+endlegend
+@enduml

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wireframe lo-fi — Inscription</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,Arial,sans-serif; background:#fff; color:#444; font-size:14px; line-height:1.5; }
+  .wf-auth { min-height:96vh; display:flex; align-items:center; justify-content:center; padding:30px 16px; }
+  .wf-auth-card { width:100%; max-width:440px; border:1px solid #ccc; border-radius:10px; padding:30px; }
+  .wf-brand { display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:18px; }
+  .wf-icon { width:20px; height:20px; border:1px solid #999; border-radius:5px; display:inline-block; flex:0 0 auto; }
+  .wf-brand .word { font-weight:700; color:#444; }
+  .bar { background:#ccc; border-radius:4px; }
+  .bar--title { height:18px; width:180px; background:#999; margin:0 auto 8px; }
+  .bar--sub { height:9px; width:200px; margin:0 auto 22px; }
+  .wf-label { display:block; font-size:12px; color:#999; margin:14px 0 5px; }
+  .wf-field { border:1px solid #ccc; border-radius:6px; height:38px; background:#fff; }
+  .wf-row { display:flex; gap:14px; }
+  .wf-col { flex:1; }
+  .wf-help { height:8px; width:90%; background:#eee; border:1px solid #eee; border-radius:4px; margin-top:6px; }
+  .wf-cgu { display:flex; align-items:center; gap:10px; margin-top:18px; }
+  .wf-check { width:18px; height:18px; border:1px solid #999; border-radius:4px; flex:0 0 auto; }
+  .wf-btn { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; border:1px solid #999; border-radius:6px; background:#999; color:#fff; padding:12px; font-size:14px; margin-top:22px; }
+  .wf-foot { text-align:center; margin-top:20px; display:flex; gap:8px; justify-content:center; align-items:center; }
+  .wf-cap { text-align:center; color:#999; font-size:12px; font-style:italic; padding:14px; border-top:1px dashed #ccc; }
+</style>
+</head>
+<body>
+<main class="wf-auth">
+  <section class="wf-auth-card" aria-label="Carte d'inscription">
+    <div class="wf-brand"><span class="wf-icon"></span><span class="word">CreaSlot</span></div>
+    <div class="bar bar--title"></div>
+    <div class="bar bar--sub"></div>
+
+    <form>
+      <div class="wf-row">
+        <div class="wf-col">
+          <label class="wf-label">Prénom</label>
+          <div class="wf-field"></div>
+        </div>
+        <div class="wf-col">
+          <label class="wf-label">Nom</label>
+          <div class="wf-field"></div>
+        </div>
+      </div>
+
+      <label class="wf-label">Adresse email</label>
+      <div class="wf-field"></div>
+
+      <label class="wf-label">Mot de passe</label>
+      <div class="wf-field"></div>
+      <div class="wf-help"></div>
+
+      <label class="wf-label">Confirmer le mot de passe</label>
+      <div class="wf-field"></div>
+
+      <div class="wf-cgu">
+        <span class="wf-check" aria-hidden="true"></span>
+        <div class="bar" style="height:9px;width:70%"></div>
+      </div>
+
+      <button type="button" class="wf-btn">Créer mon compte</button>
+    </form>
+
+    <div class="wf-foot"><div class="bar" style="height:9px;width:150px"></div><div class="bar" style="height:9px;width:80px"></div></div>
+  </section>
+</main>
+<footer class="wf-cap">Wireframe lo-fi — Inscription</footer>
+</body>
+</html>

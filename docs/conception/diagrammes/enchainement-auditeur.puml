@@ -1,0 +1,33 @@
+@startuml enchainement-auditeur
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam rectangle {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+
+rectangle "Créneaux disponibles" as DISPO
+rectangle "Confirmer ma\nréservation" as CONFIRM
+rectangle "Mes réservations" as MES
+rectangle "Détail d'une\nréservation" as DETAIL
+rectangle "Mes préférences" as PREF
+
+DISPO --> CONFIRM : choisir un créneau
+CONFIRM --> DISPO : renoncer
+CONFIRM ..> MES : réserver
+CONFIRM ..> DISPO : créneau devenu indisponible
+
+MES --> DETAIL : consulter
+MES ..> MES : annuler
+DETAIL ..> MES : annuler
+MES --> DISPO : réserver à nouveau
+
+legend bottom
+|= Trait |= Signification |
+| Trait plein | Navigation : conduit à un autre écran sans rien modifier |
+| Trait pointillé | Action : déclenche un traitement modifiant l'état du système |
+| <b>Point clé</b> | La confirmation mène à deux issues distinctes selon que le créneau\nest encore libre au moment de valider. |
+endlegend
+@enduml

@@ -1,3 +1,14 @@
+---
+config:
+  theme: base
+  themeVariables:
+    primaryColor: '#DCE7F5'
+    primaryBorderColor: '#1F4E79'
+    primaryTextColor: '#1E1E1E'
+    lineColor: '#1F4E79'
+    clusterBkg: '#FFFFFF'
+    clusterBorder: '#1F4E79'
+---
 flowchart TB
 
     PR["Pull request vers develop, preprod ou main"]
@@ -6,9 +17,10 @@ flowchart TB
         CS["Style<br/>PHP-CS-Fixer<br/>fix --dry-run --diff"]
         STAN["Analyse statique<br/>PHPStan niveau 8<br/>SANS baseline"]
         TESTS["Tests<br/>PHPUnit + couverture<br/>service MySQL 8 reel<br/>migrations + fixtures<br/><br/>derniere etape du job :<br/>analyse SonarCloud"]
+        AUDIT["Audit de securite<br/>composer audit --locked<br/>--no-dev BLOQUANT<br/>deps de developpement : informatif"]
     end
 
-    GATE{"PROTECTION DE BRANCHE : ruleset<br/>les 3 controles exiges AU VERT<br/>BLOQUANT"}
+    GATE{"PROTECTION DE BRANCHE : ruleset<br/>les 4 controles exiges AU VERT<br/>BLOQUANT"}
 
     REFUS["Merge IMPOSSIBLE<br/>tant qu un controle est rouge"]
 
@@ -36,13 +48,15 @@ flowchart TB
     PR --> CS
     PR --> STAN
     PR --> TESTS
+    PR --> AUDIT
 
     CS --> GATE
     STAN --> GATE
     TESTS --> GATE
+    AUDIT --> GATE
 
     GATE -->|"un controle rouge"| REFUS
-    GATE ==>|"les 3 controles verts"| MERGE
+    GATE ==>|"les 4 controles verts"| MERGE
 
     MERGE --> DEVELOP
     MERGE ==> PROMO
@@ -66,7 +80,7 @@ flowchart TB
     classDef echec fill:#ffc9c9,stroke:#e03131,stroke-width:2px,color:#212529
 
     class PR entree
-    class CS,STAN,TESTS qualite
+    class CS,STAN,TESTS,AUDIT qualite
     class GATE,SMOKE bloquant
     class REFUS,KO echec
     class MERGE,DEVELOP,PROMO entree

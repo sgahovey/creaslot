@@ -22,6 +22,12 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+/**
+ * Gestion des créneaux proposés par le Personnel (US-2.x).
+ *
+ * Accès réservé à ROLE_PERSONNEL (IsGranted de classe) ; les actions sur un créneau
+ * précis passent en plus par le CreneauVoter (seul le créateur ou le SUPER_ADMIN agit).
+ */
 #[IsGranted('ROLE_PERSONNEL')]
 class CreneauController extends AbstractController
 {
@@ -33,6 +39,11 @@ class CreneauController extends AbstractController
     ) {
     }
 
+    /**
+     * Liste paginée des créneaux du Personnel courant, filtrable par état.
+     *
+     * Bornée à l'utilisateur connecté : le Personnel ne gère que ses propres créneaux.
+     */
     #[Route('/creneau', name: 'app_creneau_liste', methods: ['GET'])]
     public function liste(Request $request, CreneauRepository $creneauRepository): Response
     {
@@ -52,6 +63,10 @@ class CreneauController extends AbstractController
         ]);
     }
 
+    /**
+     * Vue agenda (calendrier) des créneaux ; les données sont chargées ensuite en
+     * asynchrone via l'API calendrier (CreneauApiController).
+     */
     #[Route('/creneau/agenda', name: 'app_creneau_agenda', methods: ['GET'])]
     public function agenda(TypeRdvRepository $typeRdvRepository): Response
     {
@@ -60,6 +75,15 @@ class CreneauController extends AbstractController
         ]);
     }
 
+    /**
+     * Modifie un créneau, avec des règles différentes selon qu'il est déjà réservé.
+     *
+     * Autorisé par le Voter EDIT. Un créneau passé ou annulé n'est plus modifiable.
+     * Sur un créneau réservé, les horaires sont figés (seul le commentaire à l'auditeur
+     * évolue) ; sinon les nouveaux horaires sont contrôlés contre les chevauchements du
+     * Personnel avant d'être acceptés. Si le commentaire destiné à l'auditeur change,
+     * ce dernier en est notifié par e-mail.
+     */
     #[Route('/creneau/{id}/modifier', name: 'app_creneau_modifier', methods: ['GET', 'POST'])]
     public function modifier(Creneau $creneau, Request $request): Response
     {
@@ -142,6 +166,13 @@ class CreneauController extends AbstractController
         ]);
     }
 
+    /**
+     * Crée un créneau pour le Personnel courant.
+     *
+     * La date de fin est dérivée d'une durée prédéfinie ou d'une heure de fin libre.
+     * Le créneau n'est persisté que s'il ne chevauche aucun autre créneau du même
+     * Personnel : un conflit est tracé et renvoyé à l'utilisateur, sans enregistrement.
+     */
     #[Route('/creneau/nouveau', name: 'app_creneau_nouveau', methods: ['GET', 'POST'])]
     public function nouveau(Request $request): Response
     {
@@ -202,6 +233,14 @@ class CreneauController extends AbstractController
         ]);
     }
 
+    /**
+     * Supprime (désactive) un créneau et annule la réservation qu'il portait.
+     *
+     * Autorisé par le Voter DELETE, protégé par un jeton CSRF. La suppression est
+     * logique (est_actif à false), jamais physique. Si le créneau était réservé, la
+     * réservation active est annulée dans la foulée et son auditeur notifié par e-mail
+     * (réservation capturée avant annulation, cf. DT-1).
+     */
     #[Route('/creneau/{id}/supprimer', name: 'app_creneau_supprimer', methods: ['POST'])]
     public function supprimer(Creneau $creneau, Request $request): Response
     {

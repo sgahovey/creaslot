@@ -28,6 +28,8 @@ use Symfony\Component\Validator\Constraints\NotBlank;
  */
 class ChangementMotDePasseType extends AbstractType
 {
+    use ProtectionCsrfTrait;
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -58,9 +60,9 @@ class ChangementMotDePasseType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-            'data_class'      => ChangementMotDePasse::class,
-            'csrf_protection' => true,
-            'csrf_token_id'   => 'mon_profil_mot_de_passe',
+            'data_class' => ChangementMotDePasse::class,
         ]);
+
+        $this->configurerProtectionCsrf($resolver, 'mon_profil_mot_de_passe');
     }
 }

@@ -38,6 +38,10 @@ final class MonProfilController extends AbstractController
     ) {
     }
 
+    /**
+     * Affiche la page profil, qui réunit sur un même écran l'édition des informations
+     * et le changement de mot de passe.
+     */
     #[Route('/mon-profil', name: 'app_mon_profil', methods: ['GET'])]
     public function index(): Response
     {
@@ -50,6 +54,9 @@ final class MonProfilController extends AbstractController
         );
     }
 
+    /**
+     * Enregistre les informations personnelles éditables (prénom, nom) du compte courant.
+     */
     #[Route('/mon-profil/informations', name: 'app_mon_profil_informations', methods: ['POST'])]
     public function informations(Request $request): Response
     {
@@ -73,6 +80,13 @@ final class MonProfilController extends AbstractController
         );
     }
 
+    /**
+     * Change le mot de passe du compte courant, sous trois conditions de sécurité.
+     *
+     * Le mot de passe actuel doit être fourni et correct (re-authentification contre un
+     * détournement de session) ; le nouveau doit différer de l'actuel. Après succès,
+     * l'identifiant de session est régénéré, pour prévenir la fixation de session.
+     */
     #[Route('/mon-profil/mot-de-passe', name: 'app_mon_profil_mot_de_passe', methods: ['POST'])]
     public function motDePasse(Request $request): Response
     {

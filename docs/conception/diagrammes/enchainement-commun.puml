@@ -1,0 +1,37 @@
+@startuml enchainement-commun
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam rectangle {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+
+rectangle "Menu" as MENU #F1F3F5
+rectangle "Pied de page" as PIED #F1F3F5
+
+rectangle "Mon profil" as PROFIL
+rectangle "Mes notifications" as NOTIF
+rectangle "Mes données\npersonnelles" as DONNEES
+rectangle "Supprimer mon\ncompte" as SUPPR
+rectangle "Pages légales" as LEGAL
+
+MENU --> PROFIL
+MENU --> NOTIF
+PROFIL --> DONNEES
+PROFIL --> SUPPR
+PIED --> LEGAL
+
+PROFIL ..> PROFIL : modifier ses informations
+PROFIL ..> PROFIL : changer son mot de passe
+SUPPR --> PROFIL : renoncer
+SUPPR ..> MENU : confirmer la suppression
+
+legend bottom
+|= Trait |= Signification |
+| Trait plein | Navigation : conduit à un autre écran sans rien modifier |
+| Trait pointillé | Action : déclenche un traitement modifiant l'état du système |
+| <b>Point clé</b> | Ces écrans sont atteignables depuis n'importe quel espace.\nLes pages légales restent accessibles sans authentification. |
+endlegend
+@enduml
