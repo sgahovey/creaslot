@@ -7,8 +7,8 @@ ne contient que des procédures et des commandes copiables.
 
 **Périmètre** : déploiement, mise à jour, certificats, e-mail, crons, sauvegarde et
 restauration de la base (§8), rollback simple.
-La supervision/monitoring applicatif est en place (six sondes Uptime Kuma + route `/health`,
-cf. §3.1 et §10) ; seule l'extension des healthchecks Docker à l'ensemble des services
+La supervision/monitoring applicatif est en place (huit sondes Uptime Kuma + route `/health`,
+cf. §3.1, §6.1 et §10) ; seule l'extension des healthchecks Docker à l'ensemble des services
 (aujourd'hui `db`) reste ouverte. La journalisation des échecs de connexion (OWASP A09) est
 livrée (US-9.5, cf. §10).
 
@@ -49,8 +49,8 @@ côté client : PDO n'ouvre pas de session chiffrée sans qu'on le lui demande.
    le chiffrement du transport, lui, reste effectif.
 
 > ⚠️ **Ne jamais écrire ces options dans le bloc `dbal` commun** : l'intégration continue
-> monte son propre service MySQL sans ce certificat, et les trois jobs qui touchent la base
-> échoueraient.
+> monte son propre service MySQL sans ce certificat. Le job `phpunit`, seul à déclarer ce
+> service (`.github/workflows/ci.yml`), échouerait à ouvrir la connexion.
 
 **Vérification** (la session doit être chiffrée, pas seulement autorisée) :
 
@@ -389,7 +389,12 @@ Les chantiers initialement listés ici ont été livrés :
 
 - **US-9.5** — logs Docker bornés (`max-size`/`max-file`) et journalisation dédiée des échecs de connexion (channel Monolog `security`, OWASP A09).
 - **US-10.1** — pipeline CI/CD de déploiement continu (cf. §3.1 et `docs/architecture-deploiement.md` §5).
-- **Supervision applicative** — dispositif Uptime Kuma à **six sondes** : trois interrogations directes (santé applicative via `/health`, préproduction, production publique) et trois sondes en attente de signal (sauvegarde de la base, rappels J-1, purge du journal). La route `/health` (état app + base + file Messenger) est aussi interrogée par le contrôle de disponibilité du §3.1.
+- **Supervision applicative** — dispositif Uptime Kuma à **huit sondes**, réparties en **trois types** :
+  1. **Interrogation directe** (3) : santé applicative via `/health`, préproduction, production publique. La sonde interroge, la réponse fait foi.
+  2. **Attente de signal** (3) : sauvegarde de la base, rappels J-1, purge du journal. Chaque tâche planifiée pousse un battement en fin d'exécution réussie ; c'est l'**absence** du battement qui alerte.
+  3. **Déclenchement par évènement** (2) : blocages de connexion en préproduction et en production. À l'inverse du type précédent, c'est la **présence** d'une sollicitation qui alerte. Ces sondes sont en **mode inversé**, ce qui permet à un dispositif conçu pour surveiller une absence de signaler une survenue (cf. §6.1).
+
+  La route `/health` (état app + base + file Messenger) est aussi interrogée par le contrôle de disponibilité du §3.1.
 
 Restent ouvertes, par ordre de priorité :
 
