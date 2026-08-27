@@ -1227,9 +1227,9 @@ chaque déploiement et porteur d'un risque silencieux de duplication de fichiers
 
 ---
 
-## DT-45 — Contrastes insuffisants dans la charte graphique (🟡 MOYEN) — ⏳ OUVERTE (27/08/2026)
+## DT-45 — Contrastes insuffisants dans la charte graphique (🟡 MOYEN) — ✅ RÉSOLUE (27/08/2026)
 
-> **⏳ OUVERTE le 27/08/2026** — constatée en mesurant l'ensemble des couples texte sur fond de l'interface au regard du RGAA, à la demande de la revue d'accessibilité.
+> **✅ RÉSOLUE le 27/08/2026**, ouverte et close le même jour. Constatée en mesurant l'ensemble des couples texte sur fond de l'interface au regard du RGAA, à la demande de la revue d'accessibilité.
 >
 > **Origine** : la charte n'avait jamais été mesurée. Les couleurs ont été choisies pour leur cohérence visuelle, pas contre un seuil de contraste. Sur 44 couples réellement appliqués, **10 échouaient**.
 
@@ -1278,15 +1278,74 @@ S'y ajoute un facteur aggravant : **CLAUDE.md désigne `docs/design-tokens.md` c
 
 **Point de contrôle** : `tests/Accessibilite/ContrasteChartTest.php` **extrait les jetons de la charte** et recalcule chaque couple à l'exécution, plutôt que de comparer à une liste figée. Modifier une couleur sans vérifier son contraste fait désormais échouer la suite. Le test fige aussi l'écart du bleu téléphone par une assertion inversée, qui échouera le jour où la teinte sera corrigée : la dette ne peut donc pas se refermer en silence.
 
-**Condition de levée** : le couple `#1A1A1A` sur `#007BFF` (couleur de type téléphone, lue en base) plafonne à **4,37** et **aucune opacité ne le sauve** : même sans atténuation, il reste sous le seuil. Trois issues existent, aucune indolore, et l'arbitrage est une décision de charte.
+**Arbitrage du bleu téléphone, rendu le 27/08/2026** : le couple `#1A1A1A` sur `#007BFF` plafonnait à **4,37**, et aucune opacité ne le sauvait. Trois issues ont été mesurées avant décision, la distance colorimétrique étant calculée en **CIEDE2000** (implémentation validée sur neuf paires du jeu de référence Sharma, Wu et Dalal, concordantes au dix-millième).
 
-1. Assombrir le texte de l'événement à `#171717`, qui atteint 4,51. Marge de 0,01, donc fragile au moindre ajustement ultérieur.
-2. Changer `type_rdv.couleur_hex` pour un bleu plus clair. Touche une donnée de production, et rapproche la couleur du bleu principal de la charte, au risque de brouiller la distinction.
-3. Passer les événements du calendrier en texte clair sur fond de couleur. Correction robuste, mais elle réécrit la règle pour les trois types à la fois.
+| Issue | Règle les quatre cas | Écrans touchés | Donnée de production |
+|---|:--:|:--:|:--:|
+| 1, texte assombri à `#171717` | **non**, créneau passé à 3,81 | 2 | non |
+| 1 bis, texte assombri à `#090909` | **oui** | 2 | non |
+| 2, couleur de base changée (`#2E93FF`, `#458EFD` ou `#35A0C5`) | oui | 12 | **oui** |
+| 3, inversion seule | **non**, les six cas échouent | 2 | non |
+| 3 bis, inversion et fonds assombris | oui | 2 | non |
 
-La dette sera close lorsque cet arbitrage aura été rendu et que le couple atteindra 4,5.
+**Issue retenue : la 1 bis**, texte porté à `#090909`. Meilleur rapport entre le résultat et le périmètre : un seul fichier, deux écrans, aucune donnée de production. L'issue 2 donnait plus de marge mais touchait douze écrans et imposait une migration de données ; l'issue 3 bis rapprochait le fond téléphone du bleu principal de la charte, de `ΔE00 = 20,9` à `12,0`.
+
+**Mesures avant et après sur les quatre cas critiques**, texte `#1A1A1A` puis `#090909`, atténuation à 0,89 :
+
+| Cas | Avant | Après | Seuil |
+|---|---:|---:|---:|
+| Événement téléphone | 4,37 | **5,00** | 4,5 |
+| Créneau passé téléphone | 3,66 | **4,51** | 4,5 |
+| Événement présentiel | 5,56 | 6,36 | 4,5 |
+| Créneau passé présentiel | 4,57 | 5,63 | 4,5 |
+| Événement visio | 6,77 | 7,75 | 4,5 |
+| Créneau passé visio | 5,39 | 6,64 | 4,5 |
+
+**Pourquoi `#090909` exactement** : c'est le gris **le plus clair** qui fasse passer les quatre cas. Le facteur limitant est le créneau passé téléphone, à **4,5067** pour un seuil de 4,5, soit une marge de **0,0067**. Dès `#0A0A0A` il retombe à 4,4564, sous le seuil.
+
+**La marge est assumée, et outillée** : `tests/Accessibilite/ContrasteChartTest.php` relit désormais **la couleur du texte et l'opacité d'atténuation depuis la feuille de style**, puis recalcule les six couples du calendrier. Retoucher l'une ou l'autre fait échouer la suite. L'assertion inversée qui figeait l'écart du bleu téléphone est retirée : ce cas rejoint les couples protégés au même titre que les autres.
 
 **Hors périmètre** : la reprise des captures d'écran du dossier, que le changement de teintes rend nécessaire sur les écrans listés dans la demande d'intégration. Hors périmètre également, la création du `docs/design-tokens.md` annoncé par CLAUDE.md, qui relève d'une décision documentaire distincte.
 
-**Priorité** : 🟡 moyenne (aucun impact fonctionnel ; mais le RGAA est une exigence réglementaire du référentiel CDA, et l'écart restant porte sur un écran de consultation courante).
+**Résultat mesuré** : **41 couples conformes sur 44**. Les trois restants sont exemptés sur vérification (pastilles décoratives, bordure de carte décorative, jeton `--cs-text-disabled` déclaré et jamais appliqué). Plus aucun écart de contraste ouvert.
+
+**Ce qui reste ouvert par ricochet** : les badges de type sont codés en dur dans la feuille de style alors que les jetons de couleur existent et ne sont utilisés nulle part. Découvert en instruisant l'issue 2, sans effet sur le contraste, tracé séparément en **DT-46**.
+
+**Priorité** : 🟡 moyenne (aucun impact fonctionnel ; mais le RGAA est une exigence réglementaire du référentiel CDA).
+
+---
+
+## DT-46 — Les couleurs de type sont codées en dur dans la charte, ses jetons ne servent à rien (🟢 FAIBLE) — ⏳ OUVERTE (27/08/2026)
+
+> **⏳ OUVERTE le 27/08/2026** — découverte en instruisant l'issue 2 de DT-45, qui envisageait de changer la couleur de type téléphone en base.
+>
+> **Origine** : la couleur d'un type de rendez-vous est une **donnée**, portée par `type_rdv.couleur_hex`. Elle est correctement lue par les templates pour les pastilles, les bords de carte et les évènements du calendrier. Mais les **badges** de type, eux, portent la même couleur **recopiée en dur** dans `public/css/creaslot.css`.
+
+**Détecté** : 27/08/2026, en mesurant le périmètre d'un changement de couleur en base.
+
+**Constat** : trois règles de la feuille de style dupliquent les valeurs de la base.
+
+| Règle | Valeurs codées en dur | Correspond à |
+|---|---|---|
+| `.cs-badge-presentiel` | `rgba(40, 167, 69, 0.12)` et `#1A6E2E` | `#28A745` |
+| `.cs-badge-visio` | `rgba(253, 126, 20, 0.12)` et `#A85200` | `#FD7E14` |
+| `.cs-badge-telephone` | `rgba(0, 123, 255, 0.12)` et `#004A99` | `#007BFF` |
+
+Symétriquement, les trois jetons prévus pour cela, `--cs-green-presentiel`, `--cs-orange-visio` et `--cs-blue-telephone`, sont **déclarés et utilisés zéro fois** dans la feuille de style. Ils ne servent aujourd'hui qu'au test de contraste, qui les lit pour recalculer les couples.
+
+**Cause racine** : la couleur de type a deux sources de vérité qui ne se parlent pas. La base pour ce qui est rendu dynamiquement, la feuille de style pour les badges. Rien ne les synchronise, et rien ne signale la divergence.
+
+**Conséquence, mesurée** : changer `type_rdv.couleur_hex` **désynchroniserait le badge de la pastille et de l'évènement** pour le même type, sur le même écran. C'est ce constat qui a pesé dans l'arbitrage de DT-45 en faveur d'une correction CSS plutôt que d'un changement en base.
+
+**Aucun impact de contraste** : les trois badges sont conformes, à 5,58, 4,84 et 7,38 pour un seuil de 4,5. Le défaut est de maintenabilité, pas d'accessibilité.
+
+**Fichiers concernés** : `public/css/creaslot.css` (déclaration des trois jetons, trois règles de badge).
+
+**Piste, non instruite** : faire porter aux badges les jetons existants, en dérivant le voile de fond par `color-mix()` ou une variable de teinte assombrie, de sorte qu'une seule valeur gouverne les trois usages. La couleur de texte du badge (`#1A6E2E` et ses pareilles) devrait alors être dérivée ou conservée en jeton dédié, sa valeur ayant été choisie pour le contraste et non par simple assombrissement.
+
+**Condition de levée** : un changement de `type_rdv.couleur_hex` se répercute sur le badge sans intervention dans la feuille de style, ou bien la duplication est explicitement assumée et documentée comme telle.
+
+**Hors périmètre** : la refonte du système de couleurs de type, et la création du `docs/design-tokens.md` que CLAUDE.md annonce sans qu'il existe (cf. DT-45).
+
+**Priorité** : 🟢 faible (aucun impact fonctionnel ni d'accessibilité ; le coût se paierait le jour d'un changement de charte, qui n'est pas prévu avant la soutenance).
 
