@@ -37,7 +37,7 @@ autorisation par Voter, throttling, accès anonyme) ne sont **pas redétaillées
 ## 2. Vulnérabilités de dépendances
 
 > **Note** : les décomptes de tests indiqués dans ce document (247, 271, 274) correspondent à l'état du projet
-> au moment de chaque itération datée. Le total final est de **336 tests** (suite de la branche d'intégration `develop`, relevé le 24/07/2026 ; voir section 9 du dossier).
+> au moment de chaque itération datée. Le total est de **336 tests** à cette date (suite de la branche d'intégration `develop`, relevé le 24/07/2026 ; voir section 9 du dossier).
 
 **Constat initial** (avant remédiation) : `composer audit` signalait **38 avis de sécurité affectant 15
 paquets**, exclusivement des composants **Symfony** (8.0.8/8.0.9) et **Twig** (3.24.0). Les correctifs étaient

@@ -132,6 +132,21 @@ sans intervention manuelle (clôt aussi le manuel décrit en DT-6 côté prod).
 **Alternative écartée** : deux conteneurs MySQL — isolation plus forte mais coût mémoire
 doublé, non justifié à cette échelle.
 
+**Transport chiffré (DT-42)** : les quatre connexions applicatives vers `db` circulent en TLS.
+L'autorité auto-signée que MySQL génère à son premier démarrage est extraite du datadir,
+versionnée dans `docker/mysql/ca.pem` (clé publique, pas un secret) et montée en lecture seule
+sur les quatre services. Les options sont posées via `driverOptions` et les constantes PDO
+(`PDO::MYSQL_ATTR_SSL_CA`), dans le bloc **`when@prod` uniquement** de `doctrine.yaml`.
+**Pourquoi pas le bloc `dbal` commun** : l'intégration continue monte son propre MySQL sans ce
+certificat, le job `phpunit` échouerait à se connecter.
+**Pourquoi la vérification du nom est désactivée** (`MYSQL_ATTR_SSL_VERIFY_SERVER_CERT` à
+`false`) : le certificat porte le CN `MySQL_Server_8.0.46_Auto_Generated_CA_Certificate`, qui ne
+correspond pas à l'hôte `db`. Le chiffrement du transport reste effectif, mesuré en `TLSv1.3` /
+`TLS_AES_256_GCM_SHA384` sur les quatre services.
+**Alternative écartée** : une contrainte `REQUIRE SSL` sur les comptes MySQL, qui rendrait le
+retour arrière impossible sans intervention en base. Écarté également, le chiffrement des données
+**au repos** : la clé maîtresse résiderait sur la machine même qu'elle est censée protéger.
+
 ### 3.5 Assets servis par Caddy via synchronisation au démarrage
 
 **Décision** : l'`ENTRYPOINT` de l'image (`docker/app/entrypoint.sh`) copie `public/` (assets
@@ -141,6 +156,19 @@ compilés bakés au build) vers le volume `assets_<env>` à chaque démarrage, a
 chaque boot** garde le volume aligné sur la dernière image (robuste aux mises à jour).
 **Alternative écartée** : volume nommé initialisé une fois — resterait **figé** sur une
 ancienne version d'image après mise à jour.
+
+**Les cinq volumes nommés de la stack** (`compose.prod.yml`) :
+
+| Volume | Monté sur | Rôle |
+|---|---|---|
+| `assets_preprod` / `assets_prod` | `/srv-assets` | Statiques resynchronisés à chaque boot, lus par Caddy (cf. ci-dessus) |
+| `logs_preprod` / `logs_prod` | `/var/www/html/var/log` | Journaux applicatifs persistants : le canal `security` y écrit un fichier rotatif qui **survit à la recréation du conteneur** (A09, DT-44) |
+| `mysql_data_prod` | `/var/lib/mysql` | Datadir MySQL, les deux bases |
+
+Le point de montage `/var/www/html/var/log` existe déjà dans l'image en `app:app`
+(`Dockerfile`), le volume hérite donc de ces droits sans intervention, sur le modèle de
+`/srv-assets`. **Réserve** : ces volumes ne sont pas sauvegardés, `scripts/backup-db.sh` ne
+couvrant que la base.
 
 ### 3.6 Workers Messenger asynchrones
 
@@ -161,10 +189,11 @@ moins nets qu'un conteneur dédié.
 
 **Décision** : trois familles de fichiers, deux mécanismes d'injection.
 - **`.env.preprod` / `.env.prod`** (versionnés, **non-secrets** : `APP_ENV`, `APP_PREPROD`,
-  `APP_ENVIRONMENT_LABEL`, `MESSENGER_TRANSPORT_DSN`) → injectés en variables conteneur via
-  `env_file:`.
+  `APP_ENVIRONMENT_LABEL`, `MESSENGER_TRANSPORT_DSN`, `SUPERVISION_URL_BASE`) → injectés en
+  variables conteneur via `env_file:`.
 - **`.env.preprod.local` / `.env.prod.local`** (gitignorés, **secrets** : `APP_SECRET`,
-  `DATABASE_URL`, `MAILER_DSN`) → gabarits versionnés `*.local.example`.
+  `DATABASE_URL`, `MAILER_DSN`, `SUPERVISION_JETON_BLOCAGE_CONNEXION`) → gabarits versionnés
+  `*.local.example`.
 - **`.env.deploy.local`** (gitignoré, **infra** : `MYSQL_*`, hôtes, `CADDY_TLS`, ports,
   hash `basic_auth`) → passé en **`--env-file`** dédié pour l'interpolation `${...}` de
   Compose ; gabarit `.env.deploy.local.example`.
@@ -340,6 +369,8 @@ Preuve pérenne automatisée : `tests/Controller/CspHeaderTest.php` (intégrée 
 | **CI/CD (CP11)** — pipeline de build et de promotion | **§5 (ce document, US-10.1)** |
 | Runbook d'exploitation, sauvegardes/restauration | **US-9.4** |
 | Supervision + journalisation des échecs de login (**A09**) | **US-9.4** |
+| Rétention des journaux de sécurité et alerte poussée sur blocage (**A09**) | **DT-44** |
+| Chiffrement du transport applicatif vers MySQL (**A02**) | **DT-42**, cf. §3.4 |
 
 ---
 
@@ -350,8 +381,11 @@ Preuve pérenne automatisée : `tests/Controller/CspHeaderTest.php` (intégrée 
 | `compose.prod.yml` | Orchestration des 5 services (projet `creaslot_prod`) ; réseaux `creaslot-prod-net` (interne) et `web` (externe, proxy) |
 | `Caddyfile` (dépôt `infra-proxy`) | Reverse-proxy mutualisé : dual-root, en-têtes, basic_auth, TLS ; sert les deux sites CreaSlot parmi sept |
 | `docker/mysql/init-prod.sh` | Création des 2 bases + 2 users au premier démarrage |
+| `docker/mysql/ca.pem` | Autorité auto-signée de MySQL, montée en lecture seule sur les 4 services applicatifs (TLS, DT-42) |
 | `docker/app/entrypoint.sh` | Synchronisation `public/` → volume d'assets au boot |
 | `Dockerfile` | Image multi-stage `creaslot:prod` (US-9.1) |
 | `.env.preprod` / `.env.prod` | Variables Symfony non-secrètes par environnement |
 | `.env.*.local.example` / `.env.deploy.local.example` | Gabarits (secrets / infra) |
 | `src/EventListener/CspResponseListener.php` | CSP à nonce (A05) |
+| `config/packages/monolog.yaml` | Canal `security` sur deux destinations : `stderr` et fichier rotatif persistant (A09, DT-44) |
+| `src/Service/AlerteSecuriteService.php` | Alerte poussée vers la sonde de supervision sur blocage de connexion (A09, DT-44) |
