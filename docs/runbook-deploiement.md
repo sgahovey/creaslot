@@ -181,6 +181,45 @@ curl -s -o /dev/null -w "%{http_code}\n" https://preprod.creaslot.re/connexion  
 > d'un trigger sans privilège `SUPER` alors que le binary logging est actif). Cela vaut
 > pour le déploiement nominal (§3.1, migration jouée par le pipeline) comme manuel (§3.2).
 
+### 3.3 Commande compose ciblée sur un seul service : exporter le tag d'image
+
+> ⚠️ **Toute commande `docker compose` qui résout une image (`pull`, `up`, `up --force-recreate`)
+> lancée à la main sur un service précis DOIT être précédée de l'export du tag.** Sinon la
+> commande échoue sur :
+>
+> ```
+> Error failed to resolve reference "ghcr.io/sgahovey/creaslot:latest": not found
+> ```
+
+**Cause.** `compose.prod.yml` déclare `image: ghcr.io/sgahovey/creaslot:${PREPROD_IMAGE_TAG:-latest}`
+(idem `PROD_IMAGE_TAG` pour la prod). Le pipeline exporte cette variable avant d'appeler compose
+(`scripts/deploy-ci.sh`, §3.1) ; un shell interactif, lui, ne l'a pas, et compose retombe sur le
+`latest` par défaut. Or le registre GHCR ne contient **que des tags SHA** : `latest` n'y est jamais
+poussé, la résolution échoue donc toujours.
+
+**Retrouver le bon tag.** Interroger le conteneur en place, service par service :
+
+```bash
+docker inspect creaslot_prod-app-prod-1 --format '{{.Config.Image}}'
+```
+
+Ne PAS se fier à `git rev-parse HEAD` dans `~/creaslot` : `deploy-ci.sh` fait un `git reset --hard`
+sur le commit déployé, quel que soit l'environnement. Après un déploiement de préproduction, le HEAD
+du dépôt désigne donc la version de **préprod**, pas celle de production. Les deux environnements
+tournent couramment sur des tags différents, c'est le principe même du *promote-on-green*.
+
+**Forme correcte.**
+
+```bash
+cd ~/creaslot
+export PROD_IMAGE_TAG=<SHA 40 caractères relevé ci-dessus>
+docker compose -f compose.prod.yml --env-file .env.deploy.local up -d --force-recreate app-prod
+```
+
+La procédure de secours §3.2 échappe à ce piège tant que son `build` est bien exécuté avant le
+`up -d` : l'image est alors produite localement. Si l'on saute l'étape de build, la même règle
+s'applique.
+
 ## 4. HTTPS / certificats (Caddy dans le dépôt `infra-proxy`)
 - Le reverse-proxy Caddy vit dans le dépôt d'infrastructure dédié **`infra-proxy`** (découplé de la stack CreaSlot en PR #117 ; cf. `docs/architecture-deploiement.md`). **Toutes les opérations sur le proxy — certificats, hosts, CA ACME, `basic_auth` — s'effectuent dans ce dépôt**, pas via `compose.prod.yml`.
 - Caddy **obtient et renouvelle** les certificats automatiquement (ACME). Domaines : `creaslot.re` (prod, apex) et `preprod.creaslot.re` ; enregistrements DNS **A** pointant vers `51.178.25.175`.
