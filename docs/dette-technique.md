@@ -1,6 +1,6 @@
 # Dette technique CreaSlot — Suivi
 
-Date dernière mise à jour : 27/08/2026.
+Date dernière mise à jour : 28/08/2026.
 Convention : DT-N = Dette Technique numéro N.
 
 ---
@@ -972,7 +972,11 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 
 **Action proposée** : pseudonymiser l'email (hash partiel ou troncature) tout en conservant la traçabilité des tentatives.
 
+**Évolution depuis DT-44 (27/08/2026)** : le canal `security` n'écrivait alors que sur `php://stderr`, capté par Docker et **détruit avec le conteneur**. L'adresse en clair ne survivait donc pas au déploiement suivant, ce qui bornait de fait la tension avec la minimisation. **Ce n'est plus le cas** : DT-44 a ajouté un second handler `rotating_file` sur volume persistant, avec une rétention de **six mois glissants** (`max_files: 180`). L'adresse tentée est désormais conservée six mois, y compris celle de personnes qui n'ont pas de compte. La nature du défaut est inchangée, sa durée ne l'est pas, et cet écart n'avait pas été instruit au moment de DT-44.
+
 **Hors périmètre** : la journalisation des autres événements (déjà sur identifiants numériques) ; le mécanisme de throttling (inchangé).
+
+**Condition de levée** : la dette sera close lorsque `LoginFailureListener` n'écrira plus l'adresse en clair dans le canal `security`, mais une forme pseudonymisée conservant la corrélation entre tentatives d'une même adresse, sur le modèle du hash partiel SHA-256 tronqué déjà employé par `NotificationService`. Deux conditions accompagnent la levée : les tests de l'écouteur (`tests/EventListener/LoginFailureListenerTest.php`, cinq tests dont un porte sur le contenu exact du contexte journalisé) doivent être mis à jour pour vérifier l'absence d'adresse en clair, et la valeur journalisée doit rester stable dans le temps pour qu'une attaque répartie sur plusieurs jours reste corrélable.
 
 **Priorité** : 🟢 basse (tension mineure avec la minimisation ; logs à accès restreint ; aucun impact fonctionnel).
 
@@ -1084,7 +1088,7 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 >
 > **Origine** : le serveur MySQL savait déjà faire du TLS (`have_ssl = YES`, `have_openssl = YES`) et ses certificats auto-signés étaient présents dans le datadir depuis le premier démarrage, le 16/06/2026. Rien ne manquait côté serveur. Côté client, PDO sous mysqlnd **ne négocie pas TLS spontanément** : sans option explicite, il ouvre une session en clair, même face à un serveur qui accepte le chiffrement.
 >
-> **Résumé fix** : l'autorité `ca.pem` est extraite du conteneur `db` et versionnée dans `docker/mysql/ca.pem` (clé publique, pas un secret), puis montée en lecture seule sur `/etc/mysql/ca.pem` dans les **quatre** services applicatifs. Les options TLS sont posées via `driverOptions` et les constantes PDO (`PDO::MYSQL_ATTR_SSL_CA`, et `PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT` à `false`), dans le bloc **`when@prod` uniquement**. Commits `5416b2e` (demande d'intégration #141) et `8a9d6ae` (demande #144).
+> **Résumé fix** : l'autorité `ca.pem` est extraite du conteneur `db` et versionnée dans `docker/mysql/ca.pem` (clé publique, pas un secret), puis montée en lecture seule sur `/etc/mysql/ca.pem` dans les **quatre** services applicatifs. Les options TLS sont posées via `driverOptions` et les constantes PDO (`PDO::MYSQL_ATTR_SSL_CA`, et `PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT` à `false`), dans le bloc **`when@prod` uniquement**. Commit de référence sur `main` : **`8a9d6ae`** (demande d'intégration #144).
 
 **Détecté** : 23/08/2026, lors d'un état des lieux de la catégorie cryptographique de l'audit OWASP.
 
@@ -1095,6 +1099,8 @@ Mêmes règles, mêmes messages, même `help` : toute évolution de la politique
 **Fichiers concernés** : `docker/mysql/ca.pem` (nouveau), `compose.prod.yml` (montage sur les quatre services), `config/packages/doctrine.yaml` (bloc `when@prod`), et `docs/runbook-deploiement.md` (nouvelle section 2.1 : procédure, vérification, retour arrière et réserve).
 
 **Action réalisée** : déploiement en deux temps par le pipeline, préproduction d'abord. Résultat mesuré sur les quatre services, après recréation des conteneurs : `Ssl_cipher = TLS_AES_256_GCM_SHA384` et `Ssl_version = TLSv1.3`. Le worker de production a bien été recréé, son `RestartCount` passant de 505 à 0, et ses journaux affichent `[OK] Consuming messages from transport "async"` sans aucune occurrence de `SQLSTATE`, `Connection refused`, `certificate` ni `exception` : la preuve que sa connexion chiffrée s'ouvre, son transport étant `doctrine://default`.
+
+**Traçabilité, effet de DT-43** : le correctif a d'abord été livré sur `develop` par le commit `5416b2e` (demande d'intégration #141), mais **ce SHA n'existe pas sur `main`**. La promotion de `preprod` vers `main` se fait en fusion écrasée, qui recrée un commit unique : les identifiants d'origine n'y survivent pas. Chercher `5416b2e` sur `main` ne donne donc rien, alors que le correctif y est bien présent, dans `8a9d6ae`. C'est un effet de **DT-43** sur la traçabilité, et il vaut pour toute entrée de ce registre citant un commit de `develop`. La règle est de citer le SHA de `main` comme référence, et celui de `develop` comme origine.
 
 **Point de vigilance** : les workers ont été inclus dans le montage parce qu'ils ouvrent la **même** connexion Doctrine. Les omettre aurait activé le TLS pour tout le monde via `when@prod` tout en les laissant sans certificat, donc incapables de démarrer, et les rappels J-1 auraient cessé.
 
@@ -1162,6 +1168,8 @@ notion d'ancêtre commun de Git. Elle convient à l'intégration de branches de 
 permanentes qui doivent continuer à se comparer entre elles. Ce n'est pas un incident, c'est le
 comportement attendu de l'outil dans cette configuration.
 
+**Fichiers concernés** : sans objet, la dette porte sur la topologie des branches et non sur des fichiers.
+
 **Contournement appliqué** : le 26/08/2026, sur l'arête `develop` vers `preprod`, fusion
 `git merge -s ours origin/preprod` dans `develop`, qui restaure la parenté entre les deux branches
 sans modifier l'arbre. Contrôle effectué avant poussée : arbre identique à celui
@@ -1174,6 +1182,8 @@ rétabli aussitôt après. La même levée sera nécessaire sur `preprod` pour l
 
 Ces contournements réparent l'état du moment, ils ne traitent pas la cause : le problème se
 reproduira à chaque cycle de promotion, sur les deux arêtes.
+
+**Effet collatéral sur la traçabilité** : la fusion écrasée ne détruit pas seulement l'ancêtre commun, elle détruit aussi les identifiants de commit. Un correctif livré sur `develop` sous un SHA donné arrive sur `main` sous un autre, et l'original n'y est pas atteignable. Toute entrée de ce registre qui cite un commit de `develop` est donc introuvable pour qui la cherche sur `main`. Constaté sur **DT-42**, dont l'entrée porte désormais les deux identifiants et l'explication.
 
 **Condition de levée** : la dette sera close lorsque les promotions entre branches permanentes ne
 produiront plus de divergence structurelle, c'est-à-dire lorsque deux promotions consécutives
@@ -1230,6 +1240,8 @@ chaque déploiement et porteur d'un risque silencieux de duplication de fichiers
 ## DT-45 — Contrastes insuffisants dans la charte graphique (🟡 MOYEN) — ✅ RÉSOLUE (27/08/2026)
 
 > **✅ RÉSOLUE le 27/08/2026**, ouverte et close le même jour. Constatée en mesurant l'ensemble des couples texte sur fond de l'interface au regard du RGAA, à la demande de la revue d'accessibilité.
+>
+> **Commits de référence sur `main`** : **`d7e79d1`** (demande d'intégration #170, les sept corrections de contraste) et **`1623556`** (demande #173, clôture du bleu téléphone). Origines sur `develop` : `c6d4390` (demande #168) et `8b817c8` (demande #171), qui n'existent pas sur `main`, cf. l'effet de DT-43 documenté en DT-42.
 >
 > **Origine** : la charte n'avait jamais été mesurée. Les couleurs ont été choisies pour leur cohérence visuelle, pas contre un seuil de contraste. Sur 44 couples réellement appliqués, **10 échouaient**.
 
@@ -1315,7 +1327,7 @@ S'y ajoute un facteur aggravant : **CLAUDE.md désigne `docs/design-tokens.md` c
 
 ---
 
-## DT-46 — Les couleurs de type sont codées en dur dans la charte, ses jetons ne servent à rien (🟢 FAIBLE) — ⏳ OUVERTE (27/08/2026)
+## DT-46 — Les couleurs de type sont codées en dur dans la charte, ses jetons ne servent à rien (🟢 BAS) — ⏳ OUVERTE (27/08/2026)
 
 > **⏳ OUVERTE le 27/08/2026** — découverte en instruisant l'issue 2 de DT-45, qui envisageait de changer la couleur de type téléphone en base.
 >
@@ -1347,5 +1359,5 @@ Symétriquement, les trois jetons prévus pour cela, `--cs-green-presentiel`, `-
 
 **Hors périmètre** : la refonte du système de couleurs de type, et la création du `docs/design-tokens.md` que CLAUDE.md annonce sans qu'il existe (cf. DT-45).
 
-**Priorité** : 🟢 faible (aucun impact fonctionnel ni d'accessibilité ; le coût se paierait le jour d'un changement de charte, qui n'est pas prévu avant la soutenance).
+**Priorité** : 🟢 basse (aucun impact fonctionnel ni d'accessibilité ; le coût se paierait le jour d'un changement de charte, qui n'est pas prévu avant la soutenance).
 
