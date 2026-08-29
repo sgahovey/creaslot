@@ -1,0 +1,72 @@
+@startuml charte-graphique-2026-08-27
+' Charte graphique de CreaSlot, etat au 27/08/2026, apres les corrections de
+' contraste RGAA de DT-45. Cette figure ne remplace pas charte-graphique.puml,
+' qui appartient au dossier rendu le 07/08/2026 et reste inchange : les deux
+' coexistent volontairement, et l'ecart entre elles est lui-meme documente.
+'
+' Trois valeurs different de l'originale, dans le libelle ET dans le remplissage :
+'   Avertissement    #FD7E14 -> #C05802   (blanc dessus : 2,57 -> 4,53)
+'   Information      #17A2B8 -> #128294   (blanc dessus : 3,04 -> 4,52)
+'   Texte secondaire #6C757D -> #6B747C   (sur fond de page : 4,45 -> 4,51)
+' Un jeton est ajoute, absent de l'originale alors qu'il porte le changement le
+' plus visible du lot :
+'   Bordure de champ #CED4DA -> #8896A5   (sur blanc : 1,49 -> 3,02)
+'
+' Lisibilite de la figure elle-meme : le texte des etiquettes est #1E1E1E par
+' defaut (skinparam). Sur six fonds sombres il tombe sous 4,5, dont deux que
+' l'assombrissement de DT-45 a aggraves (avertissement 6,49 -> 3,68, information
+' 4,44 -> 3,69). Ces six etiquettes passent donc en blanc, ce qui les remonte
+' entre 4,52 et 12,62. Une figure qui documente le contraste doit s'y tenir.
+' Reste un cas irreductible, et il est parlant : sur le bleu telephone #007BFF,
+' ni le texte sombre (4,19) ni le blanc (3,98) n'atteint 4,5. C'est exactement
+' le constat qui a ouvert puis clos DT-45 sur cette meme teinte.
+'
+' Regeneration (commande verifiee : elle reproduit le PNG de l'originale au bit pres) :
+'   java -jar ~/plantuml.jar -tpng docs/realisation/diagrammes/charte-graphique-2026-08-27.puml
+' PlantUML 1.2026.6, OpenJDK 25. Le jar n'est pas versionne, cf. docs/realisation/diagrammes/README.md.
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 12
+skinparam rectangle {
+  FontColor #1E1E1E
+  BorderColor #DEE2E6
+}
+
+package "Couleurs de marque" {
+  rectangle "<color:#FFFFFF>Bleu principal\n<color:#FFFFFF><U+0023>1F4E79" as B1 #1F4E79
+  rectangle "<color:#FFFFFF>Bleu secondaire\n<color:#FFFFFF><U+0023>2E75B6" as B2 #2E75B6
+  rectangle "Bleu clair\n<U+0023>A5C8FF" as B3 #A5C8FF
+  rectangle "<color:#FFFFFF>Bleu administration\n<color:#FFFFFF><U+0023>0F3556" as B4 #0F3556
+}
+
+package "Couleurs de type de rendez-vous" {
+  rectangle "Présentiel\n<U+0023>28A745" as T1 #28A745
+  rectangle "Visioconférence\n<U+0023>FD7E14" as T2 #FD7E14
+  rectangle "Téléphone\n<U+0023>007BFF" as T3 #007BFF
+}
+
+package "Couleurs d'état" {
+  rectangle "Succès\n<U+0023>28A745" as E1 #28A745
+  rectangle "<color:#FFFFFF>Erreur\n<color:#FFFFFF><U+0023>DC3545" as E2 #DC3545
+  rectangle "<color:#FFFFFF>Avertissement\n<color:#FFFFFF><U+0023>C05802" as E3 #C05802
+  rectangle "<color:#FFFFFF>Information\n<color:#FFFFFF><U+0023>128294" as E4 #128294
+}
+
+package "Fonds et textes" {
+  rectangle "Fond de page\n<U+0023>F8F9FA" as F1 #F8F9FA
+  rectangle "Fond de carte\n<U+0023>FFFFFF" as F2 #FFFFFF
+  rectangle "Texte principal\n<U+0023>1E1E1E" as F3 #F1F3F5
+  rectangle "Texte secondaire\n<U+0023>6B747C" as F4 #F1F3F5
+  rectangle "Bordure\n<U+0023>DEE2E6" as F5 #F1F3F5
+  rectangle "Bordure de champ\n<U+0023>8896A5" as F6 #8896A5
+}
+
+legend bottom
+|= Élément |= Signification |
+| Jetons centralisés | Chaque couleur est déclarée une fois, sous forme de variable réutilisée |
+| <b>Point clé</b> | La couleur du type de rendez-vous est portée par la donnée métier,\nnon par la feuille de style : elle est injectée à l'affichage, ce qui\npermet d'ajouter un type sans toucher au code de présentation. |
+| <b>Réserve</b> | Ce principe souffre une exception, tracée en DT-46 : les badges de type\nrecopient ces trois couleurs en dur dans la feuille de style, et les jetons\nprévus pour cela n'y sont utilisés nulle part. Un changement en base\ndésynchroniserait donc le badge de la pastille et de l'évènement. |
+| <b>État</b> | Au 27/08/2026, après les corrections de contraste RGAA de DT-45.\nLa figure du dossier rendu le 07/08/2026 reste inchangée. |
+endlegend
+@enduml
