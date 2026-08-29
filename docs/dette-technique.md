@@ -1327,11 +1327,13 @@ S'y ajoute un facteur aggravant : **CLAUDE.md désigne `docs/design-tokens.md` c
 
 ---
 
-## DT-46 — Les couleurs de type sont codées en dur dans la charte, ses jetons ne servent à rien (🟢 BAS) — ⏳ OUVERTE (27/08/2026)
+## DT-46 — Duplication inerte des couleurs de type dans la charte, dont les jetons ne servent à rien (🟢 BAS) — ⏳ OUVERTE (27/08/2026)
 
 > **⏳ OUVERTE le 27/08/2026** — découverte en instruisant l'issue 2 de DT-45, qui envisageait de changer la couleur de type téléphone en base.
 >
-> **Origine** : la couleur d'un type de rendez-vous est une **donnée**, portée par `type_rdv.couleur_hex`. Elle est correctement lue par les templates pour les pastilles, les bords de carte et les évènements du calendrier. Mais les **badges** de type, eux, portent la même couleur **recopiée en dur** dans `public/css/creaslot.css`.
+> **Origine** : la couleur d'un type de rendez-vous est une **donnée**, portée par `type_rdv.couleur_hex`. Elle est lue depuis la base partout où elle s'affiche. Trois règles de la feuille de style recopient pourtant ces mêmes couleurs **en dur**, sans qu'aucun élément de l'interface ne les porte.
+>
+> **Requalifiée le 28/08/2026** : l'entrée affirmait initialement qu'un changement en base désynchroniserait le badge de la pastille. C'était **faux**, et la vérification n'avait pas été faite. Les trois règles sont mortes, la duplication est **inerte**, et le défaut est de maintenabilité et non de comportement.
 
 **Détecté** : 27/08/2026, en mesurant le périmètre d'un changement de couleur en base.
 
@@ -1345,17 +1347,21 @@ S'y ajoute un facteur aggravant : **CLAUDE.md désigne `docs/design-tokens.md` c
 
 Symétriquement, les trois jetons prévus pour cela, `--cs-green-presentiel`, `--cs-orange-visio` et `--cs-blue-telephone`, sont **déclarés et utilisés zéro fois** dans la feuille de style. Ils ne servent aujourd'hui qu'au test de contraste, qui les lit pour recalculer les couples.
 
-**Cause racine** : la couleur de type a deux sources de vérité qui ne se parlent pas. La base pour ce qui est rendu dynamiquement, la feuille de style pour les badges. Rien ne les synchronise, et rien ne signale la divergence.
+**Cause racine** : la charte a été écrite avant que la couleur de type ne devienne une donnée. Les règles de badge et leurs jetons datent de ce moment, et ni les unes ni les autres n'ont été retirées quand le rendu est passé à la lecture en base. Il reste donc une seconde source de vérité, que rien ne synchronise et que rien ne signale, mais que rien n'affiche non plus.
 
-**Conséquence, mesurée** : changer `type_rdv.couleur_hex` **désynchroniserait le badge de la pastille et de l'évènement** pour le même type, sur le même écran. C'est ce constat qui a pesé dans l'arbitrage de DT-45 en faveur d'une correction CSS plutôt que d'un changement en base.
+**Portée réelle, vérifiée le 28/08/2026** : la duplication est **inerte**. Les trois classes `.cs-badge-presentiel`, `.cs-badge-visio` et `.cs-badge-telephone` **ne sont posées sur aucun élément** de l'interface. La recherche de `cs-badge` dans `templates/`, `assets/` et `src/` ne remonte que `cs-badge-libre` et `cs-badge-en-rdv`, qui portent la disponibilité d'un collègue et non un type de rendez-vous. Aucune construction dynamique de nom de classe ne peut les atteindre, et elles n'existent dans aucune autre feuille de style. Ce sont des **règles mortes**.
 
-**Aucun impact de contraste** : les trois badges sont conformes, à 5,58, 4,84 et 7,38 pour un seuil de 4,5. Le défaut est de maintenabilité, pas d'accessibilité.
+Changer `type_rdv.couleur_hex` ne produit donc **aucune désynchronisation visible** : les 27 références au champ, dans les templates, le contrôleur Stimulus des statistiques, les deux sérialiseurs de calendrier et le formulaire de créneau, lisent toutes la donnée. Le badge visible sur une carte de créneau est un badge de **statut** (`text-bg-danger`, `text-bg-secondary`, `text-bg-info`, `text-bg-success`, cf. `templates/components/carte_creneau.html.twig` lignes 12 à 28), il n'a jamais porté la couleur d'un type.
+
+**Ce que cela change pour l'arbitrage de DT-45** : la crainte d'une désynchronisation avait pesé contre l'issue 2, celle du changement de couleur en base. Cette crainte n'était pas fondée. L'arbitrage retenu reste le bon pour ses autres raisons, un fichier contre douze écrans et aucune donnée de production touchée, mais il ne doit plus être justifié par ce motif.
+
+**Aucun impact de contraste** : les trois règles, si elles étaient un jour appliquées, donneraient 5,58, 4,84 et 7,38 pour un seuil de 4,5. Elles sont donc conformes autant qu'inutilisées.
 
 **Fichiers concernés** : `public/css/creaslot.css` (déclaration des trois jetons, trois règles de badge).
 
 **Piste, non instruite** : faire porter aux badges les jetons existants, en dérivant le voile de fond par `color-mix()` ou une variable de teinte assombrie, de sorte qu'une seule valeur gouverne les trois usages. La couleur de texte du badge (`#1A6E2E` et ses pareilles) devrait alors être dérivée ou conservée en jeton dédié, sa valeur ayant été choisie pour le contraste et non par simple assombrissement.
 
-**Condition de levée** : un changement de `type_rdv.couleur_hex` se répercute sur le badge sans intervention dans la feuille de style, ou bien la duplication est explicitement assumée et documentée comme telle.
+**Condition de levée** : les trois règles mortes et les trois jetons inutilisés sont retirés de la feuille de style, ou bien ils sont conservés à dessein et un commentaire dit lequel, pour qu'une relecture ultérieure ne les prenne pas pour une source de vérité active.
 
 **Hors périmètre** : la refonte du système de couleurs de type, et la création du `docs/design-tokens.md` que CLAUDE.md annonce sans qu'il existe (cf. DT-45).
 
