@@ -3,7 +3,7 @@
 > Livrable de mémoire — Concepteur Développeur d'Applications (CDA).
 > État **après remédiation** (US-8.3). Date d'exécution de référence : **07/06/2026 16:51**.
 > Statuts mis à jour au **04/08/2026** : certificat Let's Encrypt de production **livré** (US-9.3) et **DT-19 résolue**.
-> Statuts mis à jour au **27/08/2026** : **A02 corrigée** (TLS applicatif vers MySQL, DT-42) et **A09 corrigée**
+> Statuts mis à jour au **27/08/2026** : **A02 partielle** (TLS applicatif vers MySQL livré, DT-42 ; chiffrement au repos absent) et **A09 corrigée**
 > (rétention des journaux et alerte poussée sur blocage de connexion, DT-44), les deux vérifiées en production.
 
 ---
@@ -71,7 +71,7 @@ Les 33 avis restants (sévérités moyenne à basse : `cache`, `routing`, `http-
 | Catégorie | Mesure en place (fichier / mécanisme) | État | Trou éventuel / renvoi |
 |---|---|:--:|---|
 | **A01 — Broken Access Control** | 3 Voters (`CreneauVoter`, `ReservationVoter`, `UtilisateurVoter`) ; `#[IsGranted]` au niveau classe ; `access_control` avec catch-all `^/ → IS_AUTHENTICATED_FULLY` ; `role_hierarchy` ; anti-escalade `allow_extra_fields: false` (rejet 422) prouvé par test | ✅ Couvert | — |
-| **A02 — Cryptographic Failures** | Hachage des mots de passe en **argon2id** (`security.yaml`) ; secrets en `.env.local` **non versionné** (gitignoré) ; CSRF actif ; **HSTS + architecture TLS Caddy** (`Caddyfile`, dépôt `infra-proxy`), validée en local en `tls internal` (US-9.2), **certificat Let's Encrypt de production en place** (US-9.3) ; **TLS applicatif vers MySQL** sur les quatre services (`doctrine.yaml`, bloc `when@prod`, `driverOptions` + constantes PDO ; `ca.pem` monté en lecture seule) — **DT-42** | ✅ Corrigé | **Chiffrement au repos : limite assumée**, cf. ci-dessous |
+| **A02 — Cryptographic Failures** | Hachage des mots de passe en **argon2id** (`security.yaml`) ; secrets en `.env.local` **non versionné** (gitignoré) ; CSRF actif ; **HSTS + architecture TLS Caddy** (`Caddyfile`, dépôt `infra-proxy`), validée en local en `tls internal` (US-9.2), **certificat Let's Encrypt de production en place** (US-9.3) ; **TLS applicatif vers MySQL** sur les quatre services (`doctrine.yaml`, bloc `when@prod`, `driverOptions` + constantes PDO ; `ca.pem` monté en lecture seule) — **DT-42** | 🟡 Partiel | **Chiffrement au repos : absent**, limite assumée, cf. ci-dessous |
 | **A03 — Injection** | Accès données via **Doctrine ORM paramétré** (aucun SQL natif concaténé) ; **auto-échappement Twig** (aucun `\|raw` sur donnée utilisateur) ; composant **Validator** sur les entrées | ✅ Couvert | — |
 | **A04 — Insecure Design** | Verrou **`PESSIMISTIC_WRITE`** + re-vérification après `refresh` ; invariant **« ≤ 1 réservation ACTIVE par créneau »** ; **suppression logique** (statut ANNULEE) ; jeton de réinitialisation à **usage unique** + `session->migrate(true)` | ✅ Couvert | `ReservationService` extrait — **DT-19 résolue (18/06/2026)** |
 | **A05 — Security Misconfiguration** | **CSP à nonce** posée par l'application (`CspResponseListener` + `csp_nonce()`) : `script-src 'self' 'nonce-…'` strict, sans `unsafe-inline`/`unsafe-eval` (US-9.2) ; en-têtes via Caddy : **HSTS**, **Permissions-Policy**, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, en-tête **`Server` masqué** (`Caddyfile`, dépôt `infra-proxy`) ; **`APP_ENV=prod` / `APP_DEBUG=0`** câblés (`.env.preprod`/`.env.prod`) ; web-profiler en `dev` uniquement ; bandeau d'environnement | ✅ Traité | — |
@@ -81,16 +81,23 @@ Les 33 avis restants (sévérités moyenne à basse : `cache`, `routing`, `http-
 | **A09 — Security Logging & Monitoring** | **`JournalAdmin`** (trace immuable des actions d'administration sur les comptes, RGPD) ; Monolog sur réservation, annulation, profil, réinitialisation ; **évènements d'authentification** (connexion réussie, **échec**, compte désactivé, **blocage après plafonnement**) journalisés via un **channel Monolog `security` dédié**, écrit systématiquement (**hors `fingers_crossed`**) sur **deux destinations** : `php://stderr` et un **fichier rotatif** sur volume persistant, six mois glissants (US-9.5, **DT-44**) ; **alerte poussée** vers un moniteur Uptime Kuma dédié à chaque blocage, notifiée sur Discord (**DT-44**) | ✅ Corrigé | Corrélation multi-services (SIEM) : hors périmètre, cf. §4.5 |
 | **A10 — Server-Side Request Forgery (SSRF)** | **Non applicable** : aucune requête sortante pilotée par l'utilisateur (l'unique sortie réseau est l'envoi d'email vers l'endpoint Brevo, fixe et configuré) | ✅ N/A | — |
 
-**Synthèse** : **4 catégories corrigées** (**A06** et **A07** en US-8.3 ; **A02** et **A09** au 27/08/2026),
-**A05 traité en US-9.2** (CSP à nonce + en-têtes Caddy), 4 catégories couvertes (**A01**, **A03**, **A04**, **A08**),
-1 non applicable (**A10**).
+**Synthèse** : **3 catégories corrigées** (**A06** et **A07** en US-8.3 ; **A09** au 27/08/2026),
+**1 partielle** (**A02**), **A05 traité en US-9.2** (CSP à nonce + en-têtes Caddy), 4 catégories couvertes
+(**A01**, **A03**, **A04**, **A08**), 1 non applicable (**A10**).
+
+**Pourquoi A02 est partielle et non corrigée.** Le défaut trouvé, le transport en clair vers MySQL, est bel et
+bien corrigé et vérifié en production. Mais la catégorie couvre aussi le **chiffrement des données au repos**,
+qui n'existe pas : mesuré le 29/08/2026, zéro table en `ENCRYPTION=Y` et aucun périphérique chiffré sur l'hôte.
+Marquer la catégorie corrigée reviendrait à faire disparaître ce résiduel derrière un défaut réglé. Le support
+de soutenance, qui suit l'édition 2025, porte la même catégorie sous le numéro **A04** et le même statut
+**partiel** : les deux livrables disent désormais la même chose.
 
 Les deux corrections du 27/08/2026 sont **vérifiées en production**, pas seulement configurées : TLS applicatif
 vers MySQL en `TLSv1.3` / `TLS_AES_256_GCM_SHA384` sur les quatre services (A02, DT-42), et pour A09 une trace
 qui survit à la recréation d'un conteneur, doublée d'une alerte reçue lors d'un blocage réel provoqué en
 production (DT-44). Le détail des preuves figure au §4.5.
 
-**Un seul résiduel assumé** : le chiffrement des données au repos. Il est écarté en connaissance de cause, la
+**Ce résiduel est le seul du référentiel**, et c'est lui qui maintient A02 en partielle : le chiffrement des données au repos. Il est écarté en connaissance de cause, la
 base et l'application vivant sur le même VPS : la clé maîtresse résiderait sur la machine même qu'elle est
 censée protéger, et le chiffrement n'ajouterait de garantie que contre le vol du disque physique, scénario qui
 relève de l'hébergeur. Ce point est tracé dans la rubrique « Hors périmètre » de **DT-42**.
@@ -176,7 +183,7 @@ livrables, et cette table les relie.
 | Catégorie 2021 — corps de cet audit | Catégorie 2025 correspondante | Statut du projet |
 |---|---|:--:|
 | **A01 — Broken Access Control** | **A01 — Contrôle d'accès** | ✅ Couvert |
-| **A02 — Cryptographic Failures** | **A04 — Défaillances cryptographiques** | ✅ Corrigé |
+| **A02 — Cryptographic Failures** | **A04 — Défaillances cryptographiques** | 🟡 Partiel |
 | **A03 — Injection** | **A05 — Injection** | ✅ Couvert |
 | **A04 — Insecure Design** | **A06 — Conception non sécurisée** | ✅ Couvert |
 | **A05 — Security Misconfiguration** | **A02 — Mauvaise configuration** | ✅ Traité |
