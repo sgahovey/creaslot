@@ -1,0 +1,74 @@
+@startuml fonctionnement-agregateur-veille
+' Figure datee du 03/09/2026. Elle decrit le fonctionnement interne de l'agregateur
+' de veille, la ou dispositif-veille.puml (05/08/2026, figee) en decrit la place dans
+' le dispositif d'ensemble. Les deux coexistent, elles ne se remplacent pas.
+'
+' Etabli par lecture du depot veille-bot, sans rien y ecrire :
+'   declenchement quotidien et hebdomadaire ... .github/workflows/*.yml
+'   enchainement de la chaine quotidienne ..... src/application/daily_digest_service.py
+'   fenetre de 24 heures ...................... src/domain/article_filter.py
+'   ecart des doublons ........................ src/domain/deduplicator.py
+'   les 15 flux et leurs categories ........... src/sources.py
+'   bilan hebdomadaire et archive ............. src/application/weekly_recap_service.py
+' Rien d'autre n'est represente : le code ne fait ni score maison, ni base de
+' mots-cles, ni interface de consultation.
+
+left to right direction
+skinparam shadowing false
+skinparam ranksep 40
+skinparam nodesep 20
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam rectangle {
+  BorderColor #1F4E79
+  BackgroundColor #DCE7F5
+  FontColor #1E1E1E
+}
+skinparam database {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+skinparam note {
+  BorderColor #1F4E79
+  BackgroundColor #F1F3F5
+  FontColor #1E1E1E
+}
+
+rectangle "15 flux publics\nsécurité, arrière-plan,\ninterface, généraux" as FLUX
+
+package "Chaque jour à 7 h" {
+  rectangle "Ne garde que\nles 24 dernières heures" as RECENT
+  rectangle "Écarte ce qui\na déjà été publié" as NEUF
+  rectangle "Résume, trie,\nsignale l'important" as SYNTHESE
+}
+
+database "Mémoire\ndes articles publiés" as MEMOIRE
+
+package "Chaque dimanche à 19 h" {
+  rectangle "Reprend la semaine\net la résume" as RECAP
+}
+
+rectangle "Canal Discord" as DISCORD
+database "Un fichier par semaine\ndans le dépôt" as ARCHIVE
+
+FLUX --> RECENT
+RECENT --> NEUF
+NEUF --> SYNTHESE : ce qui reste
+SYNTHESE --> DISCORD : synthèse du jour
+
+MEMOIRE --> NEUF : ce qu'on a déjà vu
+DISCORD --> MEMOIRE : après publication
+MEMOIRE --> RECAP : articles retenus
+RECAP --> DISCORD : bilan du dimanche
+RECAP --> ARCHIVE
+
+legend bottom
+  |= Élément |= Signification |
+  | Boîte bleue | Une étape du traitement, automatique et sans intervention humaine |
+  | Cylindre | Ce qui est conservé d'une exécution à la suivante |
+  | Cadre titré | Le moment où l'étape se déclenche, à l'heure de La Réunion |
+  | <b>Point clé</b> | Deux filtres avant toute synthèse : la fraîcheur, puis l'absence de doublon. |
+| <b>Reprise sur incident</b> | Un article n'entre en mémoire qu'après une publication réussie. Si le canal est\nindisponible, rien n'est perdu : les articles se représentent le lendemain. |
+endlegend
+@enduml

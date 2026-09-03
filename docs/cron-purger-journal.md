@@ -62,8 +62,19 @@ crontab -e
 # Exécution : le 1er de chaque mois à 03h00 UTC. Le seuil de rétention est calculé
 # EN INTERNE par la commande en heure Réunion ; pour une borne mensuelle, le décalage
 # UTC/Réunion de 4h est sans incidence.
-0 3 1 * * cd /home/ubuntu/creaslot && /usr/bin/docker compose -f compose.prod.yml --env-file .env.deploy.local exec -T app-prod php bin/console app:purger-journal >> /home/ubuntu/cron-logs/purger-journal.log 2>&1
+0 3 1 * * cd /home/ubuntu/creaslot && /usr/bin/docker compose -f compose.prod.yml --env-file .env.deploy.local exec -T app-prod php bin/console app:purger-journal >> /home/ubuntu/cron-logs/purger-journal.log 2>&1 && curl -fsS -m 10 -o /dev/null "https://status.creaslot.re/api/push/<JETON_PUSH>?status=up&msg=OK"
 ```
+
+> **Le battement de supervision est indissociable de cette ligne.** Le `&&` fait que
+> `curl` n'est appelé **que si la commande précédente sort en succès** : c'est ce qui
+> rend la sonde Uptime Kuma significative. Sans lui, la sonde passerait au rouge chaque
+> jour alors que la tâche s'exécute, ou pire, resterait au vert si la tâche échouait.
+>
+> `<JETON_PUSH>` est à remplacer par le jeton du moniteur, lisible dans son champ
+> *Push URL* sur `https://status.creaslot.re`. **Il n'est pas écrit ici, ni dans aucun
+> fichier versionné** : quiconque le connaît peut pousser un faux battement et éteindre
+> l'alerte. Même règle que pour `SUPERVISION_JETON_BLOCAGE_CONNEXION`, cf. runbook §6.1.
+
 
 Notes :
 
