@@ -62,8 +62,19 @@ crontab -e
 # Exécution : tous les jours à 02h30 UTC (06h30 heure Réunion, heure creuse), décalée
 # de la purge mensuelle (03h00). Le script gère seul le dump cohérent (--single-transaction),
 # la compression, l'horodatage et la purge des dumps > 14 jours.
-30 2 * * * cd /home/ubuntu/creaslot && PATH=/usr/local/bin:/usr/bin:/bin /bin/bash scripts/backup-db.sh >> /home/ubuntu/cron-logs/backup-db.log 2>&1
+30 2 * * * cd /home/ubuntu/creaslot && PATH=/usr/local/bin:/usr/bin:/bin /bin/bash scripts/backup-db.sh >> /home/ubuntu/cron-logs/backup-db.log 2>&1 && curl -fsS -m 10 -o /dev/null "https://status.creaslot.re/api/push/<JETON_PUSH>?status=up&msg=OK"
 ```
+
+> **Le battement de supervision est indissociable de cette ligne.** Le `&&` fait que
+> `curl` n'est appelé **que si la commande précédente sort en succès** : c'est ce qui
+> rend la sonde Uptime Kuma significative. Sans lui, la sonde passerait au rouge chaque
+> jour alors que la tâche s'exécute, ou pire, resterait au vert si la tâche échouait.
+>
+> `<JETON_PUSH>` est à remplacer par le jeton du moniteur, lisible dans son champ
+> *Push URL* sur `https://status.creaslot.re`. **Il n'est pas écrit ici, ni dans aucun
+> fichier versionné** : quiconque le connaît peut pousser un faux battement et éteindre
+> l'alerte. Même règle que pour `SUPERVISION_JETON_BLOCAGE_CONNEXION`, cf. runbook §6.1.
+
 
 Notes :
 
