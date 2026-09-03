@@ -141,7 +141,7 @@ L'isolation diffère selon le niveau, et chaque choix est argumenté :
 | Fonctionnel — Auditeur / réservation & préférences | ReservationParcours (9), ReservationAnnulationRedirection (3), Preferences (4) | 16 |
 | Fonctionnel — Personnel | Agenda (4), CollegueServiceQueryCount (1) | 5 |
 | Fonctionnel — Transverse / pages publiques | Legal (5), HomeRedirection (4), NotificationListe (4), CspHeader (3), Health (2) | 18 |
-| **Total** | | **336** |
+| **Total** | | **344** |
 
 > Réconciliation : 34 + 72 + 25 + 54 + 18 + 59 + 43 + 16 + 5 + 18 = **344**, identique au total par niveau.
 
