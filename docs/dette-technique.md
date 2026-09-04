@@ -1,6 +1,6 @@
 # Dette technique CreaSlot — Suivi
 
-Date dernière mise à jour : 28/08/2026.
+Date dernière mise à jour : 04/09/2026.
 Convention : DT-N = Dette Technique numéro N.
 
 ---
@@ -1367,3 +1367,64 @@ Changer `type_rdv.couleur_hex` ne produit donc **aucune désynchronisation visib
 
 **Priorité** : 🟢 basse (aucun impact fonctionnel ni d'accessibilité ; le coût se paierait le jour d'un changement de charte, qui n'est pas prévu avant la soutenance).
 
+---
+
+## DT-47 — Symfony 8.0 n'est plus maintenue depuis juillet 2026 (🟠 HAUT) — ✅ RÉSOLUE (04/09/2026)
+
+> **✅ RÉSOLUE le 04/09/2026**, ouverte et close le même jour. Montée de **Symfony 8.0.13 vers 8.1.6**.
+>
+> **Commit de référence sur `main`** : **`767ec4e`** (demande d'intégration #192). Origine sur `develop` : `40cc079` (demande #190), qui n'existe pas sur `main`, cf. l'effet de DT-43 documenté en DT-42.
+>
+> **Origine** : la dette n'est pas née d'un défaut du code mais du calendrier de l'éditeur. Une version qui cesse d'être maintenue ne reçoit plus de correctif de sécurité : la laisser en place transforme le temps qui passe en risque.
+
+**Détecté** : par le dispositif de veille, qui a relevé la fin de maintenance de la branche 8.0 en **juillet 2026**. Vérifié ensuite sur la page officielle des versions de Symfony.
+
+**Constat** : `composer.json` déclarait la contrainte `8.0.*` sur **33 déclarations**, `extra.symfony.require` compris, et `composer.lock` figeait **73 paquets `symfony/*`** sur la branche 8.0. La 8.1 exige le même PHP 8.4, déjà en place : aucun changement de plateforme n'était nécessaire.
+
+**Cause racine** : aucune. C'est une dette de maintenance et non de conception, et elle se reformerait d'elle-même à chaque fin de branche si rien ne la surveillait. Ce qui l'a rendue visible n'est pas une relecture du code mais le dispositif de veille, ce qui est précisément sa raison d'être.
+
+**Décision d'arbitrage : montée ciblée plutôt que globale.** Les deux périmètres ont été mesurés par une résolution à blanc, menée sur une copie de `composer.json` hors du dépôt, avant toute modification.
+
+| | `composer update` | `composer update "symfony/*" --with-dependencies` |
+|---|---:|---:|
+| Paquets montés | 97 | **72** |
+| Dont `symfony/*` | 69 | 69 |
+| Dont tiers | 28 | **3** |
+
+L'écart tient à ce que l'update global embarquait toute la chaîne d'outillage de tests, dont **PHPUnit 13.1.14 vers 13.3.2** et **`sebastian/diff` 8.3.0 vers 9.0.1**, qui est un changement de version majeure. Monter le framework et l'outillage qui le mesure dans le même mouvement rend les deux risques indiscernables : si la suite rougit, plus rien ne dit lequel des deux en est la cause. Le périmètre ciblé a donc été retenu, et l'outillage vérifié figé version par version dans le lock : PHPUnit `13.1.14`, PHPStan `2.2.2`, PHP-CS-Fixer `v3.95.4`, Twig `v3.27.1`.
+
+**Prérequis levé séparément.** La confrontation du `UPGRADE-8.1.md` officiel au code, ligne à ligne, avait identifié **un seul point d'impact certain** : l'option `framework.profiler.collect_serializer_data`, dépréciée en 8.1 et posée sous `when@dev` et `when@test`. `phpunit.dist.xml` portant `failOnDeprecation="true"`, elle aurait fait tomber tout test démarrant un noyau, soit **42 fichiers sur 61**. Elle a été retirée par la demande d'intégration **#187** et promue jusqu'en production **avant** la montée, pour que les deux changements ne se mélangent pas.
+
+Les quatre autres dépréciations du guide qui auraient pu porter tombent à côté du code, chacune vérifiée par recherche : les méthodes dépréciées de `SameOriginCsrfTokenManager` ne sont appelées nulle part, `security.erase_credentials` n'est pas configuré, les tests de formulaire n'utilisent pas `TypeTestCase`, et le seul `ChoiceType` à placeholder porte déjà `'required' => false`, forme que le guide donne lui-même comme conforme.
+
+**Fichiers concernés** : `composer.json` (33 contraintes), `composer.lock` (72 paquets), `config/reference.php` (régénéré, il décrit la surface de configuration de la version installée).
+
+**Action réalisée** : montée ciblée, 72 paquets modifiés, **1 installé, 0 supprimé, 0 rétrogradé**. Les 3 montées tierces sont `doctrine/dbal` 4.4.3 vers 4.4.4, `monolog/monolog` 3.10.0 vers 3.11.0 et `nikic/php-parser` v5.7.0 vers v5.8.0. Le paquet installé est `symfony/polyfill-deepclone`, exigé par la dépréciation VarExporter de la 8.1.
+
+**Vérification : zéro dépréciation sur trois surfaces distinctes.** La configuration de tests n'intercepte que ce qui est émis pendant l'exécution des tests ; une dépréciation de configuration serait émise à la compilation du conteneur, donc en dehors. Les trois surfaces ont été contrôlées séparément.
+
+| Surface | Mesure |
+|---|---|
+| Sortie PHPUnit | `OK (390 tests, 1428 assertions)`, rejouée deux fois. Aucune occurrence de `deprecat`, `risky`, `warning`, `notice` |
+| Compilation du conteneur | caches `test` et `dev` détruits puis reconstruits : zéro dépréciation à l'une comme à l'autre |
+| Journaux applicatifs | `var/log/test.log` : zéro. Les 1243 entrées de `var/log/dev.log` sont **toutes antérieures au 05/08/2026** et sans rapport (DBAL « MySQL < 8 », `trim(null)`, transactions Doctrine Migrations) |
+
+S'y ajoutent PHPStan niveau 8 sans baseline (`[OK] No errors`), PHP-CS-Fixer (`0 of 166 files`), l'audit Composer (aucun avis de vulnérabilité), `lint:container` et `lint:twig` conformes.
+
+**Vérification en production**, après déploiement du commit `767ec4e` :
+
+| Contrôle | Résultat |
+|---|---|
+| Version réellement en service | `Symfony v8.1.6 (env: prod, debug: false)` |
+| Image en service | `ghcr.io/sgahovey/creaslot:767ec4ec…` sur `app-prod` et `worker-prod` |
+| `https://creaslot.re/connexion` | 200 |
+| `https://creaslot.re/health` | 200, `{"status":"ok","checks":{"database":"ok"}}` |
+| TLS de la connexion applicative à MySQL | `Ssl_version` = **TLSv1.3**, `Ssl_cipher` = **TLS_AES_256_GCM_SHA384** |
+
+Le contrôle TLS a été mené sur la connexion réellement ouverte par la configuration DBAL de l'application en production, interrogée via `performance_schema.session_status`, et non sur la configuration déclarée. Il confirme que **DT-42 tient après la montée**, ce qui n'allait pas de soi puisque `doctrine/dbal` est l'un des trois paquets tiers montés au passage.
+
+**Condition de levée** : atteinte. La branche 8.1 est maintenue, l'application y tourne en production, et les cinq contrôles bloquants sont au vert.
+
+**Reste ouvert, hors périmètre de cette entrée** : la 8.1 cessera à son tour d'être maintenue. La vraie réponse durable n'est pas cette montée mais le dispositif qui l'a déclenchée. Aucune alerte automatisée ne surveille aujourd'hui la fin de maintenance des branches Symfony : c'est la lecture humaine de la veille qui a joué ce rôle.
+
+**Priorité** : 🟠 haute au moment de l'ouverture (absence de correctifs de sécurité sur une application exposée), sans objet depuis la clôture.
