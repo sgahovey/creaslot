@@ -21,6 +21,11 @@
 ' ni le texte sombre (4,19) ni le blanc (3,98) n'atteint 4,5. C'est exactement
 ' le constat qui a ouvert puis clos DT-45 sur cette meme teinte.
 '
+' Ligne « Réserve » requalifiee le 28/08/2026 : elle affirmait qu'un changement de
+' couleur en base desynchroniserait le badge de la pastille. Verification faite, les
+' trois regles .cs-badge-* ne sont posees sur aucun element : la duplication existe
+' mais elle est inerte. Le defaut est de maintenabilite, pas de comportement (DT-46).
+'
 ' Regeneration (commande verifiee : elle reproduit le PNG de l'originale au bit pres) :
 '   java -jar ~/plantuml.jar -tpng docs/realisation/diagrammes/charte-graphique-2026-08-27.puml
 ' PlantUML 1.2026.6, OpenJDK 25. Le jar n'est pas versionne, cf. docs/realisation/diagrammes/README.md.
@@ -66,7 +71,7 @@ legend bottom
 |= Élément |= Signification |
 | Jetons centralisés | Chaque couleur est déclarée une fois, sous forme de variable réutilisée |
 | <b>Point clé</b> | La couleur du type de rendez-vous est portée par la donnée métier,\nnon par la feuille de style : elle est injectée à l'affichage, ce qui\npermet d'ajouter un type sans toucher au code de présentation. |
-| <b>Réserve</b> | Ce principe souffre une exception, tracée en DT-46 : les badges de type\nrecopient ces trois couleurs en dur dans la feuille de style, et les jetons\nprévus pour cela n'y sont utilisés nulle part. Un changement en base\ndésynchroniserait donc le badge de la pastille et de l'évènement. |
+| <b>Réserve</b> | Le principe tient sans exception : tous les points d'affichage lisent la\ndonnée. Trois règles de badge recopient pourtant ces couleurs en dur dans la\nfeuille de style, et trois jetons prévus pour elles n'y servent à rien. Cette\nduplication est inerte, aucun élément ne portant ces règles (DT-46). |
 | <b>État</b> | Au 27/08/2026, après les corrections de contraste RGAA de DT-45.\nLa figure du dossier rendu le 07/08/2026 reste inchangée. |
 endlegend
 @enduml
