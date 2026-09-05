@@ -15,8 +15,10 @@ Jusqu'ici, **aucune procédure n'était écrite**. Les deux captures présentes 
 | `liste-des-creneaux-dispo.png` | 780 x 857 | Créneaux disponibles, Auditeur | de la barre de navigation à la pagination, pied de page exclu |
 | `liste-des-creneaux-dispo-MOBILE.png` | 267 x 532 | idem, en colonne unique | du haut de page à la deuxième carte, coupée |
 
-Les deux sont également incorporées au diaporama, à l'octet près (`ppt/media/image25.png` et
-`image26.png`). **Toute reprise doit donc être répercutée dans les deux endroits.**
+Le diaporama porte le même écran, mais **ce ne sont plus les mêmes images** : `ppt/media/image25.png`
+et `image26.png` y mesurent 837 x 867 et 262 x 581, contre 780 x 857 et 267 x 532 ici. Elles ont été
+reprises le 05/09/2026 côté diaporama seulement. **Les deux jeux ont donc divergé**, et une reprise
+doit dire lequel des deux elle met à jour.
 
 ## Environnement de prise de vue
 
