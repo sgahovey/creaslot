@@ -1,0 +1,61 @@
+' Contrastes mesures de l'interface au regard du RGAA, etat au 05/09/2026.
+' Figure de resultat : elle montre ce qui a change, pas la methode.
+'
+' Les huit couples corriges sont ceux qui echouaient au diagnostic du 27/08/2026 ;
+' les trois exemptes sont ceux dont la dispense a ete verifiee un par un, non supposee.
+' Les 33 autres couples mesures etaient deja conformes et ne racontent rien : ils sont
+' hors figure, seul le total les rappelle.
+'
+' Toutes les valeurs sont RECALCULEES, jamais recopiees. Formule WCAG 2.1 : linearisation
+' sRGB au seuil 0,04045, exposant 2,4, luminance ponderee 0,2126 / 0,7152 / 0,0722. Le
+' calculateur est controle au prealable sur deux paires de reference, noir sur blanc a
+' 21,00 et #767676 sur blanc a 4,54. Les valeurs « apres » sont relues dans
+' public/css/creaslot.css (jetons, opacite du copyright, opacite des creneaux passes,
+' couleur du texte d'evenement) ; les valeurs « avant » sont recalculees depuis les
+' couples d'origine consignes en DT-45. Les seize resultats concordent avec le registre.
+'
+' Lisibilite de la figure elle-meme : le texte #1E1E1E mesure 12,85 sur le fond des
+' couples corriges et 14,99 sur les fonds de section. Une figure qui documente le
+' contraste doit s'y tenir.
+'
+' Regeneration :
+'   java -jar ~/plantuml.jar -tpng docs/realisation/diagrammes/contrastes-rgaa.puml
+' PlantUML 1.2026.6, OpenJDK 25. Le jar n'est pas versionne, cf. README.md du repertoire.
+
+@startuml contrastes-rgaa
+' Rendu a 192 dpi : la figure est projetee, pas lue a l'ecran.
+skinparam dpi 192
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 14
+skinparam note {
+  BorderColor #1F4E79
+  BackgroundColor #FFFFFF
+  FontColor #1E1E1E
+}
+
+note as TABLEAU
+  |= <color:#1E1E1E>Couple mesuré |= <color:#1E1E1E>Contraste |= <color:#1E1E1E>Seuil |
+  |<back:#F1F3F5> <b>Corrigés</b> |<back:#F1F3F5>  |<back:#F1F3F5>  |
+  | Texte secondaire |<back:#D1E7DD> 4,45 → <b>4,51</b> | 4,5 |
+  | Lien |<back:#D1E7DD> 4,27 → <b>4,53</b> | 4,5 |
+  | Mention de copyright |<back:#D1E7DD> 3,10 → <b>4,52</b> | 4,5 |
+  | Bandeau de préproduction |<back:#D1E7DD> 2,57 → <b>4,53</b> | 4,5 |
+  | Bandeau de développement |<back:#D1E7DD> 3,04 → <b>4,52</b> | 4,5 |
+  | Bordure de champ |<back:#D1E7DD> 1,49 → <b>3,02</b> | 3,0 |
+  | Événement téléphone |<back:#D1E7DD> 4,37 → <b>5,00</b> | 4,5 |
+  | Créneau passé, téléphone |<back:#D1E7DD> 2,08 → <b>4,51</b> | 4,5 |
+  |<back:#F1F3F5> <b>Exemptés, motif vérifié</b> |<back:#F1F3F5>  |<back:#F1F3F5>  |
+  | Pastilles de couleur | toujours doublées du libellé | sans objet |
+  | Bordure de carte | décorative, le fond distingue déjà | sans objet |
+  | Texte désactivé | jeton déclaré, jamais appliqué | sans objet |
+end note
+
+legend bottom
+  |= Élément |= Signification |
+  | Contraste | Rapport mesuré avant puis après correction, formule WCAG 2.1 |
+  | Seuil | 4,5 pour du texte, 3,0 pour un composant d'interface |
+  | Exempté | Dispense vérifiée une par une, jamais supposée |
+  | <b>Résultat</b> | 44 couples mesurés, 41 conformes, 3 exemptés. Aucun écart de contraste ouvert.\nUn test rejoue le calcul à chaque exécution de la suite : une couleur ne peut plus\nchanger sans que son contraste soit vérifié. |
+endlegend
+@enduml

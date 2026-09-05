@@ -89,7 +89,7 @@ tail -20 /home/ubuntu/cron-logs/rappels-j1.log
 
 # Vérifier en BDD que les rappels sont marqués
 cd /home/ubuntu/creaslot && /usr/bin/docker compose -f compose.prod.yml --env-file .env.deploy.local exec -T app-prod \
-  php bin/console doctrine:query:sql \
+  php bin/console dbal:run-sql \
   "SELECT id, rappel_envoye_at FROM reservation WHERE rappel_envoye_at IS NOT NULL ORDER BY id DESC LIMIT 5"
 ```
 
