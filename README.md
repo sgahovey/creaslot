@@ -140,6 +140,20 @@ OK (390 tests, 1428 assertions)
 > **Cette séquence est vérifiée, pas supposée.** Elle a été rejouée le 05/09/2026 depuis un
 > environnement remis à zéro par `docker compose down -v`, jusqu'à la suite verte.
 
+### Raccourci
+
+Les étapes 5 à 9 peuvent être enchaînées par un script, une fois les conteneurs démarrés :
+
+```bash
+./bin/setup.sh
+```
+
+**C'est un raccourci, pas un substitut.** Les neuf étapes ci-dessus restent la référence :
+si le script s'arrête, c'est à elles qu'il faut revenir pour comprendre où. Son en-tête
+documente son rôle, ses prérequis et ce qu'il fait. Il refuse de démarrer si les conteneurs
+ne tournent pas, et il ne contient aucun secret : le mot de passe root MySQL est lu dans
+l'environnement du conteneur `db`.
+
 ---
 
 ## Commandes utiles
