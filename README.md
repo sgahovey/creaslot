@@ -6,7 +6,11 @@ Développée dans le cadre du mémoire MSP3 — Titre Concepteur Développeur d'
 Permet aux Auditeurs (étudiants) de réserver des créneaux proposés par le Personnel administratif.
 Trois types de RDV : présentiel, téléphone, visio.
 
-> Documentation complète du projet : `docs/` (architecture, maquettes, API)
+> Documentation complète du projet : `docs/` (architecture, conception, réalisation, exploitation)
+
+**État du projet** : en production sur [creaslot.re](https://creaslot.re), version **v1.2.0**.
+Suite de tests verte, **390 cas** et **1428 assertions**, couverture **85,0 %** mesurée par SonarCloud.
+Cinq contrôles en intégration continue, dont quatre bloquants.
 
 ---
 
@@ -15,17 +19,18 @@ Trois types de RDV : présentiel, téléphone, visio.
 | Composant | Technologie |
 |---|---|
 | Langage | PHP 8.4 |
-| Framework | Symfony 8 |
+| Framework | Symfony 8.1 |
 | ORM | Doctrine |
 | Base de données | MySQL 8 |
 | Templates | Twig |
 | Front | Bootstrap 5 |
 | Conteneurisation | Docker + Docker Compose |
-| Déploiement | VPS OVH (Ubuntu) — Docker Compose + Caddy (preprod + prod) |
+| Déploiement | VPS OVH (Ubuntu), Docker Compose, préproduction et production |
 | CI/CD | GitHub Actions |
 | Qualité code | SonarCloud |
 | Emails | Brevo via Symfony Mailer |
-| Monitoring | Uptime Kuma + Dozzle |
+| Reverse proxy | Caddy, dans le dépôt dédié `infra-proxy` (découplé de cette pile) |
+| Monitoring | Uptime Kuma et Dozzle, hébergés sur le VPS hors de ce dépôt |
 | Tests | PHPUnit |
 
 ---
@@ -71,15 +76,69 @@ docker compose up -d
 La première exécution télécharge les images et construit le conteneur PHP (~2-3 minutes).  
 Les démarrages suivants prennent moins de 30 secondes.
 
-### 4. Vérifier que tout fonctionne
+### 4. Vérifier que les conteneurs tournent
 
 ```bash
 docker compose ps
 ```
 
-Les trois services (`app`, `nginx`, `db`) doivent afficher `healthy`.
+Quatre services démarrent. `app`, `nginx` et `db` affichent `healthy` ;
+`phpmyadmin` affiche seulement `Up`, il ne déclare pas de sonde de santé.
 
-Ouvrir [http://localhost:8000](http://localhost:8000) dans un navigateur.
+### 5. Créer le schéma et charger les données de démonstration
+
+```bash
+docker compose exec app php bin/console doctrine:migrations:migrate --no-interaction
+docker compose exec app php bin/console doctrine:fixtures:load --no-interaction
+```
+
+### 6. Compiler les assets
+
+```bash
+docker compose exec app php bin/console asset-map:compile
+```
+
+**Cette étape n'est pas optionnelle** : la configuration Docker ne sert pas les assets à la
+volée. Sans elle, l'interface s'affiche sans style.
+
+### 7. Ouvrir l'application
+
+- Application : [http://localhost:8000](http://localhost:8000)
+- phpMyAdmin : [http://localhost:8080](http://localhost:8080)
+
+Les comptes de démonstration partagent le mot de passe `Motdepasse123!`. Par exemple
+`creaslotdemo+julie@gmail.com` pour un Auditeur, `creaslotdemo+jean@gmail.com` pour le
+Personnel, `creaslotdemo+admin@gmail.com` pour l'administration.
+
+### 8. Préparer la base de test
+
+La suite de tests utilise une base séparée, `creaslot_test`, que **l'utilisateur applicatif
+n'a pas le droit de créer**. Il faut la créer une fois avec le compte root du conteneur,
+puis lui appliquer le schéma et les données :
+
+```bash
+docker compose exec db sh -c 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS creaslot_test CHARACTER SET utf8mb4; GRANT ALL PRIVILEGES ON creaslot_test.* TO '"'"'creaslot'"'"'@'"'"'%'"'"'; FLUSH PRIVILEGES;"'
+docker compose exec app php bin/console doctrine:migrations:migrate --env=test --no-interaction
+docker compose exec app php bin/console doctrine:fixtures:load --env=test --no-interaction
+```
+
+Sans cette étape, la suite échoue en masse : **208 erreurs et 3 échecs**, tous dus au même
+refus d'accès à `creaslot_test`.
+
+### 9. Lancer la suite
+
+```bash
+docker compose exec app php bin/phpunit
+```
+
+Résultat attendu :
+
+```
+OK (390 tests, 1428 assertions)
+```
+
+> **Cette séquence est vérifiée, pas supposée.** Elle a été rejouée le 05/09/2026 depuis un
+> environnement remis à zéro par `docker compose down -v`, jusqu'à la suite verte.
 
 ---
 
@@ -124,7 +183,7 @@ docker compose exec app sh
 docker compose exec db mysql -u creaslot -pcreaslot creaslot
 ```
 
-### Symfony (disponible après US-1.2)
+### Symfony
 
 ```bash
 # Console Symfony
@@ -140,7 +199,7 @@ docker compose exec app php bin/console doctrine:fixtures:load
 docker compose exec app php bin/console cache:clear
 ```
 
-### Tests (disponible après US-6.x)
+### Tests
 
 ```bash
 docker compose exec app php bin/phpunit
@@ -196,6 +255,7 @@ Voir `.env.example` pour la liste complète avec commentaires.
 - **nginx** : sert les assets statiques, délègue le PHP à app via FastCGI
 - **app** : PHP-FPM 8.4 Alpine, exécute l'application Symfony
 - **db** : MySQL 8, données persistées dans le volume `mysql_data`
+- **phpmyadmin** : consultation de la base sur le port 8080, confort de développement
 
 ---
 
@@ -206,10 +266,21 @@ Voir `.env.example` pour la liste complète avec commentaires.
 | `main` | Livraison finale (fin de projet uniquement) |
 | `preprod` | Pré-production déployée sur le VPS |
 | `develop` | Intégration quotidienne |
-| `devops` | Expérimentations infrastructure |
 | `feature/US-X.Y-*` | Développement d'une user story |
 
 Workflow : `feature/*` → `develop` → `preprod` → `main`
+
+---
+
+## Documentation
+
+| Document | Ce qu'il porte |
+|---|---|
+| [Runbook de déploiement](docs/runbook-deploiement.md) | Promotion, déploiement, rollback, incidents |
+| [Audit de sécurité OWASP](docs/audit-securite-owasp.md) | Les dix catégories, leur traitement, les limites assumées |
+| [Plan de tests](docs/plan-de-tests.md) | Stratégie, matrice de traçabilité, résultats |
+| [Registre de dette technique](docs/dette-technique.md) | 47 entrées, chacune avec sa cause et sa résolution |
+| [Procédure de nommage](docs/procedure-de-nommage.md) | Conventions de code et leur vérification outillée |
 
 ---
 
