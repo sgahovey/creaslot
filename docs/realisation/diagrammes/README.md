@@ -34,12 +34,22 @@ npx --offline @mermaid-js/mermaid-cli@11.16.0 -i <figure>.mermaid -o <figure>.pn
 Version épinglée : une version différente change la mise en page et rend le diff du PNG
 illisible.
 
-## Figures figées
+## Figures figées, et figures vivantes
 
-`charte-graphique.puml`, `chaine-tracabilite.puml`, `dispositif-veille.puml` et
+Le répertoire contient sept sources, et elles ne suivent pas le même régime.
+
+**Figées.** `charte-graphique.puml`, `chaine-tracabilite.puml`, `dispositif-veille.puml` et
 `gantt-reel.mermaid` datent tous du **05/08/2026**, deux jours avant le rendu du dossier
 du 07/08/2026, et n'ont plus bougé depuis. **Ils appartiennent au dossier rendu et ne
 doivent pas être modifiés.**
+
+**Vivantes.** Trois figures ont été ajoutées après le rendu et peuvent évoluer :
+
+| Figure | Ajoutée le | Ce qu'elle montre |
+|---|---|---|
+| `charte-graphique-2026-08-27.puml` | 27/08/2026 | la charte après les corrections de contraste de DT-45 |
+| `fonctionnement-agregateur-veille.puml` | 03/09/2026 | le cheminement interne de l'agrégateur de veille |
+| `contrastes-rgaa.puml` | 05/09/2026 | les couples de contraste corrigés, avec leur avant et leur après |
 
 Lorsque l'application évolue et rend une figure obsolète, la règle est donc de **créer une
 version datée à côté**, sans toucher à l'originale, comme le fait
