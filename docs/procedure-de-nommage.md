@@ -183,14 +183,14 @@ La conformité n'est pas déclarative, elle est exécutable :
 docker compose exec app vendor/bin/php-cs-fixer fix --dry-run --using-cache=no
 ```
 
-Résultat au 20 août 2026 :
+Résultat au 5 septembre 2026 :
 
 ```
 PHP CS Fixer 3.95.4 Adalbertus
-Found 0 of 162 files that can be fixed in 1.101 seconds
+Found 0 of 166 files that can be fixed in 1.204 seconds
 ```
 
-**162 fichiers analysés, zéro écart.** Le code de retour est 0. Cette commande tourne également
+**166 fichiers analysés, zéro écart.** Le code de retour est 0. Cette commande tourne également
 dans le pipeline d'intégration continue, où elle bloque la fusion en cas d'écart, ce qui rend la
 convention opposable et non facultative.
 
