@@ -106,7 +106,7 @@ tail -20 /home/ubuntu/cron-logs/purger-journal.log
 
 # Vérifier en BDD qu'il ne reste aucune entrée antérieure à 12 mois
 cd /home/ubuntu/creaslot && /usr/bin/docker compose -f compose.prod.yml --env-file .env.deploy.local exec -T app-prod \
-  php bin/console doctrine:query:sql \
+  php bin/console dbal:run-sql \
   "SELECT COUNT(*) AS expirees FROM journal_admin WHERE date_action < (NOW() - INTERVAL 12 MONTH)"
 ```
 
