@@ -71,6 +71,17 @@ end note
 
 FAUTIF -[hidden]right-> CONFORME
 
+note as DEFINITIONS
+  <b>Les trois formes normales</b>
+  ====
+  |= Forme |= Définition |= Dans ce projet |
+  | <b>1FN</b> | Chaque attribut contient une valeur <b>atomique</b>,\nindivisible. Ni liste, ni groupe répétitif. | Un créneau porte un identifiant de type,\npas une liste de modalités. |
+  | <b>2FN</b> | En 1FN, et tout attribut non-clé dépend de la\n<b>totalité</b> de la clé, jamais d'une partie.\nNe concerne que les clés composées. | Aucune clé composée dans le schéma :\nrespectée par construction. |
+  | <b>3FN</b> | En 2FN, et aucun attribut non-clé ne dépend\nd'un <b>autre attribut non-clé</b>.\nPas de dépendance transitive. | Le cas illustré ci-dessus,\nentre utilisateur et service. |
+end note
+
+FAUTIF -[hidden]down-> DEFINITIONS
+
 legend bottom
   |= Élément |= Signification |
   | Colonne rosée | Valeur dupliquée à chaque ligne, source d'incohérence |

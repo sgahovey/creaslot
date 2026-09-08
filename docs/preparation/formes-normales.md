@@ -8,8 +8,9 @@ colonnes nommées existent.
 
 ![Les deux modélisations de la troisième forme normale](troisieme-forme-normale.png)
 
-*Figure : à gauche la table `utilisateur` telle qu'elle aurait été si le nom du service
-avait été dupliqué, à droite celle du projet, avec la clé étrangère vers `service`.
+*Figure : en haut, à gauche la table `utilisateur` telle qu'elle aurait été si le nom du
+service avait été dupliqué, à droite celle du projet, avec la clé étrangère vers `service`.
+En dessous, la définition des trois formes normales et ce qu'elles donnent dans ce projet.
 Régénération : `java -jar ~/plantuml.jar -tpng docs/preparation/troisieme-forme-normale.puml`*
 
 ---
