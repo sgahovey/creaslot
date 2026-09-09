@@ -1,5 +1,13 @@
 # Carte du dossier — CreaSlot MSP3
 
+> **Ce fichier n'est pas le dossier, c'est sa carte** : il en donne la structure, les pages,
+> les figures et les tableaux, pour retrouver un passage sans ouvrir le document. Le dossier
+> lui-même n'est pas versionné dans ce dépôt.
+>
+> **Version cartographiée** : celle du 17/07/2026. Le dossier a été rendu le 07/08/2026 dans
+> une version postérieure, dont la pagination diffère. Les numéros de page ci-dessous valent
+> donc pour la version citée en source, pas pour le rendu final.
+>
 > Source : `Creaslot_Dossier_Complet.docx` · PDF converti (soffice, polices métriques Carlito). Le rendu de référence de l'auteur fait 161 pages ; cette conversion en fait 163 (écart de rendu).
 
 ## Métadonnées
