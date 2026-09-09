@@ -1,5 +1,11 @@
 # Configuration cron — Rappels J-1 (US-4.6)
 
+**À qui s'adresse ce document, et ce qu'il permet.** À la personne qui exploite CreaSlot sur le
+serveur, et qui n'a à suivre cette procédure qu'une seule fois. Elle met en place l'envoi
+automatique, chaque soir, d'un courriel de rappel aux Auditeurs dont le rendez-vous a lieu le
+lendemain. Les termes techniques qui reviennent (`crontab`, *smoke test*, idempotence) sont définis
+dans le glossaire, en fin de `docs/runbook-deploiement.md`.
+
 ## Objectif
 
 Exécuter automatiquement chaque jour à 18h (heure Réunion) la commande
@@ -7,6 +13,9 @@ Exécuter automatiquement chaque jour à 18h (heure Réunion) la commande
 ayant un rendez-vous prévu pour le lendemain.
 
 ## Vérification que la commande fonctionne
+
+On obtient deux choses : la fiche de la commande, qui prouve qu'elle existe bien dans l'application,
+puis son exécution réelle, qui indique combien de rappels ont été envoyés.
 
 ```bash
 # Affiche les détails de la commande
@@ -35,12 +44,19 @@ En place depuis **US-9.3** (déploiement réel). Le VPS est en fuseau **`Etc/UTC
 
 ### Étape 1 — Éditer la crontab de l'utilisateur `ubuntu`
 
+On obtient, ouvert dans un éditeur, le carnet des tâches planifiées de la machine, avec son contenu
+actuel.
+
 ```bash
 ssh ubuntu@51.178.25.175
 crontab -e
 ```
 
 ### Étape 2 — Ajouter la ligne suivante
+
+Une fois cette ligne enregistrée, les rappels partiront seuls chaque soir à 18h, heure de La
+Réunion, la tâche écrira son compte rendu dans un fichier, et signalera à la supervision qu'elle a
+bien eu lieu.
 
 ```cron
 # CreaSlot — Rappels J-1 (heure Réunion = UTC+4, pas de DST ; VPS en UTC)
@@ -67,11 +83,16 @@ Notes :
 
 ### Étape 3 — Vérifier que la cron est bien enregistrée
 
+On obtient la ligne que l'on vient d'écrire. Si rien ne s'affiche, c'est qu'elle n'a pas été
+enregistrée.
+
 ```bash
 crontab -l | grep envoyer-rappels-j1
 ```
 
 ### Étape 4 — Créer le dossier de logs (propriétaire `ubuntu`)
+
+On obtient le dossier dans lequel la tâche écrira son compte rendu à chaque exécution.
 
 ```bash
 mkdir -p /home/ubuntu/cron-logs
@@ -81,7 +102,8 @@ Aucun `sudo`/`chown` nécessaire : `/home/ubuntu/cron-logs` appartient déjà à
 
 ### Étape 5 — Test post-déploiement
 
-Le lendemain à 18h01 (heure Réunion), vérifier :
+Le lendemain à 18h01 (heure Réunion), vérifier. On obtient d'abord les dernières lignes du compte
+rendu, puis les cinq derniers rendez-vous pour lesquels un rappel a été envoyé, avec la date d'envoi.
 
 ```bash
 # Vérifier que la commande s'est exécutée
@@ -106,6 +128,8 @@ cd /home/ubuntu/creaslot && /usr/bin/docker compose -f compose.prod.yml --env-fi
 5. Logs : `[OK] Rappels J-1 : N envoyés, M erreurs.`
 
 ### Idempotence
+
+La commande peut être relancée sans dommage : aucun Auditeur ne reçoit deux fois le même rappel.
 
 Si le cron est relancé manuellement le même jour :
 

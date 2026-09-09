@@ -12,6 +12,13 @@ Trois types de RDV : présentiel, téléphone, visio.
 Suite de tests verte, **390 cas** et **1428 assertions**, couverture **85,0 %** mesurée par SonarCloud.
 Cinq contrôles en intégration continue, dont quatre bloquants.
 
+**À qui s'adresse ce document, et ce qu'il permet.** À qui veut faire tourner CreaSlot sur sa propre
+machine, pour le voir fonctionner ou pour y travailler. Il suffit de suivre les neuf étapes de
+l'installation, dans l'ordre, pour obtenir l'application ouverte dans un navigateur et sa suite de
+tests au vert. Aucune connaissance de PHP n'est nécessaire pour y arriver : il faut Docker et Git,
+et rien d'autre. Les termes techniques qui reviennent (`fixtures`, *smoke test*, `SHA`) sont définis
+dans le glossaire, en fin de [docs/runbook-deploiement.md](docs/runbook-deploiement.md).
+
 ---
 
 ## Stack technique
@@ -40,7 +47,8 @@ Cinq contrôles en intégration continue, dont quatre bloquants.
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) 4.x ou supérieur
 - Git
 
-Vérifier l'installation :
+Vérifier l'installation. On obtient deux numéros de version ; un message d'erreur signifie que
+Docker n'est pas installé, ou qu'il n'est pas démarré.
 
 ```bash
 docker --version
@@ -51,7 +59,24 @@ docker compose version
 
 ## Installation
 
+### Avant de commencer : ce que Docker fait ici
+
+Rien ne s'installe sur votre machine, ni PHP, ni MySQL, ni le serveur web. Docker crée à la place
+quatre petites machines isolées, appelées conteneurs, qui contiennent déjà tout cela dans les bonnes
+versions. Votre ordinateur ne fait que les héberger et leur parler.
+
+C'est ce qui explique le préfixe qui revient partout : `docker compose exec app` veut dire
+« exécute la suite à l'intérieur du conteneur nommé `app` », celui qui porte PHP. La même commande
+lancée sans ce préfixe s'adresserait à votre machine, qui n'a ni PHP ni l'application, et
+échouerait. De même, `docker compose exec db` s'adresse au conteneur de la base de données.
+
+Dernier point utile : ces conteneurs sont jetables. `docker compose down -v` les supprime avec leurs
+données, et reprendre à l'étape 3 reconstruit un environnement neuf. Rien de ce que vous ferez ici
+ne laissera de trace sur votre système.
+
 ### 1. Cloner le dépôt
+
+On obtient une copie complète du projet dans un dossier `creaslot`, et on s'y place.
 
 ```bash
 git clone https://github.com/sgahovey/creaslot.git
@@ -59,6 +84,9 @@ cd creaslot
 ```
 
 ### 2. Configurer les variables d'environnement locales
+
+On obtient un fichier de réglages personnel, `.env.local`, que Git ignore : c'est là que vivront les
+mots de passe de votre installation, et nulle part ailleurs.
 
 ```bash
 cp .env.example .env.local
@@ -69,6 +97,9 @@ Les valeurs par défaut du `.env` fonctionnent sans modification pour le dévelo
 
 ### 3. Démarrer l'environnement
 
+On obtient les quatre conteneurs en marche : le serveur web, PHP, la base de données et son
+interface de consultation.
+
 ```bash
 docker compose up -d
 ```
@@ -77,6 +108,8 @@ La première exécution télécharge les images et construit le conteneur PHP (~
 Les démarrages suivants prennent moins de 30 secondes.
 
 ### 4. Vérifier que les conteneurs tournent
+
+On obtient la liste des quatre services et l'état de chacun.
 
 ```bash
 docker compose ps
@@ -87,12 +120,17 @@ Quatre services démarrent. `app`, `nginx` et `db` affichent `healthy` ;
 
 ### 5. Créer le schéma et charger les données de démonstration
 
+On obtient une base de données utilisable : d'abord les tables, vides, puis des comptes, des
+créneaux et des réservations fictifs qui permettent de parcourir l'application sans rien saisir.
+
 ```bash
 docker compose exec app php bin/console doctrine:migrations:migrate --no-interaction
 docker compose exec app php bin/console doctrine:fixtures:load --no-interaction
 ```
 
 ### 6. Compiler les assets
+
+On obtient les feuilles de style et les scripts déposés là où le serveur web ira les chercher.
 
 ```bash
 docker compose exec app php bin/console asset-map:compile
@@ -114,7 +152,18 @@ Personnel, `creaslotdemo+admin@gmail.com` pour l'administration.
 
 La suite de tests utilise une base séparée, `creaslot_test`, que **l'utilisateur applicatif
 n'a pas le droit de créer**. Il faut la créer une fois avec le compte root du conteneur,
-puis lui appliquer le schéma et les données :
+puis lui appliquer le schéma et les données.
+
+**Ce que produit la première ligne**, la plus longue des trois : elle crée la base `creaslot_test`,
+vide, et donne au compte de l'application le droit d'y écrire. Elle est nécessaire parce que ce
+compte, volontairement peu privilégié, ne peut pas créer une base lui-même ; il faut donc passer par
+le compte administrateur de MySQL, qui vit dans le conteneur `db` et non dans `app`. Sa longueur
+tient entièrement à ce détour : les guillemets imbriqués ne servent qu'à faire traverser le texte de
+la commande jusqu'à MySQL, et le mot de passe n'y figure jamais, il est lu dans l'environnement du
+conteneur. Les deux lignes suivantes remplissent cette base neuve, la structure puis les données.
+
+Cette étape ne se fait **qu'une fois** : la base ainsi créée survit aux redémarrages, et n'est à
+refaire qu'après un `docker compose down -v`.
 
 ```bash
 docker compose exec db sh -c 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS creaslot_test CHARACTER SET utf8mb4; GRANT ALL PRIVILEGES ON creaslot_test.* TO '"'"'creaslot'"'"'@'"'"'%'"'"'; FLUSH PRIVILEGES;"'
@@ -126,6 +175,9 @@ Sans cette étape, la suite échoue en masse : **208 erreurs et 3 échecs**, tou
 refus d'accès à `creaslot_test`.
 
 ### 9. Lancer la suite
+
+On obtient l'exécution des 390 tests. C'est le contrôle final : s'ils passent tous, l'installation
+est correcte de bout en bout.
 
 ```bash
 docker compose exec app php bin/phpunit
@@ -142,7 +194,8 @@ OK (390 tests, 1428 assertions)
 
 ### Raccourci
 
-Les étapes 5 à 9 peuvent être enchaînées par un script, une fois les conteneurs démarrés :
+Les étapes 5 à 9 peuvent être enchaînées par un script, une fois les conteneurs démarrés. On
+obtient le même résultat qu'en les suivant une à une : base remplie, assets compilés, suite verte.
 
 ```bash
 ./bin/setup.sh
@@ -157,6 +210,9 @@ l'environnement du conteneur `db`.
 ---
 
 ## Commandes utiles
+
+Ces commandes ne servent pas à l'installation : elles sont utiles ensuite, au quotidien. Chaque
+ligne porte en commentaire ce qu'elle produit.
 
 ### Gestion des conteneurs
 

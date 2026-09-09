@@ -4,12 +4,30 @@
 > du projet et vérifiées en continu par PHP-CS-Fixer, dont la configuration est versionnée
 > depuis le 7 juin 2026.
 
+**À qui s'adresse ce document, et ce qu'il permet.** À qui lit ou reprend le code de CreaSlot et
+veut savoir selon quelles règles il a été écrit. Il permet de vérifier, règle par règle et chiffre à
+l'appui, que ces règles sont réellement appliquées, et de refaire cette vérification soi-même
+(section 8). Le terme `dry-run`, qui y apparaît, est défini dans le glossaire, en fin de
+`docs/runbook-deploiement.md`.
+
+**Ce qu'est une convention de nommage.** C'est un accord sur la façon de nommer les choses dans un
+programme : les classes, les méthodes, les tables de la base, les fichiers. Elle ne change rien à ce
+que le code fait, mais elle décide du temps qu'il faudra pour le comprendre : quand tout est nommé
+de la même manière, on devine où se trouve une chose avant même de l'avoir cherchée.
+
 Toutes les règles ci-dessous décrivent l'état réel du code, mesuré sur le dépôt. Les chiffres
 cités sont des comptages, pas des estimations. Les écarts connus sont listés en section 9.
 
 ---
 
 ## 1. Norme de référence
+
+**PSR-12** est une norme d'écriture publiée par le groupe qui coordonne les grands projets PHP. Elle
+fixe la mise en forme du code : indentation, espaces, position des accolades, ordre des
+déclarations. **@Symfony** est un jeu de règles supplémentaire, propre au framework employé ici, qui
+tranche ce que PSR-12 laisse ouvert. Ni l'une ni l'autre n'a été inventée pour ce projet : ce sont
+des choix collectifs déjà écrits ailleurs, que le projet adopte, ce qui lui évite d'avoir à
+rediscuter chaque cas.
 
 Le style est celui de **PSR-12**, complété par le jeu de règles **@Symfony**. Les deux sont
 activés dans `.php-cs-fixer.dist.php`, lignes 43 et 44 :
@@ -177,7 +195,8 @@ Exemples : `app_mes_donnees` sur `/mes-donnees`, `api_creneaux_personnel` sur `/
 
 ## 8. Vérification
 
-La conformité n'est pas déclarative, elle est exécutable :
+La conformité n'est pas déclarative, elle est exécutable. On obtient le nombre de fichiers analysés
+et le nombre d'écarts trouvés ; `--dry-run` fait que la commande les signale sans rien modifier.
 
 ```bash
 docker compose exec app vendor/bin/php-cs-fixer fix --dry-run --using-cache=no

@@ -1,5 +1,11 @@
 # Configuration cron — Sauvegarde quotidienne de la base (US-9.4)
 
+**À qui s'adresse ce document, et ce qu'il permet.** À la personne qui exploite CreaSlot sur le
+serveur, et qui n'a à suivre cette procédure qu'une seule fois. Elle met en place la copie
+automatique de la base de données, chaque nuit : si les données venaient à être perdues ou
+corrompues, c'est cette copie qui permettrait de les retrouver. Les termes techniques qui reviennent
+(`crontab`, *smoke test*) sont définis dans le glossaire, en fin de `docs/runbook-deploiement.md`.
+
 ## Objectif
 
 Automatiser la sauvegarde de la base de production `creaslot_prod` par une tâche
@@ -11,6 +17,9 @@ La procédure de **restauration** (et sa vérification en base jetable) est déc
 `docs/runbook-deploiement.md` (§8).
 
 ## Le script
+
+On obtient un fichier de sauvegarde compressé et daté, déposé dans `~/backups/creaslot/`. La
+première forme sauvegarde la base de production, la seconde celle de préproduction.
 
 ```bash
 # PROD (défauts) :
@@ -50,12 +59,19 @@ La Réunion (heure creuse) et est **décalé** du cron de purge du journal (03h0
 
 ### Étape 1 — Éditer la crontab de l'utilisateur `ubuntu`
 
+On obtient, ouvert dans un éditeur, le carnet des tâches planifiées de la machine, avec son contenu
+actuel.
+
 ```bash
 ssh ubuntu@51.178.25.175
 crontab -e
 ```
 
 ### Étape 2 — Ajouter la ligne suivante
+
+Une fois cette ligne enregistrée, la sauvegarde s'exécutera seule chaque nuit, écrira son compte
+rendu dans un fichier, effacera d'elle-même les copies de plus de quatorze jours, et signalera à la
+supervision qu'elle a bien eu lieu.
 
 ```cron
 # CreaSlot — Sauvegarde quotidienne de la base de PROD (rétention 14 j — US-9.4 ; VPS en UTC)
@@ -89,11 +105,16 @@ Notes :
 
 ### Étape 3 — Vérifier que la cron est bien enregistrée
 
+On obtient la ligne que l'on vient d'écrire. Si rien ne s'affiche, c'est qu'elle n'a pas été
+enregistrée.
+
 ```bash
 crontab -l | grep backup-db
 ```
 
 ### Étape 4 — Dossier de logs (propriétaire `ubuntu`, mutualisé avec les autres crons CreaSlot)
+
+On obtient le dossier dans lequel la tâche écrira son compte rendu à chaque exécution.
 
 ```bash
 mkdir -p /home/ubuntu/cron-logs
@@ -102,6 +123,10 @@ mkdir -p /home/ubuntu/cron-logs
 Aucun `sudo`/`chown` nécessaire : `/home/ubuntu/cron-logs` appartient déjà à `ubuntu`.
 
 ### Étape 5 — Test (avant de dépendre du cron)
+
+On obtient une vraie sauvegarde, produite à la main, puis une seconde produite exactement dans les
+conditions du cron. C'est ce second essai qui compte : il attrape les erreurs qui ne se manifestent
+que lorsque la machine lance la tâche toute seule.
 
 ```bash
 # a) Lancement manuel du script : un dump doit apparaître
@@ -118,6 +143,9 @@ Sortie attendue : `Sauvegarde OK : …` suivi de la taille du dump. Si `docker: 
 not found` apparaît dans le log, c'est un souci de PATH → ajuster le préfixe `PATH=`.
 
 ### Étape 6 — Vérification post-déploiement (le lendemain)
+
+On obtient la preuve que la machine a bien travaillé sans nous : le compte rendu de la nuit, et le
+fichier de sauvegarde correspondant sur le disque.
 
 ```bash
 # La sauvegarde de ~02h30 UTC doit figurer dans le log et sur le disque
