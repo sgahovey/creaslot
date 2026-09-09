@@ -1,0 +1,91 @@
+' Les deux modelisations de la troisieme forme normale, cote a cote.
+' Figure de preparation orale, pas une figure du dossier rendu : elle ne vit pas
+' dans docs/realisation/diagrammes/, dont le README distingue figures gelees et
+' figures vivantes.
+'
+' Les donnees affichees sont REELLES, relevees dans la base le 08/09/2026 :
+'   service     : 3 lignes, identifiants 1 a 3
+'   utilisateur : les six membres du personnel, identifiants 1 a 6
+' A gauche la table fautive, telle qu'elle aurait ete si le nom du service avait
+' ete duplique. A droite la table du projet.
+'
+' Piege PlantUML, constate par essais successifs : le souligne est interprete comme une
+' balise creole et disparait du rendu de facon peu previsible. Ni <U+005F>, ni &#95;,
+' ni ~_ , ni <nowiki>, ni <color:...> ne le protegent de maniere fiable dans un
+' en-tete de tableau. Les colonnes de la table fautive sont donc nommees en clair,
+' « nom du service » et « description du service » : cette table est hypothetique, ses
+' noms de colonnes n'ont pas a imiter une convention de nommage. La colonne id_service
+' de la table reelle, elle, rend correctement son souligne et le garde.
+'
+' Regeneration :
+'   java -jar ~/plantuml.jar -tpng docs/preparation/troisieme-forme-normale.puml
+' PlantUML 1.2026.6, OpenJDK 25. Le jar n'est pas versionne.
+
+@startuml troisieme-forme-normale
+skinparam dpi 192
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam defaultFontSize 13
+skinparam note {
+  BorderColor #1F4E79
+  BackgroundColor #FFFFFF
+  FontColor #1E1E1E
+}
+
+note as FAUTIF
+  <b><color:#8B1A1A>Ce que je n'ai pas fait</color></b>
+  ====
+  <b>utilisateur</b>
+  |= id |= prénom |= nom |= nom du service |= description du service |
+  | 1 | Marion | BEQUET |<back:#F8D7DA> Service Commercial |<back:#F8D7DA> Responsables commerciaux du Cnam |
+  | 2 | Aurélien | LAFLEUR |<back:#F8D7DA> Service Commercial |<back:#F8D7DA> Responsables commerciaux du Cnam |
+  | 3 | Nadège | PAYET |<back:#F8D7DA> Service Alternance |<back:#F8D7DA> Gestionnaires de l'alternance |
+  ====
+  La description ne dépend pas de l'utilisateur.
+  Elle dépend du service, qui dépend de l'utilisateur.
+  <b>Dépendance transitive.</b>
+  Renommer un service : <b>six lignes</b> à modifier,
+  et une seule oubliée suffit à créer deux noms
+  pour le même service.
+end note
+
+note as CONFORME
+  <b><color:#1A6E2E>Ce que porte le projet</color></b>
+  ====
+  <b>utilisateur</b>
+  |= id |= prénom |= nom |= <color:#1E1E1E>id_service</color> |
+  | 1 | Marion | BEQUET |<back:#D1E7DD> 1 |
+  | 2 | Aurélien | LAFLEUR |<back:#D1E7DD> 1 |
+  | 3 | Nadège | PAYET |<back:#D1E7DD> 2 |
+  ====
+  <b>service</b>
+  |= id |= nom |= description |
+  | 1 | Service Commercial | Responsables commerciaux du Cnam |
+  | 2 | Service Alternance | Gestionnaires de l'alternance |
+  | 3 | Accueil | Accueil et orientation des auditeurs |
+  ====
+  Chaque attribut dépend de la clé de sa table.
+  Renommer un service : <b>une seule ligne</b>.
+  Et un service peut exister sans personnel.
+end note
+
+FAUTIF -[hidden]right-> CONFORME
+
+note as DEFINITIONS
+  <b>Les trois formes normales</b>
+  ====
+  |= Forme |= Définition |= Dans ce projet |
+  | <b>1FN</b> | Chaque attribut contient une valeur <b>atomique</b>,\nindivisible. Ni liste, ni groupe répétitif. | Un créneau porte un identifiant de type,\npas une liste de modalités. |
+  | <b>2FN</b> | En 1FN, et tout attribut non-clé dépend de la\n<b>totalité</b> de la clé, jamais d'une partie.\nNe concerne que les clés composées. | Aucune clé composée dans le schéma :\nrespectée par construction. |
+  | <b>3FN</b> | En 2FN, et aucun attribut non-clé ne dépend\nd'un <b>autre attribut non-clé</b>.\nPas de dépendance transitive. | Le cas illustré ci-dessus,\nentre utilisateur et service. |
+end note
+
+FAUTIF -[hidden]down-> DEFINITIONS
+
+legend bottom
+  |= Élément |= Signification |
+  | Colonne rosée | Valeur dupliquée à chaque ligne, source d'incohérence |
+  | Colonne verte | Clé étrangère vers service, une seule source de vérité |
+  | <b>Données</b> | Réelles, relevées dans la base le 08/09/2026, tronquées aux trois premières lignes |
+endlegend
+@enduml
