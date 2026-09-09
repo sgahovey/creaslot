@@ -8,7 +8,7 @@ Trois types de RDV : présentiel, téléphone, visio.
 
 > Documentation complète du projet : `docs/` (architecture, conception, réalisation, exploitation)
 
-**État du projet** : en production sur [creaslot.re](https://creaslot.re), version **v1.2.0**.
+**État du projet** : en production sur [creaslot.re](https://creaslot.re), version **v1.2.1**.
 Suite de tests verte, **390 cas** et **1428 assertions**, couverture **85,0 %** mesurée par SonarCloud.
 Cinq contrôles en intégration continue, dont quatre bloquants.
 
@@ -293,7 +293,7 @@ Workflow : `feature/*` → `develop` → `preprod` → `main`
 | [Runbook de déploiement](docs/runbook-deploiement.md) | Promotion, déploiement, rollback, incidents |
 | [Audit de sécurité OWASP](docs/audit-securite-owasp.md) | Les dix catégories, leur traitement, les limites assumées |
 | [Plan de tests](docs/plan-de-tests.md) | Stratégie, matrice de traçabilité, résultats |
-| [Registre de dette technique](docs/dette-technique.md) | 47 entrées, chacune avec sa cause et sa résolution |
+| [Registre de dette technique](docs/dette-technique.md) | 48 entrées, chacune avec sa cause et sa résolution |
 | [Procédure de nommage](docs/procedure-de-nommage.md) | Conventions de code et leur vérification outillée |
 
 ---
