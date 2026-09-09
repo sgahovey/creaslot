@@ -26,6 +26,7 @@ vous cherchez.
 | **Comment les données sont structurées** | [`conception/diagrammes/`](conception/diagrammes/) : modèle physique, diagramme de classes, cas d'utilisation, diagrammes de séquence. |
 | **Comment les tâches planifiées fonctionnent** | les trois documents `cron-*.md` : sauvegarde quotidienne, rappels la veille, purge du journal. |
 | **Comment reproduire une figure du dossier** | [`realisation/diagrammes/README.md`](realisation/diagrammes/README.md), qui donne la commande exacte et distingue les figures gelées des figures vivantes. |
+| **Comment le dossier rendu est structuré**, page par page | [`carte-dossier.md`](carte-dossier.md) : la cartographie du mémoire remis, sections, pages, figures et tableaux. Utile pour retrouver un passage sans ouvrir le document. |
 | **Comment répondre à l'oral sur deux sujets précis** | [`preparation/`](preparation/) : les six familles de contraintes, et les formes normales démontrées sur les tables réelles. Aide-mémoire de soutenance, pas des livrables. |
 
 ---
