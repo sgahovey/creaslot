@@ -1,9 +1,14 @@
 # Runbook de déploiement et d'exploitation — CreaSlot (production)
 
+**À qui s'adresse ce document, et ce qu'il permet.** À la personne qui exploite CreaSlot en
+production : celle qui met le site à jour, le surveille, le sauvegarde et le répare. Il donne les
+gestes exacts pour mettre en ligne une nouvelle version, renouveler les certificats, poser les
+tâches automatiques, sauvegarder et restaurer la base, et revenir en arrière quand une version pose
+problème. Un lecteur qui découvre le projet peut lire la **section 0** seule, qui raconte le trajet
+du code sans une seule commande ; le **glossaire**, en fin de document, traduit les termes qui
+reviennent.
+
 Procédures **opérationnelles** pour déployer et exploiter CreaSlot en production.
-Pour les **choix de conception** (pourquoi Caddy en façade, image *build-once*, dual-root,
-CSP à nonce, `trusted_proxies`…), voir `docs/architecture-deploiement.md` — ce runbook
-ne contient que des procédures et des commandes copiables.
 
 **Périmètre** : déploiement, mise à jour, certificats, e-mail, crons, sauvegarde et
 restauration de la base (§8), rollback simple.
@@ -11,6 +16,38 @@ La supervision/monitoring applicatif est en place (huit sondes Uptime Kuma + rou
 cf. §3.1, §6.1 et §10) ; seule l'extension des healthchecks Docker à l'ensemble des services
 (aujourd'hui `db`) reste ouverte. La journalisation des échecs de connexion (OWASP A09) est
 livrée (US-9.5, cf. §10).
+
+Pour les **choix de conception** (pourquoi Caddy en façade, image *build-once*, dual-root,
+CSP à nonce, `trusted_proxies`…), voir `docs/architecture-deploiement.md` — ce runbook
+ne contient que des procédures et des commandes copiables.
+
+## 0. Le trajet du code, de ma machine au site public
+
+Cette section ne contient aucune commande. Elle est là pour qui découvre le projet ; un exploitant
+peut passer directement à la section 1.
+
+Le code écrit sur la machine du développeur ne part jamais directement vers le site public. Il est
+d'abord déposé sur GitHub, qui garde l'historique du projet et sert de point de passage unique. À
+chaque dépôt, quatre contrôles automatiques s'exécutent : le style du code, une analyse d'erreurs,
+la suite de tests, et la recherche de failles connues dans les bibliothèques utilisées. Tant que
+l'un d'eux échoue, rien ne va plus loin.
+
+Le code franchit ensuite trois étages, toujours dans le même ordre. `develop` est l'étage de
+travail. `preprod` est une copie complète du site, identique mais fermée au public par un mot de
+passe : c'est là qu'on vérifie qu'une version tient debout. `main` est le site public. On ne monte
+d'un étage que si le précédent va bien.
+
+Chaque montée fabrique une image : un paquet figé contenant le code et tout ce qu'il lui faut pour
+tourner. C'est ce paquet, et non le code source, qui est envoyé au serveur. Il porte le numéro de la
+version qui l'a produit, ce qui permet de savoir à tout instant ce qui est en service, et de
+remettre une version antérieure si besoin.
+
+Le serveur est une machine louée chez OVH. Elle héberge la base de données, la copie de
+préproduction et le site public ; devant eux, un portier reçoit les visiteurs, chiffre les échanges
+et oriente chaque demande vers la bonne copie.
+
+Une seule étape reste manuelle, et c'est délibéré : la mise en ligne publique demande une
+approbation explicite. Tout le reste s'enchaîne seul.
 
 ## 1. Accès et environnement
 - VPS OVH Ubuntu, IP **51.178.25.175**, fuseau **`Etc/UTC`**.
@@ -23,12 +60,17 @@ livrée (US-9.5, cf. §10).
 - `.env.deploy.local` (**secret**, infra ; passé via `--env-file`) : hosts, `CADDY_TLS` (e-mail ACME), `CADDY_ACME_CA` (vide = prod), ports, `MYSQL_*`, `PREPROD_BASICAUTH_*` (hash bcrypt **échappé `$$`**).
 - `.env.prod.local` / `.env.preprod.local` (**secrets**, app) : `APP_SECRET`, `DATABASE_URL`, `MAILER_DSN`.
 - Gabarits `*.example` versionnés ; les `*.local` sont **gitignorés** (jamais commités).
-- **Préfixe commun de toutes les commandes** :
+- **Préfixe commun de toutes les commandes**. Il ne produit rien seul : il indique à Docker quel
+  fichier de services lire et où trouver les secrets, et se place devant tout ce qui suit.
   ```bash
   docker compose -f compose.prod.yml --env-file .env.deploy.local <...>
   ```
 
 ### 2.1 TLS applicatif vers MySQL
+
+**Ce que l'on cherche à obtenir.** Que la conversation entre l'application et sa base de données ne
+circule pas en clair à l'intérieur du serveur, mais chiffrée, de sorte que personne ayant accès à la
+machine ne puisse lire au passage ce qui s'y échange.
 
 Le serveur MySQL sait faire du TLS depuis son premier démarrage : `have_ssl = YES`, et les
 certificats auto-signés ont été générés dans le datadir le **16/06/2026**. Ce qui manquait était
@@ -52,7 +94,8 @@ côté client : PDO n'ouvre pas de session chiffrée sans qu'on le lui demande.
 > monte son propre service MySQL sans ce certificat. Le job `phpunit`, seul à déclarer ce
 > service (`.github/workflows/ci.yml`), échouerait à ouvrir la connexion.
 
-**Vérification** (la session doit être chiffrée, pas seulement autorisée) :
+**Vérification** (la session doit être chiffrée, pas seulement autorisée). On obtient deux lignes :
+la version du protocole et l'algorithme de chiffrement de la connexion en cours.
 
 ```bash
 $PFX exec -T app-prod php bin/console dbal:run-sql \
@@ -100,12 +143,14 @@ L'ancienne méthode `git merge --ff-only` + `git push origin <branche>` est dés
 
 **Préproduction (déploiement automatique)** :
 
-1. Créer la PR de `develop` vers `preprod` :
+1. Créer la PR de `develop` vers `preprod`. On obtient une demande d'intégration ouverte sur
+   GitHub, qui lance aussitôt les contrôles automatiques :
    ```bash
    gh pr create --base preprod --head develop --title "deploy: promotion develop vers preprod"
    ```
 2. Attendre les **4 contrôles verts** (PHP-CS-Fixer, PHPStan, PHPUnit, `composer audit`) **et SonarCloud**.
-3. Merger en squash :
+3. Merger en squash. Le contenu de `develop` passe dans `preprod`, et la préproduction se met à
+   jour toute seule dans la foulée :
    ```bash
    gh pr merge <NUM> --squash
    ```
@@ -116,12 +161,14 @@ qui répond 401 avant l'application). Aucune action manuelle sur le VPS.
 
 **Production (déploiement après approbation manuelle)** :
 
-1. Créer la PR de `preprod` vers `main` :
+1. Créer la PR de `preprod` vers `main`. On obtient la demande d'intégration qui, une fois
+   fusionnée puis approuvée, mettra le site public à jour :
    ```bash
    gh pr create --base main --head preprod --title "deploy: mise en production"
    ```
 2. Attendre les **4 contrôles verts**.
-3. Merger en squash :
+3. Merger en squash. Le contenu de `preprod` passe dans `main` et le déploiement se met en attente
+   de votre approbation :
    ```bash
    gh pr merge <NUM> --squash
    ```
@@ -134,12 +181,15 @@ basic_auth). On ne promeut vers `main` qu'une fois la préprod validée (*promot
 
 **Après le déploiement prod** :
 
-1. Vérifier que le site répond :
+1. Vérifier que le site répond. On obtient deux nombres : `200` sur les deux lignes signifie que
+   le site public s'affiche et que l'application voit sa base de données.
    ```bash
    curl -s -o /dev/null -w "%{http_code}\n" https://creaslot.re/connexion   # attendu 200
    curl -s -o /dev/null -w "%{http_code}\n" https://creaslot.re/health       # attendu 200
    ```
-2. Créer le tag de version et la release GitHub (depuis `main` à jour). Remplacer `vX.Y.Z` par le numero de version reel (ex. `v1.1.0`) :
+2. Créer le tag de version et la release GitHub (depuis `main` à jour). On obtient un nom fixe
+   posé sur la version en service, retrouvable dans GitHub, qui permet plus tard de dire quelle
+   version tournait à quelle date. Remplacer `vX.Y.Z` par le numero de version reel (ex. `v1.1.0`) :
    ```bash
    git checkout main && git pull --ff-only
    git tag vX.Y.Z
@@ -155,6 +205,9 @@ ou pour un correctif appliqué directement sur le VPS.
 > ⚠️ **IMPORTANT** — L'image **embarque le code** et tourne avec OPcache
 > `validate_timestamps=0`. Un `git pull` seul **ne prend JAMAIS effet** → il **FAUT
 > rebuild + recreate**.
+
+Ce que produit la séquence ci-dessous : la version voulue en service sur le serveur, sans être
+passée par GitHub. Les deux dernières lignes vérifient le résultat.
 
 ```bash
 cd ~/creaslot
@@ -197,7 +250,8 @@ curl -s -o /dev/null -w "%{http_code}\n" https://preprod.creaslot.re/connexion  
 `latest` par défaut. Or le registre GHCR ne contient **que des tags SHA** : `latest` n'y est jamais
 poussé, la résolution échoue donc toujours.
 
-**Retrouver le bon tag.** Interroger le conteneur en place, service par service :
+**Retrouver le bon tag.** Interroger le conteneur en place, service par service. On obtient
+l'empreinte exacte de la version réellement en service, celle à réutiliser ensuite :
 
 ```bash
 docker inspect creaslot_prod-app-prod-1 --format '{{.Config.Image}}'
@@ -208,7 +262,8 @@ sur le commit déployé, quel que soit l'environnement. Après un déploiement d
 du dépôt désigne donc la version de **préprod**, pas celle de production. Les deux environnements
 tournent couramment sur des tags différents, c'est le principe même du *promote-on-green*.
 
-**Forme correcte.**
+**Forme correcte.** On obtient le service relancé sur l'image voulue, sans que Docker aille
+chercher un `latest` qui n'existe pas.
 
 ```bash
 cd ~/creaslot
@@ -235,7 +290,8 @@ s'applique.
 - Domaine `creaslot.re` **authentifié chez Brevo** via 4 entrées DNS dans la zone OVH : code Brevo (`TXT @`), DKIM `brevo1._domainkey` + `brevo2._domainkey` (`CNAME`), DMARC (`_dmarc`, `TXT`).
 - `MAILER_DSN=brevo+api://<cle-api>@default` dans `.env.prod.local` (**PROD**). Préprod : `MAILER_DSN=null://null` (aucun envoi réel).
 - Expéditeur : `noreply@creaslot.re` (`APP_NOTIFICATION_FROM`). Envoi **asynchrone** via le worker (`messenger:consume`).
-- Test d'envoi :
+- Test d'envoi. On obtient un vrai message dans la boîte indiquée, ce qui prouve que la chaîne
+  complète fonctionne, de l'application jusqu'au fournisseur d'envoi :
   ```bash
   docker compose -f compose.prod.yml --env-file .env.deploy.local exec app-prod php bin/console app:email:test <destinataire-que-vous-consultez>
   ```
@@ -253,6 +309,10 @@ s'applique.
 Le canal de journalisation `security` conserve la trace d'un blocage, mais personne ne lit un
 fichier de journal en continu. Un moniteur Uptime Kuma dédié transforme cette trace en
 notification Discord immédiate.
+
+**Ce que le dispositif doit produire.** Lorsqu'un compte est bloqué après trop de tentatives de
+connexion, une notification arrive dans Discord en quelques minutes, sans que personne ait eu à
+ouvrir un fichier de journal.
 
 **Principe.** Le moniteur est de type **push**, en **mode inversé** (*Upside Down Mode*). Un
 moniteur push signale normalement l'ABSENCE de battement ; le mode inversé retourne cette
@@ -293,7 +353,8 @@ qui en est l'objet. L'adresse tentée reste dans le journal applicatif. Kuma est
 vue des données, il n'a pas à connaître d'adresse.
 
 **Provoquer un blocage pour tester.** Six tentatives de connexion avec un mot de passe erroné sur la
-même adresse, `login_throttling` étant réglé à cinq (`config/packages/security.yaml`) :
+même adresse, `login_throttling` étant réglé à cinq (`config/packages/security.yaml`). On obtient un compte
+volontairement bloqué, une ligne dans le journal de sécurité et une notification Discord :
 
 ```bash
 for i in $(seq 1 6); do
@@ -314,6 +375,10 @@ jeton. Une supervision en panne ne peut pas empêcher une connexion d'aboutir, c
 couverte par les tests.
 
 ## 7. Administration courante
+
+Trois gestes du quotidien : créer un compte d'administration, savoir si les services tournent,
+lire les dernières lignes de journal d'un service.
+
 ```bash
 # Créer un super-administrateur (interactif, mot de passe masqué)
 docker compose -f compose.prod.yml --env-file .env.deploy.local exec app-prod php bin/console app:creer-admin
@@ -328,7 +393,7 @@ docker compose -f compose.prod.yml --env-file .env.deploy.local logs <service> -
 ## 8. Sauvegarde et restauration de la base
 
 ### Sauvegarde
-- Script versionné : `scripts/backup-db.sh`, **automatisé par cron** (quotidien, 02h30 UTC — cf. `docs/cron-backup.md`). Lancement **manuel** possible à tout moment depuis le VPS :
+- Script versionné : `scripts/backup-db.sh`, **automatisé par cron** (quotidien, 02h30 UTC — cf. `docs/cron-backup.md`). Lancement **manuel** possible à tout moment depuis le VPS. On obtient un fichier de sauvegarde compressé et daté dans `~/backups/creaslot/` :
 ```bash
   cd ~/creaslot && ./scripts/backup-db.sh
 ```
@@ -342,22 +407,27 @@ docker compose -f compose.prod.yml --env-file .env.deploy.local logs <service> -
 ### Restauration
 Toujours restaurer d'abord dans une **base jetable** pour vérifier le dump sans risque ; vers la production
 uniquement en cas d'incident réel. Préfixe commun :
+
+Ces deux lignes ne produisent rien par elles-mêmes : elles nomment le préfixe et le fichier de
+sauvegarde choisi, pour que les commandes suivantes tiennent en une ligne.
 ```bash
 PFX="docker compose -f compose.prod.yml --env-file .env.deploy.local"
 DUMP=~/backups/creaslot/creaslot_creaslot_prod_AAAAMMJJ_HHMMSS.sql.gz   # choisir le dump voulu
 ```
-1. **Vérification dans une base jetable** (ne touche pas la prod) :
+1. **Vérification dans une base jetable** (ne touche pas la prod). On obtient une copie de la
+   sauvegarde dans une base à part, `creaslot_restore_test`, que l'on pourra inspecter puis jeter :
 ```bash
    $PFX exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS creaslot_restore_test; CREATE DATABASE creaslot_restore_test"'
    zcat "$DUMP" | $PFX exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" creaslot_restore_test'
 ```
-   Contrôle d'intégrité (comparer à la source) :
+   Contrôle d'intégrité (comparer à la source). On obtient deux nombres, le nombre de tables et le
+   nombre de comptes restaurés, à comparer avec ceux de la base d'origine :
 ```bash
    $PFX exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -N -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=\"creaslot_restore_test\""'
    $PFX exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -N -e "SELECT COUNT(*) FROM creaslot_restore_test.utilisateur"'
 ```
    Nettoyage : `$PFX exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS creaslot_restore_test"'`
-2. **Restauration réelle vers la production** (⚠️ écrase les données actuelles — uniquement en cas d'incident) :
+2. **Restauration réelle vers la production** (⚠️ écrase les données actuelles — uniquement en cas d'incident). On obtient la production ramenée à l'état exact de la sauvegarde choisie ; tout ce qui a été enregistré depuis est perdu.
 ```bash
    zcat "$DUMP" | $PFX exec -T db sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" creaslot_prod'
 ```
@@ -375,6 +445,9 @@ DUMP=~/backups/creaslot/creaslot_creaslot_prod_AAAAMMJJ_HHMMSS.sql.gz   # choisi
   chiffré) pour lever ce point unique de défaillance.
 
 ## 9. Rollback simple
+
+On obtient le site remis dans l'état d'une version antérieure, reconstruite sur le serveur.
+
 ```bash
 cd ~/creaslot
 git checkout <commit-stable>
@@ -400,3 +473,15 @@ Restent ouvertes, par ordre de priorité :
 
 - **Copie hors-VPS des sauvegardes** : la sauvegarde quotidienne par cron est en place (cf. `docs/cron-backup.md`) ; reste à externaliser une copie chiffrée (`scp` ou stockage objet) pour lever le point unique de défaillance.
 - **Extension des healthchecks Docker** à l'ensemble des services (aujourd'hui limités à `db`).
+
+## Glossaire
+
+Les termes qui reviennent dans les procédures du dépôt, une ligne chacun.
+
+- **crontab** : le carnet de rendez-vous de la machine ; on y inscrit une commande et l'heure à laquelle elle doit s'exécuter toute seule, chaque jour ou chaque mois.
+- **squash** : manière de fusionner qui rassemble tous les changements d'une branche en une seule entrée d'historique, au lieu d'en recopier le détail.
+- **SHA** : l'empreinte d'une version, une suite de quarante caractères qui la désigne sans ambiguïté ; c'est le numéro de série d'un état précis du code.
+- **smoke test** : contrôle sommaire lancé juste après une mise en ligne, qui vérifie que le site répond, sans rien tester d'autre.
+- **fixtures** : jeu de données de démonstration chargé automatiquement dans une base vide, pour disposer de comptes et de créneaux sans les saisir à la main.
+- **dry-run** : mode d'essai d'une commande destructrice ; elle annonce ce qu'elle ferait, et ne le fait pas.
+- **idempotence** : propriété d'une commande qu'on peut relancer plusieurs fois sans dommage, le deuxième passage ne refaisant pas ce que le premier a déjà fait.
