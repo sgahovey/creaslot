@@ -1,5 +1,12 @@
 # Configuration cron — Purge du journal d'administration (DT-15)
 
+**À qui s'adresse ce document, et ce qu'il permet.** À la personne qui exploite CreaSlot sur le
+serveur, et qui n'a à suivre cette procédure qu'une seule fois. Elle met en place l'effacement
+automatique des traces d'administration devenues trop anciennes : le projet s'engage à ne les
+conserver que douze mois, et c'est cette tâche planifiée qui tient l'engagement, chaque mois, sans
+que personne ait à y penser. Les termes techniques qui reviennent (`crontab`, `dry-run`,
+*smoke test*) sont définis dans le glossaire, en fin de `docs/runbook-deploiement.md`.
+
 ## Objectif
 
 Appliquer la durée de conservation RGPD (**limitation de la conservation**, art. 5.1.e)
@@ -14,6 +21,10 @@ qui a dépassé la durée annoncée, jamais une entrée choisie — le caractèr
 
 ## Options de la commande
 
+La commande efface les entrées du journal plus anciennes que la durée de conservation. Sans option,
+elle applique la durée par défaut ; les deux options permettent de changer cette durée, ou de
+regarder ce qui serait effacé sans rien effacer.
+
 ```bash
 docker compose exec -T app php bin/console app:purger-journal [--mois=N] [--dry-run]
 ```
@@ -24,6 +35,9 @@ docker compose exec -T app php bin/console app:purger-journal [--mois=N] [--dry-
 - `--dry-run` : compte les entrées qui *seraient* purgées **sans rien supprimer**.
 
 ## Vérification que la commande fonctionne
+
+On obtient deux choses : la fiche de la commande, qui prouve qu'elle existe bien dans l'application,
+puis le nombre d'entrées qui seraient effacées, sans qu'aucune ne le soit réellement.
 
 ```bash
 # Affiche les détails de la commande
@@ -50,12 +64,18 @@ n'est pas critique : `0 3 1 * *` (03h00 UTC le 1er du mois) convient.
 
 ### Étape 1 — Éditer la crontab de l'utilisateur `ubuntu`
 
+On obtient, ouvert dans un éditeur, le carnet des tâches planifiées de la machine, avec son contenu
+actuel.
+
 ```bash
 ssh ubuntu@51.178.25.175
 crontab -e
 ```
 
 ### Étape 2 — Ajouter la ligne suivante
+
+Une fois cette ligne enregistrée, la purge s'exécutera seule le 1er de chaque mois, écrira son
+compte rendu dans un fichier, et signalera à la supervision qu'elle a bien eu lieu.
 
 ```cron
 # CreaSlot — Purge du journal RGPD (rétention 12 mois — DT-15 ; VPS en UTC)
@@ -84,11 +104,16 @@ Notes :
 
 ### Étape 3 — Vérifier que la cron est bien enregistrée
 
+On obtient la ligne que l'on vient d'écrire. Si rien ne s'affiche, c'est qu'elle n'a pas été
+enregistrée.
+
 ```bash
 crontab -l | grep purger-journal
 ```
 
 ### Étape 4 — Dossier de logs (propriétaire `ubuntu`, mutualisé avec les autres crons CreaSlot)
+
+On obtient le dossier dans lequel la tâche écrira son compte rendu à chaque exécution.
 
 ```bash
 mkdir -p /home/ubuntu/cron-logs
@@ -98,7 +123,9 @@ Aucun `sudo`/`chown` nécessaire : `/home/ubuntu/cron-logs` appartient déjà à
 
 ### Étape 5 — Test post-déploiement
 
-Le 1er du mois suivant à 03h05, vérifier :
+Le 1er du mois suivant à 03h05, vérifier. On obtient d'abord les dernières lignes du compte rendu,
+puis un nombre : **zéro** signifie qu'il ne subsiste aucune entrée plus ancienne que douze mois, donc
+que la purge a bien fait son travail.
 
 ```bash
 # Vérifier que la commande s'est exécutée
