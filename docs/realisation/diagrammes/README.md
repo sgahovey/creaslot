@@ -1,5 +1,10 @@
 # Régénération des figures de la réalisation
 
+**À qui s'adresse ce document, et ce qu'il permet.** À qui doit remettre à jour une figure du
+dossier après une évolution du projet. Il donne la commande qui refabrique l'image à partir de sa
+source, et dit lesquelles des sept figures peuvent être modifiées, lesquelles sont gelées avec le
+dossier rendu.
+
 Ce répertoire contient les figures du dossier, chacune sous deux formes : la **source**
 (`.puml` ou `.mermaid`) et le **PNG** rendu, tous deux versionnés. Le PNG est ce que le
 dossier affiche ; la source est ce qui fait foi.
@@ -8,6 +13,10 @@ Jusqu'ici, **aucune commande de régénération n'était écrite nulle part**. E
 que dans la mémoire de qui avait produit les figures. Ce fichier comble ce manque.
 
 ## PlantUML (`.puml`)
+
+On obtient le PNG de la figure, écrit à côté de sa source et sous le même nom, en remplacement du
+précédent. `plantuml.jar` est le programme qui lit la source et dessine l'image ; `java -jar` sert à
+le lancer, car il est écrit en Java.
 
 ```bash
 java -jar ~/plantuml.jar -tpng docs/realisation/diagrammes/<figure>.puml
@@ -26,6 +35,9 @@ C'est ce contrôle qui permet d'affirmer que le jar et la version ci-dessus sont
 qui ont servi.
 
 ## Mermaid (`.mermaid`)
+
+On obtient de même le PNG à partir de sa source, pour les figures écrites dans cet autre langage de
+diagrammes.
 
 ```bash
 npx --offline @mermaid-js/mermaid-cli@11.16.0 -i <figure>.mermaid -o <figure>.png

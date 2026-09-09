@@ -1,5 +1,10 @@
 # Captures d'écran de l'application
 
+**À qui s'adresse ce document, et ce qu'il permet.** À qui doit refaire une capture d'écran devenue
+périmée, parce que l'application a changé depuis. Il permet de remonter l'environnement exact dans
+lequel l'image d'origine a été prise, puis de reprendre la vue. Le terme `fixtures`, qui y revient,
+est défini dans le glossaire, en fin de `../../runbook-deploiement.md`.
+
 Ce répertoire contient les captures de l'application réelle utilisées par le dossier et le
 diaporama. Contrairement aux figures de `../diagrammes/`, une capture **n'a pas de source** :
 l'image est le seul artefact. La reproduire suppose donc de reconstituer l'état qui l'a
@@ -22,6 +27,9 @@ doit dire lequel des deux elle met à jour.
 
 ## Environnement de prise de vue
 
+On obtient l'application en marche sur sa propre machine, remplie de données de démonstration, et
+affichant la charte graphique à jour. C'est l'état à photographier.
+
 ```bash
 docker compose up -d
 docker compose exec app php bin/console doctrine:migrations:migrate -n
@@ -38,6 +46,12 @@ volée, une charte non compilée ne serait pas celle affichée à l'écran.
 
 **Contrôle préalable, à ne pas sauter** : vérifier que la feuille servie est bien celle du
 dépôt, sans quoi la capture figerait une charte périmée.
+
+Ce que la commande compare : d'un côté la feuille de style que l'application est en train de servir,
+récupérée depuis `http://localhost:8000` ; de l'autre le fichier `public/css/creaslot.css` versionné
+dans le dépôt. `diff` les met face à face. Le mot `identique` s'affiche si, et seulement si, les deux
+sont **exactement le même fichier** ; sinon la commande affiche les lignes qui diffèrent, et il faut
+recompiler avant de photographier quoi que ce soit.
 
 ```bash
 curl -s http://localhost:8000/css/creaslot.css | diff - public/css/creaslot.css && echo identique
@@ -71,7 +85,8 @@ façon de celles de l'image d'origine.
 Les captures d'origine ont été prises à la main, à la largeur d'affichage correspondant aux
 dimensions du tableau ci-dessus. Pour un rendu reproductible, Chrome sans interface graphique
 est disponible sous `~/.cache/puppeteer/chrome/<version>/chrome-linux64/chrome` et accepte
-une fenêtre de dimensions fixées :
+une fenêtre de dimensions fixées. On obtient un fichier `sortie.png` aux dimensions demandées, pris
+sans qu'aucune fenêtre s'ouvre à l'écran.
 
 ```bash
 CHROME=~/.cache/puppeteer/chrome/linux-151.0.7922.47/chrome-linux64/chrome
