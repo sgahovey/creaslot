@@ -1,6 +1,6 @@
 # Dette technique CreaSlot — Suivi
 
-Date dernière mise à jour : 04/09/2026.
+Date dernière mise à jour : 09/09/2026.
 Convention : DT-N = Dette Technique numéro N.
 
 ---
@@ -1428,3 +1428,47 @@ Le contrôle TLS a été mené sur la connexion réellement ouverte par la confi
 **Reste ouvert, hors périmètre de cette entrée** : la 8.1 cessera à son tour d'être maintenue. La vraie réponse durable n'est pas cette montée mais le dispositif qui l'a déclenchée. Aucune alerte automatisée ne surveille aujourd'hui la fin de maintenance des branches Symfony : c'est la lecture humaine de la veille qui a joué ce rôle.
 
 **Priorité** : 🟠 haute au moment de l'ouverture (absence de correctifs de sécurité sur une application exposée), sans objet depuis la clôture.
+
+---
+
+## DT-48 — Le client MySQL du conteneur est en latin1 : toute injection SQL sans option corrompt les accents (🟠 HAUT) — ✅ RÉSOLUE (09/09/2026)
+
+> **✅ RÉSOLUE le 09/09/2026**, ouverte et close le même jour. Constatée en préproduction, où les prénoms accentués du jeu de démonstration s'affichaient « NadÃ¨ge », « KÃ©vin », « AurÃ©lien ».
+>
+> **Origine** : l'image `mysql:8.0` livre un client dont le jeu de caractères par défaut est **`latin1`**, alors que les fichiers de peuplement sont en UTF-8 et que les bases sont en `utf8mb4`. Sans `--default-character-set=utf8mb4`, le client annonce du latin1 au serveur, qui transcode chaque octet. La corruption est donc **écrite en base**, elle n'est pas un défaut d'affichage.
+
+**Détecté** : 09/09/2026, sur signalement de noms mal affichés dans l'interface de préproduction.
+
+**Constat, mesuré sur les octets** : pour « Nadège », la base contenait `4E 61 64 C3 83 C2 A8 67 65`, soit 9 octets et 7 caractères, là où l'UTF-8 correct s'écrit `4E 61 64 C3 A8 67 65`, 7 octets et 6 caractères. Le `C3 A8` du « è » avait été transformé en `C3 83 C2 A8`, c'est-à-dire l'encodage UTF-8 des deux caractères « Ã » et « ¨ ».
+
+**Ce qui n'était pas en cause**, vérifié un par un :
+
+| Élément | État |
+|---|---|
+| Base, tables et colonnes | `utf8mb4` sur les trois environnements |
+| Connexion Doctrine | `character_set_client`, `_connection`, `_results` et `_database` tous à `utf8mb4` |
+| `DATABASE_URL` | déclare bien `charset=utf8mb4` |
+| Fichiers `.sql` sources | UTF-8 valide, « Nadège » y occupe les bons octets |
+| Gabarits Twig | corrects, le pied de page affichait « Cnam Réunion » sans défaut |
+
+**Cause racine, isolée par un témoin** : la table `type_rdv`, peuplée par les fixtures Doctrine et non par le script SQL, portait des octets **corrects** dans la même base au même instant (`Présentiel` en `50 72 C3 A9 …`). Deux chemins d'écriture coexistaient donc, l'un sain et l'autre corrupteur. Cela élimine la base, la colonne et la connexion applicative, et désigne la seule différence restante : la commande d'injection.
+
+**Vérification directe** : dans le conteneur, `mysql -e "SELECT @@character_set_client"` rend **`latin1`** sans option et `utf8mb4` avec.
+
+**Fichiers concernés** : `scripts/seed-preprod.sql` et `scripts/seed-preprod-demo.sql` (en-têtes documentant la commande d'injection).
+
+**Action réalisée** :
+
+1. La commande documentée dans les deux en-têtes porte désormais `--default-character-set=utf8mb4`, avec un bloc d'avertissement expliquant le mécanisme, le contrôle à faire après injection et les octets attendus.
+2. Le jeu de démonstration a été réinjecté en **préproduction** et en **local** avec l'option. Contrôle après réinjection : « Nadège » rend `4E6164C3A86765`, 7 octets, 6 caractères, sur les deux environnements.
+3. Balayage des colonnes textuelles des trois bases à la recherche de la signature `C383` : **zéro occurrence** dans `utilisateur`, `reservation`, `notification`, `type_rdv` et `service`.
+
+**Piège de diagnostic à connaître** : chercher la corruption avec `LIKE '%Ã%'` donne des faux positifs en masse. La collation `utf8mb4_0900_ai_ci` étant insensible aux accents, « Ã » y correspond à tout « A ». Le seul test fiable porte sur les octets, `HEX(colonne) LIKE '%C383%'`.
+
+**La production n'a pas été touchée**, et elle était indemne : elle ne contient aucun nom accentué, ses sept comptes étant en ASCII pur. Elle l'était **par absence d'accents, non par protection**. L'avertissement inscrit dans les deux en-têtes interdit désormais d'y injecter un jeu accentué sans l'option.
+
+**Condition de levée** : atteinte. Les deux fichiers portent la commande correcte, les deux environnements peuplés portent des octets valides, et aucune séquence `C383` ne subsiste.
+
+**Ce qui reste ouvert** : rien n'empêche techniquement de rejouer la mauvaise commande, l'option n'étant pas contrainte par un script. Un peuplement passant par `bin/setup.sh` ou par les fixtures Doctrine n'a pas ce défaut ; seule l'injection SQL directe l'expose.
+
+**Priorité** : 🟠 haute au moment de l'ouverture (données visibles à l'écran, à trois jours d'une démonstration), sans objet depuis la clôture.
