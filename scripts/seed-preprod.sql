@@ -20,8 +20,27 @@
 --
 -- CIBLE
 --   Base `creaslot_preprod`. À exécuter par exemple :
---     docker compose exec -T db mysql -u root -p creaslot_preprod < scripts/seed-preprod.sql
+--     docker compose exec -T db sh -c 'mysql -u root -p"$MYSQL_ROOT_PASSWORD" \
+--       --default-character-set=utf8mb4 creaslot_preprod' < scripts/seed-preprod.sql
 --   (ou via phpMyAdmin, base creaslot_preprod sélectionnée).
+--
+-- ENCODAGE, A NE PAS OUBLIER
+--   Le client `mysql` du conteneur `mysql:8.0` a pour jeu de caracteres par defaut
+--   `latin1`, alors que ce fichier est en UTF-8 et que la base est en `utf8mb4`.
+--   Sans `--default-character-set=utf8mb4`, le client annonce du latin1 au serveur,
+--   qui transcode chaque octet : « Nadege » avec accent devient « NadA¨ge », la
+--   corruption etant alors ECRITE en base et non affichee a tort. Verifie le
+--   09/09/2026 : sans l'option, HEX(prenom) rend C383C2A8 la ou il faut C3A8.
+--   L'option n'est donc pas un confort, c'est une condition de correction (DT-48).
+--
+--   Controle apres injection :
+--     SELECT prenom, HEX(prenom), LENGTH(prenom), CHAR_LENGTH(prenom)
+--     FROM utilisateur WHERE prenom REGEXP '[^ -~]' LIMIT 1;
+--   Attendu pour « Nadege » accentue : 4E6164C3A86765, 7 octets, 6 caracteres.
+--
+--   NE PAS injecter de jeu accentue en PRODUCTION sans cette option : la base de
+--   production est aujourd'hui indemne parce qu'elle ne contient aucun accent, pas
+--   parce qu'elle serait protegee.
 --
 -- IDEMPOTENCE (script rejouable sans doublon)
 --   On reproduit le comportement de `doctrine:fixtures:load` (qui purge les
