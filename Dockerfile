@@ -10,7 +10,17 @@
 # ==============================================================================
 # Stage base : socle commun à runtime et dev (extensions + user app + var/ writable).
 # ==============================================================================
-FROM php:8.4-fpm-alpine AS base
+# Version de PHP épinglée au patch, pas au tag flottant « 8.4 ».
+#   - CERTFR-2026-ALE-014 (CVE-2026-109618, CVE-2026-109619) : toutes les
+#     versions 8.4 antérieures à 8.4.27 sont vulnérables. L'image tournait
+#     en 8.4.25.
+#   - Un tag flottant ne corrige que si l'on reconstruit : l'image restait en
+#     arrière sans que rien ne le signale. Épinglé, le patch se lit dans le
+#     diff et toute montée devient un choix daté.
+#   - En contrepartie, les correctifs suivants ne viendront plus tout seuls :
+#     cette ligne est à relire à chaque avis de sécurité PHP, et les deux
+#     stages doivent monter ensemble.
+FROM php:8.4.27-fpm-alpine AS base
 
 # Bibliothèques runtime permanentes + extensions (headers de build en .build-deps
 # puis supprimés). Commun à runtime et dev : aucune duplication.
@@ -47,7 +57,8 @@ RUN mkdir -p var/cache var/log \
 # Stage build — dépendances Composer, compilation des assets, warmup du cache.
 # Base CLI (la console Symfony suffit ici ; php-fpm inutile pour compiler).
 # ==============================================================================
-FROM php:8.4-cli-alpine AS build
+# Même patch que le stage base : voir la note en tête de celui-ci.
+FROM php:8.4.27-cli-alpine AS build
 
 # Extensions nécessaires au boot de la console (intl, pdo_mysql, zip).
 RUN apk add --no-cache \
